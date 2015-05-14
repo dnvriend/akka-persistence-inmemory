@@ -104,7 +104,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
       val fromSeq = fromSequenceNr
       log.debug("Async read for highest sequence number for processorId: {} (hint, seek from  nr: {})", pid, fromSeq)
       journal.get(pid) match {
-        case None => 0
+        case None | Some(Nil) => 0
         case Some(list) => list.map(_.sequenceNr).max
       }
     }
