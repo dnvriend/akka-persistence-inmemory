@@ -30,7 +30,7 @@ akka {
  - Akka 2.3.6 -> 2.3.11
  - Scala 2.11.1 -> 2.11.6
  - Scala 2.10.4 -> 2.10.5
- - Merged Issue #1 (Sebastián Ortega)[https://github.com/sortega] Fix corner case when persisted events are deleted, thanks!
+ - Merged Issue #1 [Sebastián Ortega](https://github.com/sortega) Fix corner case when persisted events are deleted, thanks!
 
 ## 1.0.0
  - Moved to bintray
