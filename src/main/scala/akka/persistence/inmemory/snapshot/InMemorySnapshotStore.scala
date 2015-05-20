@@ -1,36 +1,84 @@
 package akka.persistence.inmemory.snapshot
 
-import java.util.concurrent.ConcurrentHashMap
-
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging, Props}
+import akka.pattern.ask
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
+import akka.util.Timeout
 
-import scala.collection.JavaConverters._
 import scala.concurrent.Future
+import scala.concurrent.duration._
+
+trait SnapshotEvent
+
+case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any) extends SnapshotEvent
+
+case class DeleteSnapshotByMetadata(metadata: SnapshotMetadata) extends SnapshotEvent
+
+case class DeleteSnapshotByCriteria(persistenceId: String, criteria: SnapshotSelectionCriteria) extends SnapshotEvent
+
+// API
+case class LoadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria)
+
+case class LoadSnapshotResult(selectedSnapshot: Option[SelectedSnapshot])
+
+// general ack
+case object SnapshotAck
+
+case class SnapshotCache(cache: Map[SnapshotMetadata, Any]) {
+  def update(event: SnapshotEvent): SnapshotCache = event match {
+    case SaveSnapshot(metadata, snapshot) =>
+      copy(cache = cache + (metadata -> snapshot))
+
+    case DeleteSnapshotByMetadata(metadata) =>
+      copy(cache = cache - metadata)
+
+    case DeleteSnapshotByCriteria(persistenceId, criteria) =>
+      copy(cache = cache.filterNot {
+        case (meta, _) =>
+          meta.persistenceId == persistenceId && meta.sequenceNr <= criteria.maxSequenceNr
+      })
+  }
+}
+
+class SnapshotActor extends Actor {
+  var snapshots = SnapshotCache(Map.empty[SnapshotMetadata, Any])
+
+  override def receive: Receive = {
+    case event: SnapshotEvent =>
+      snapshots = snapshots.update(event)
+      sender() ! SnapshotAck
+
+    case LoadSnapshot(persistenceId, criteria) =>
+      val ss = snapshots.cache.filter {
+        case (meta, _) =>
+          meta.persistenceId == persistenceId &&
+          meta.sequenceNr <= criteria.maxSequenceNr &&
+          meta.timestamp <= criteria.maxTimestamp
+      }.map {
+        case (meta, snap) => SelectedSnapshot(meta, snap)
+      }.toSeq
+        .sortBy(_.metadata.sequenceNr)
+        .reverse
+        .headOption
+
+      sender() ! LoadSnapshotResult(ss)
+  }
+}
 
 class InMemorySnapshotStore extends SnapshotStore with ActorLogging {
+  implicit val timeout = Timeout(100.seconds)
   implicit val ec = context.system.dispatcher
+  val snapshots = context.actorOf(Props(new SnapshotActor))
 
-  val snapshots: scala.collection.mutable.Map[SnapshotMetadata, Any] = new ConcurrentHashMap[SnapshotMetadata, Any].asScala
-
-  override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = Future {
+  override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     log.debug("loading for persistenceId: {}, criteria: {}", persistenceId, criteria)
-    snapshots.keySet.toList.filter { meta =>
-      meta.persistenceId == persistenceId && meta.sequenceNr <= criteria.maxSequenceNr
-    }.filterNot(_.timestamp > criteria.maxTimestamp)
-      .sortBy(_.sequenceNr)
-      .reverse.headOption
-      .flatMap { (meta: SnapshotMetadata) =>
-      snapshots.get(meta) map { (snapshot: Any) =>
-        SelectedSnapshot(meta, snapshot)
-      }
-    }
+    (snapshots ? LoadSnapshot(persistenceId, criteria)).mapTo[LoadSnapshotResult].map(_.selectedSnapshot)
   }
 
-  override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = Future {
+  override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     log.debug("Saving metadata: {}, snapshot: {}", metadata, snapshot)
-    snapshots.put(metadata, snapshot)
+    (snapshots ? SaveSnapshot(metadata, snapshot)).map(_ => ())
   }
 
   override def saved(metadata: SnapshotMetadata): Unit =
@@ -38,13 +86,11 @@ class InMemorySnapshotStore extends SnapshotStore with ActorLogging {
 
   override def delete(metadata: SnapshotMetadata): Unit = {
     log.debug("Deleting: {}", metadata)
-    snapshots.remove(metadata)
+    snapshots ! DeleteSnapshotByMetadata(metadata)
   }
 
   override def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Unit = {
     log.debug("Deleting for persistenceId: {} and criteria: {}", persistenceId, criteria)
-    snapshots.keySet.toList.filter { meta =>
-      meta.persistenceId == persistenceId && meta.sequenceNr <= criteria.maxSequenceNr
-    }.foreach(snapshots.remove)
+    snapshots ! DeleteSnapshotByCriteria(persistenceId, criteria)
   }
 }

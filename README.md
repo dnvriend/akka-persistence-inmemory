@@ -25,6 +25,9 @@ akka {
 
 ## What's new?
 
+## 1.0.2 (2015-05-20)
+ - Refactored from the ConcurrentHashMap implementation to a pure Actor managed concurrency model
+
 ## 1.0.1 (2015-05-16)
  - Some refactoring, fixed some misconceptions about the behavior of Scala Futures one year ago :)
  - Akka 2.3.6 -> 2.3.11
