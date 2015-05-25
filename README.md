@@ -25,6 +25,10 @@ akka {
 
 ## What's new?
 
+## 1.0.3 (2015-05-25)
+ - Merged Issue #2 [Sebastián Ortega](https://github.com/sortega) Regression: Fix corner case when persisted events are deleted, thanks!
+ - Added test for the corner case issue #1 and #2
+
 ## 1.0.2 (2015-05-20)
  - Refactored from the ConcurrentHashMap implementation to a pure Actor managed concurrency model
 
