@@ -79,7 +79,7 @@ class JournalActor extends Actor {
       journal = journal.update(event)
       sender() ! JournalAck
 
-    case ReadHighestSequenceNr(persistenceId, fromSequenceNr) if journal.cache.isDefinedAt(persistenceId) =>
+    case ReadHighestSequenceNr(persistenceId, fromSequenceNr) if journal.cache.get(persistenceId).exists(_.nonEmpty) =>
       sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) =>
