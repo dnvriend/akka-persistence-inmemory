@@ -3,7 +3,7 @@ package akka.persistence.inmemory.journal
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.ask
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{PersistentConfirmation, PersistentId, PersistentRepr}
+import akka.persistence.PersistentRepr
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
@@ -14,11 +14,7 @@ trait JournalEvent
 
 case class WriteMessage(persistenceId: String, message: PersistentRepr) extends JournalEvent
 
-case class WriteConfirmation(persistenceId: String, confirmation: PersistentConfirmation) extends JournalEvent
-
 case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) extends JournalEvent
-
-case class DeleteMessage(persistenceId: String, persistentId: PersistentId, permanent: Boolean) extends JournalEvent
 
 // API
 case class ReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
@@ -49,25 +45,6 @@ case class JournalCache(cache: Map[String, Seq[PersistentRepr]]) {
       copy(cache = cache + (persistenceId -> (xs1 ++ xs2)))
 
     case DeleteMessagesTo(_, _, _) => this
-
-    case WriteConfirmation(persistenceId, confirmation) if cache.isDefinedAt(persistenceId) =>
-      val xs1 = cache(persistenceId).filter(_.sequenceNr == confirmation.sequenceNr)
-        .map(repr => repr.update(confirms = repr.confirms :+ confirmation.channelId))
-      val xs2 = cache(persistenceId).filterNot(_.sequenceNr == confirmation.sequenceNr)
-      copy(cache = cache + (persistenceId -> (xs1 ++ xs2)))
-
-    case WriteConfirmation(_, _) => this
-
-    case DeleteMessage(persistenceId, persistentId, true) if cache.isDefinedAt(persistenceId) =>
-      copy(cache = cache + (persistenceId -> cache(persistenceId).filterNot(_.sequenceNr == persistentId.sequenceNr)))
-
-    case DeleteMessage(persistenceId, persistentId, false) if cache.isDefinedAt(persistenceId) =>
-      val xs1 = cache(persistenceId).filter(_.sequenceNr == persistentId.sequenceNr)
-        .map(repr => repr.update(deleted = true))
-      val xs2 = cache(persistenceId).filterNot(_.sequenceNr == persistentId.sequenceNr)
-      copy(cache = cache + (persistenceId -> (xs1 ++ xs2)))
-
-    case DeleteMessage(_, _, _) => this
   }
 }
 
@@ -105,24 +82,12 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
 
   override def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = {
     log.debug("asyncWriteMessages: {}", messages)
-    Future.sequence(messages.map(repr => journal ? WriteMessage(repr.processorId, repr)).toList).map(_ => ())
+    Future.sequence(messages.map(repr => journal ? WriteMessage(repr.persistenceId, repr)).toList).map(_ => ())
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = {
     log.debug("asyncDeleteMessagesTo for processorId: {} to sequenceNr: {}, permanent: {}", persistenceId, toSequenceNr, permanent)
     (journal ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).map(_ => ())
-  }
-
-  @scala.deprecated("writeConfirmations will be removed, since Channels will be removed.")
-  override def asyncWriteConfirmations(confirmations: Seq[PersistentConfirmation]): Future[Unit] = {
-    log.debug("writeConfirmations for {} messages", confirmations.size)
-    Future.sequence(confirmations.map(confirmation => journal ? WriteConfirmation(confirmation.persistenceId, confirmation)).toList).map(_ => ())
-  }
-
-  @scala.deprecated("asyncDeleteMessages will be removed.")
-  override def asyncDeleteMessages(messageIds: Seq[PersistentId], permanent: Boolean): Future[Unit] = {
-    log.debug("Async delete {} messages, permanent: {}", messageIds.size, permanent)
-    Future.sequence(messageIds.map(persistentId => journal ? DeleteMessage(persistentId.persistenceId, persistentId, permanent))).map(_ => ())
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {
