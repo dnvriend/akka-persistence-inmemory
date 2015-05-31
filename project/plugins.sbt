@@ -5,3 +5,5 @@ resolvers += "bintray-sbt-plugin-releases" at "http://dl.bintray.com/content/sbt
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
 
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
+
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.1.0")
