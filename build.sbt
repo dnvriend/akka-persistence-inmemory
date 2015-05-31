@@ -6,8 +6,6 @@ version := "1.1.0-M1"
 
 scalaVersion := "2.11.6"
 
-crossScalaVersions := Seq("2.10.5", "2.11.6")
-
 resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
 
 libraryDependencies ++= {
