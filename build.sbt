@@ -2,7 +2,7 @@ organization := "com.github.dnvriend"
 
 name := "akka-persistence-inmemory"
 
-version := "1.0.3"
+version := "1.1.0-M1"
 
 scalaVersion := "2.11.6"
 
