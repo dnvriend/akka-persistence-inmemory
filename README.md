@@ -3,6 +3,7 @@ Akka-persistence-inmemory is a plugin for [akka-persistence](http://doc.akka.io/
 that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
+[![Coverage Status](https://coveralls.io/repos/dnvriend/akka-persistence-inmemory/badge.svg)](https://coveralls.io/r/dnvriend/akka-persistence-inmemory)
 
 # Dependency
 To include the plugin into your sbt project, add the following lines to your build.sbt file:
