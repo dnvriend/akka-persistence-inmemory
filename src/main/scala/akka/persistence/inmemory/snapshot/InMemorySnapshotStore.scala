@@ -81,16 +81,13 @@ class InMemorySnapshotStore extends SnapshotStore with ActorLogging {
     (snapshots ? SaveSnapshot(metadata, snapshot)).map(_ => ())
   }
 
-  override def saved(metadata: SnapshotMetadata): Unit =
-    log.debug("Saved: {}", metadata)
-
-  override def delete(metadata: SnapshotMetadata): Unit = {
+  override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] = {
     log.debug("Deleting: {}", metadata)
-    snapshots ! DeleteSnapshotByMetadata(metadata)
+    (snapshots ? DeleteSnapshotByMetadata(metadata)).map(_ => ())
   }
 
-  override def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Unit = {
+  override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = {
     log.debug("Deleting for persistenceId: {} and criteria: {}", persistenceId, criteria)
-    snapshots ! DeleteSnapshotByCriteria(persistenceId, criteria)
+    (snapshots ? DeleteSnapshotByCriteria(persistenceId, criteria)).map(_ => ())
   }
 }
