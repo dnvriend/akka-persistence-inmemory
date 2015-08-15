@@ -85,7 +85,7 @@ class InMemorySnapshotStore extends SnapshotStore with ActorLogging {
   val snapshots = context.actorOf(Props(new SnapshotActor))
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
-    log.debug("loading for persistenceId: {}, criteria: {}", persistenceId, criteria)
+    log.debug("Loading for persistenceId: {}, criteria: {}", persistenceId, criteria)
     (snapshots ? LoadSnapshot(persistenceId, criteria)).mapTo[LoadSnapshotResult].map(_.selectedSnapshot)
   }
 
