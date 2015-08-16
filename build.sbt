@@ -6,7 +6,7 @@ version := "1.0.4"
 
 scalaVersion := "2.11.7"
 
-crossScalaVersions := Seq("2.10.6", "2.11.7")
+crossScalaVersions := Seq("2.10.5", "2.11.7")
 
 resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
 
