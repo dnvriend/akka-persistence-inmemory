@@ -91,10 +91,6 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
     log.debug("Async write messages: {}", messages)
     Future.sequence(messages.map(m => journal ? WriteMessages(m.persistenceId, m.payload))).mapTo[Seq[Try[Unit]]]
-
-
-    //    Future.sequence(messages.map(m => journal ? WriteMessages(m.persistenceId, m.payload)).toList).map(_ => ())
-    //    (s ? WriteMessages(messages)).mapTo[immutable.Seq[Try[Unit]]]
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
