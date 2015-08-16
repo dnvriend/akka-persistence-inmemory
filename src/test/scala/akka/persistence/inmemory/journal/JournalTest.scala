@@ -1,6 +1,22 @@
+/*
+ * Copyright 2015 Dennis Vriend
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package akka.persistence.inmemory.journal
 
-import akka.actor.{PoisonPill, Props}
+import akka.actor.{ PoisonPill, Props }
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.persistence.PersistentActor
@@ -10,9 +26,9 @@ class JournalTest extends TestSpec {
 
   case class CounterState(counter: Long) {
     def update(event: String): CounterState = event match {
-      case "add" => copy(counter = counter + 1)
-      case "sub" => copy(counter = counter - 1)
-      case "rst" => copy(counter = 0)
+      case "add" ⇒ copy(counter = counter + 1)
+      case "sub" ⇒ copy(counter = counter - 1)
+      case "rst" ⇒ copy(counter = 0)
     }
   }
 
@@ -26,23 +42,22 @@ class JournalTest extends TestSpec {
     }
 
     override def receiveCommand: Receive = LoggingReceive {
-      case "state" =>
+      case "state" ⇒
         sender() ! state.counter
 
-      case "deleteAll" =>
+      case "deleteAll" ⇒
         deleteMessages(Long.MaxValue, permanent = true)
 
-      case event: String =>
-        persist(event) { (event: String) =>
+      case event: String ⇒
+        persist(event) { (event: String) ⇒
           updateState(event)
         }
     }
 
     override def receiveRecover: Receive = LoggingReceive {
-      case event: String => state = state.update(event)
+      case event: String ⇒ state = state.update(event)
     }
   }
-
 
   "Counter" should "persist state" in {
     var counter = system.actorOf(Props(new Counter(1)))

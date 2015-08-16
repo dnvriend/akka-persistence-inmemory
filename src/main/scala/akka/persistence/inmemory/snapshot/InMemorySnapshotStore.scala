@@ -1,9 +1,25 @@
+/*
+ * Copyright 2015 Dennis Vriend
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package akka.persistence.inmemory.snapshot
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.pattern.ask
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.{SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
+import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.util.Timeout
 
 import scala.concurrent.Future
@@ -27,15 +43,15 @@ case object SnapshotAck
 
 case class SnapshotCache(cache: Map[SnapshotMetadata, Any]) {
   def update(event: SnapshotEvent): SnapshotCache = event match {
-    case SaveSnapshot(metadata, snapshot) =>
+    case SaveSnapshot(metadata, snapshot) ⇒
       copy(cache = cache + (metadata -> snapshot))
 
-    case DeleteSnapshotByMetadata(metadata) =>
+    case DeleteSnapshotByMetadata(metadata) ⇒
       copy(cache = cache - metadata)
 
-    case DeleteSnapshotByCriteria(persistenceId, criteria) =>
+    case DeleteSnapshotByCriteria(persistenceId, criteria) ⇒
       copy(cache = cache.filterNot {
-        case (meta, _) =>
+        case (meta, _) ⇒
           meta.persistenceId == persistenceId && meta.sequenceNr <= criteria.maxSequenceNr
       })
   }
@@ -45,18 +61,18 @@ class SnapshotActor extends Actor {
   var snapshots = SnapshotCache(Map.empty[SnapshotMetadata, Any])
 
   override def receive: Receive = {
-    case event: SnapshotEvent =>
+    case event: SnapshotEvent ⇒
       snapshots = snapshots.update(event)
       sender() ! SnapshotAck
 
-    case LoadSnapshot(persistenceId, criteria) =>
+    case LoadSnapshot(persistenceId, criteria) ⇒
       val ss = snapshots.cache.filter {
-        case (meta, _) =>
+        case (meta, _) ⇒
           meta.persistenceId == persistenceId &&
-          meta.sequenceNr <= criteria.maxSequenceNr &&
-          meta.timestamp <= criteria.maxTimestamp
+            meta.sequenceNr <= criteria.maxSequenceNr &&
+            meta.timestamp <= criteria.maxTimestamp
       }.map {
-        case (meta, snap) => SelectedSnapshot(meta, snap)
+        case (meta, snap) ⇒ SelectedSnapshot(meta, snap)
       }.toSeq
         .sortBy(_.metadata.sequenceNr)
         .reverse
@@ -78,7 +94,7 @@ class InMemorySnapshotStore extends SnapshotStore with ActorLogging {
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = {
     log.debug("Saving metadata: {}, snapshot: {}", metadata, snapshot)
-    (snapshots ? SaveSnapshot(metadata, snapshot)).map(_ => ())
+    (snapshots ? SaveSnapshot(metadata, snapshot)).map(_ ⇒ ())
   }
 
   override def saved(metadata: SnapshotMetadata): Unit =
