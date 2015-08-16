@@ -1,20 +1,22 @@
 package akka.persistence.inmemory.journal
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.pattern.ask
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.PersistentRepr
+import akka.persistence.{AtomicWrite, PersistentRepr}
+import akka.serialization.SerializationExtension
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Try
 
 trait JournalEvent
 
-case class WriteMessage(persistenceId: String, message: PersistentRepr) extends JournalEvent
+case class WriteMessages(persistenceId: String, messages: Seq[PersistentRepr]) extends JournalEvent
 
-case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) extends JournalEvent
+case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean = true) extends JournalEvent
 
 // API
 case class ReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
@@ -28,13 +30,17 @@ case class ReplayMessagesResponse(messages: Seq[PersistentRepr])
 // general ack
 case object JournalAck
 
-case class JournalCache(cache: Map[String, Seq[PersistentRepr]]) {
-  def update(event: JournalEvent): JournalCache = event match {
-    case WriteMessage(persistenceId, message) if cache.isDefinedAt(persistenceId) =>
-      copy(cache = cache + (persistenceId -> (cache(persistenceId) :+ message)))
+case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRepr]]) {
+  val serialization = SerializationExtension(system)
 
-    case WriteMessage(persistenceId, message) =>
-      copy(cache = cache + (persistenceId -> Seq(message)))
+  def update(event: JournalEvent): JournalCache = event match {
+    case WriteMessages(persistenceId, messages) =>
+      messages.foreach(m => serialization.findSerializerFor(m.payload.asInstanceOf[AnyRef]))
+      if (cache.isDefinedAt(persistenceId)) {
+        copy(cache = cache + (persistenceId -> (cache(persistenceId) ++ messages)))
+      } else {
+        copy(cache = cache + (persistenceId -> messages))
+      }
 
     case DeleteMessagesTo(persistenceId, toSequenceNr, true) if cache.isDefinedAt(persistenceId) =>
       copy(cache = cache + (persistenceId -> cache(persistenceId).filterNot(_.sequenceNr <= toSequenceNr)))
@@ -49,12 +55,14 @@ case class JournalCache(cache: Map[String, Seq[PersistentRepr]]) {
 }
 
 class JournalActor extends Actor {
-  var journal = JournalCache(Map.empty[String, Seq[PersistentRepr]])
+  var journal = JournalCache(context.system, Map.empty[String, Seq[PersistentRepr]])
 
   override def receive: Receive = {
     case event: JournalEvent =>
-      journal = journal.update(event)
-      sender() ! JournalAck
+      sender() ! Try({
+        journal = journal.update(event)
+        JournalAck
+      })
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) if journal.cache.get(persistenceId).exists(_.nonEmpty) =>
       sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
@@ -80,14 +88,18 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   implicit val ec = context.system.dispatcher
   val journal = context.actorOf(Props(new JournalActor))
 
-  override def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = {
-    log.debug("asyncWriteMessages: {}", messages)
-    Future.sequence(messages.map(repr => journal ? WriteMessage(repr.persistenceId, repr)).toList).map(_ => ())
+  override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
+    log.debug("Async write messages: {}", messages)
+    Future.sequence(messages.map(m => journal ? WriteMessages(m.persistenceId, m.payload))).mapTo[Seq[Try[Unit]]]
+
+
+    //    Future.sequence(messages.map(m => journal ? WriteMessages(m.persistenceId, m.payload)).toList).map(_ => ())
+    //    (s ? WriteMessages(messages)).mapTo[immutable.Seq[Try[Unit]]]
   }
 
-  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = {
-    log.debug("asyncDeleteMessagesTo for processorId: {} to sequenceNr: {}, permanent: {}", persistenceId, toSequenceNr, permanent)
-    (journal ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).map(_ => ())
+  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
+    log.debug("Async delete messages for processorId: {} to sequenceNr: {}", persistenceId, toSequenceNr)
+    (journal ? DeleteMessagesTo(persistenceId, toSequenceNr)).map(_ => ())
   }
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = {

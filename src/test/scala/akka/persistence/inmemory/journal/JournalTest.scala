@@ -1,6 +1,6 @@
 package akka.persistence.inmemory.journal
 
-import akka.actor.{PoisonPill, Props}
+import akka.actor.Props
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.persistence.PersistentActor
@@ -30,7 +30,7 @@ class JournalTest extends TestSpec {
         sender() ! state.counter
 
       case "deleteAll" =>
-        deleteMessages(Long.MaxValue, permanent = true)
+        deleteMessages(Long.MaxValue)
 
       case event: String =>
         persist(event) { (event: String) =>
