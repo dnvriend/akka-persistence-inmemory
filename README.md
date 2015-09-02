@@ -26,6 +26,12 @@ akka {
 
 ## What's new?
 
+## 1.1.0-RC1 (2015-09-02)
+ - Compatibility with Akka 2.4.0-RC1
+ - Created a new branch `release-akka-2.4.0-RC1` for release akka-persistence-inmemory 1.1.0-RC1 Akka 2.4-RC1 compatibility
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC1"` 
+ - Be sure to use Akka 2.4.0-RC1, Scala 2.11 and Java 8 if you want to try out the RC1 release.
+
 ## 1.1.0-M3 (2015-08-16)
  - Merged PR #5 [Dmitry Lisin](https://github.com/dlisin) Compatibility with Akka 2.4-M3, thanks!
  - Created a new branch `release-akka-2.4-M3` for release akka-persistence-inmemory 1.1.0-M3 Akka 2.4-M3 compatibility,
