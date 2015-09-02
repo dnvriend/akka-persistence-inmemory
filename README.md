@@ -2,6 +2,8 @@
 Akka-persistence-inmemory is a plugin for [akka-persistence](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html) 
 that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
+Please note that this version is compatible with Akka 2.4.0-RC1 and it needs Java 8 to operate.
+
 [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
 [![Coverage Status](https://coveralls.io/repos/dnvriend/akka-persistence-inmemory/badge.svg)](https://coveralls.io/r/dnvriend/akka-persistence-inmemory)
 
@@ -10,7 +12,7 @@ To include the plugin into your sbt project, add the following lines to your bui
 
     resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.3"
+    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC1"
 
 # Configuration
 Add the following to the application.conf:
@@ -26,6 +28,11 @@ akka {
 
 ## What's new?
 
+## 1.1.0-RC1 (2015-09-02)
+ - Compatibility with Akka 2.4.0-RC1
+ - Created a new branch `release-akka-2.4.0-RC1` for release akka-persistence-inmemory 1.1.0-RC1 Akka 2.4-RC1 compatibility
+ - Be sure to use Akka 2.4.0-RC1, Scala 2.11 and Java 8 if you want to try out the RC1 release.
+ 
 ## 1.1.0-M1 (2015-05-31)
  - Accepted Issue #3 [Dmitry Lisin](https://github.com/dlisin) Compatibility with Akka 2.4-M1, thanks!
  - Created a new branch `release-akka-2.4-M1` for release akka-persistence-inmemory 1.1.0-M1 Akka 2.4-M1 compatibility
