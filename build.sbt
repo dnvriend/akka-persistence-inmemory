@@ -2,7 +2,7 @@ organization := "com.github.dnvriend"
 
 name := "akka-persistence-inmemory"
 
-version := "1.0.4"
+version := "1.0.5"
 
 scalaVersion := "2.11.7"
 
@@ -11,7 +11,7 @@ crossScalaVersions := Seq("2.10.5", "2.11.7")
 resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
 
 libraryDependencies ++= {
-    val akkaVersion = "2.3.12"
+    val akkaVersion = "2.3.13"
     Seq(
     "com.typesafe.akka"   %% "akka-actor"                    % akkaVersion,
     "com.typesafe.akka"   %% "akka-slf4j"                    % akkaVersion,

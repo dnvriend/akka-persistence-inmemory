@@ -10,7 +10,7 @@ To include the plugin into your sbt project, add the following lines to your bui
 
     resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.4"
+    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.5"
 
 # Configuration
 Add the following to the application.conf:
@@ -25,6 +25,10 @@ akka {
 ```
 
 ## What's new?
+
+## 1.0.5 (2015-09-04)
+ - Compatibilty with Akka 2.3.13
+ - Akka 2.3.12 -> 2.3.13
 
 ## 1.1.0-RC1 (2015-09-02)
  - Compatibility with Akka 2.4.0-RC1
