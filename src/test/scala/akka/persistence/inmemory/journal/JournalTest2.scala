@@ -16,11 +16,13 @@
 
 package akka.persistence.inmemory.journal
 
-import akka.actor.Props
+import akka.actor.{ActorSystem, Props}
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
+import com.typesafe.config.ConfigValueFactory.fromAnyRef
+import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
 
 class MyInnerCmdNotSerializable(val value: String) extends MyInnerCmd
 
@@ -59,16 +61,17 @@ class JournalTest2 extends TestSpec {
   }
 
   "Counter" should "persist state" in {
+    val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.doSerialize", fromAnyRef("on")))
     val objSer = new MyCommand(new MyInnerCmdSerializable("qwe"))
     val objNonSer = new MyCommand(new MyInnerCmdNotSerializable("asd"))
 
-    val counter = system.actorOf(Props(new ObjectStateActor(1)))
+    val counter = system2.actorOf(Props(new ObjectStateActor(1)))
     counter ! objSer
     (counter ? "state").futureValue shouldBe objSer.inner.value
     counter ! objNonSer
     (counter ? "state").futureValue shouldBe objSer.inner.value
 
-    val counter2 = system.actorOf(Props(new ObjectStateActor(2)))
+    val counter2 = system2.actorOf(Props(new ObjectStateActor(2)))
     counter2 ! objNonSer
     (counter2 ? "state").futureValue shouldBe ""
     counter2 ! objSer

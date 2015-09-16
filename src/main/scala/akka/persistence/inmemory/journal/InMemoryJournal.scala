@@ -19,7 +19,7 @@ package akka.persistence.inmemory.journal
 import akka.actor.{ Actor, ActorLogging, ActorSystem, Props }
 import akka.pattern.ask
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.persistence.{Persistence, AtomicWrite, PersistentRepr}
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 
@@ -49,9 +49,11 @@ case object JournalAck
 case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRepr]]) {
   val serialization = SerializationExtension(system)
 
+  private val doSerialize = Persistence(system).journalConfigFor("inmemory-journal").getBoolean("doSerialize")
+
   def update(event: JournalEvent): JournalCache = event match {
     case WriteMessages(persistenceId, messages) ⇒
-      messages.foreach(m ⇒ serialization.serialize(m.payload.asInstanceOf[AnyRef]).get)
+      messages.foreach(m ⇒ if (doSerialize) serialization.serialize(m.payload.asInstanceOf[AnyRef]).get else serialization.findSerializerFor(m.payload.asInstanceOf[AnyRef]))
       if (cache.isDefinedAt(persistenceId)) {
         copy(cache = cache + (persistenceId -> (cache(persistenceId) ++ messages)))
       } else {
