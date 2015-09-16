@@ -51,7 +51,8 @@ case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRe
 
   def update(event: JournalEvent): JournalCache = event match {
     case WriteMessages(persistenceId, messages) ⇒
-      messages.foreach(m ⇒ serialization.findSerializerFor(m.payload.asInstanceOf[AnyRef]))
+//      messages.foreach(m ⇒ serialization.findSerializerFor(m.payload.asInstanceOf[AnyRef]))
+      messages.foreach(m ⇒ serialization.serialize(m.payload.asInstanceOf[AnyRef]))
       if (cache.isDefinedAt(persistenceId)) {
         copy(cache = cache + (persistenceId -> (cache(persistenceId) ++ messages)))
       } else {
