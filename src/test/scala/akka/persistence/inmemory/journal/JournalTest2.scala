@@ -21,20 +21,12 @@ import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
+import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
-
-class MyInnerCmdNotSerializable(val value: String) extends MyInnerCmd
-
-class MyInnerCmdSerializable(val value : String) extends MyInnerCmd with Serializable
 
 class MyCommand(val inner: MyInnerCmd) extends Serializable
 
-trait MyInnerCmd {
-  val value: String
-
-  override def toString: String = s"${getClass.getSimpleName}:$value"
-}
+class MyInnerCmd(val value: String)
 
 class JournalTest2 extends TestSpec {
 
@@ -60,10 +52,10 @@ class JournalTest2 extends TestSpec {
     }
   }
 
-  "Counter" should "persist state" in {
+  wh "Counter" should "persist state" in {
     val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.doSerialize", fromAnyRef("on")))
-    val objSer = new MyCommand(new MyInnerCmdSerializable("qwe"))
-    val objNonSer = new MyCommand(new MyInnerCmdNotSerializable("asd"))
+    val objSer = new MyCommand(new MyInnerCmd("qwe") with Serializable)
+    val objNonSer = new MyCommand(new MyInnerCmd("asd"))
 
     val counter = system2.actorOf(Props(new ObjectStateActor(1)))
     counter ! objSer
