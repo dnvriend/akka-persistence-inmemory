@@ -22,13 +22,19 @@ import akka.pattern.ask
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
 
+class MyInnerCmdNotSerializable(val value: String) extends MyInnerCmd
+
+class MyInnerCmdSerializable(val value : String) extends MyInnerCmd with Serializable
+
+class MyCommand(val inner: MyInnerCmd) extends Serializable
+
+trait MyInnerCmd {
+  val value: String
+
+  override def toString: String = s"${getClass.getSimpleName}:$value"
+}
+
 class JournalTest2 extends TestSpec {
-
-  class MyInnerCmd(val value : String)
-
-  class MyCommand(val inner: MyInnerCmd) extends Serializable {
-    def update(event: String) = new MyCommand(new MyInnerCmd(event))
-  }
 
   class ObjectStateActor(id: Int) extends PersistentActor {
     var state = ""
@@ -50,18 +56,22 @@ class JournalTest2 extends TestSpec {
     override def receiveRecover: Receive = LoggingReceive {
       case cmd: MyCommand ⇒ updateState(cmd)
     }
-
-    override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
-      super.onPersistRejected(cause, event, seqNr)
-      cause.printStackTrace()
-    }
   }
 
   "Counter" should "persist state" in {
-    val obj = new MyCommand(new MyInnerCmd("qwe"))
+    val objSer = new MyCommand(new MyInnerCmdSerializable("qwe"))
+    val objNonSer = new MyCommand(new MyInnerCmdNotSerializable("asd"))
+
     val counter = system.actorOf(Props(new ObjectStateActor(1)))
-    (counter ? "state").futureValue shouldBe ""
-    counter ! obj
-    (counter ? "state").futureValue shouldBe obj.inner.value
+    counter ! objSer
+    (counter ? "state").futureValue shouldBe objSer.inner.value
+    counter ! objNonSer
+    (counter ? "state").futureValue shouldBe objSer.inner.value
+
+    val counter2 = system.actorOf(Props(new ObjectStateActor(2)))
+    counter2 ! objNonSer
+    (counter2 ? "state").futureValue shouldBe ""
+    counter2 ! objSer
+    (counter2 ? "state").futureValue shouldBe objSer.inner.value
   }
 }
