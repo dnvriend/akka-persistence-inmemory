@@ -16,13 +16,56 @@
 
 package akka.persistence.inmemory.query
 
+import akka.actor.Props
+import akka.event.LoggingReceive
+import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.{AllPersistenceIds, PersistenceQuery}
+import akka.stream.ActorMaterializer
+import akka.pattern._
 
 class ReadJournalTest extends TestSpec {
 
-  "ReadJournal" should "be OK" in {
-    PersistenceQuery(system).readJournalFor(InMemoryReadJournal.Identifier) should not be null
+  class MyActor(id: Int) extends PersistentActor {
+    override val persistenceId: String = "my-" + id
+
+    var state : Int = 0
+
+    override def receiveCommand: Receive = LoggingReceive {
+      case "state" ⇒
+        sender() ! state
+
+      case event: Int ⇒
+        persist(event) { (event: Int) ⇒
+          updateState(event)
+        }
+    }
+
+    def updateState(event: Int): Unit = {
+      state = state + event
+    }
+
+    override def receiveRecover: Receive = LoggingReceive {
+      case event: Int => updateState(event)
+    }
+  }
+
+  "ReadJournal" should "support AllPersistenceIds" in {
+    var actor1 = system.actorOf(Props(new MyActor(1)))
+    var actor2 = system.actorOf(Props(new MyActor(2)))
+
+    val readJournal = PersistenceQuery(system).readJournalFor(InMemoryReadJournal.Identifier)
+    implicit val mat = ActorMaterializer()
+
+//    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s)}.futureValue.sorted shouldBe List("my-1", "my-2")
+
+    actor1 ! 2
+    (actor1 ? "state").futureValue shouldBe 2
+
+    actor2 ! 3
+    (actor2 ? "state").futureValue shouldBe 3
+
+    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s)}.futureValue.sorted shouldBe List("my-1", "my-2")
   }
 
 }
