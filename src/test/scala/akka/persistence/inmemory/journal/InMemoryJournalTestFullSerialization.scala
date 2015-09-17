@@ -28,7 +28,7 @@ class MyCmd(val inner: MyInnerCmd) extends Serializable
 
 class MyInnerCmd(val value: String)
 
-class JournalTestFullSerialization extends TestSpec {
+class InMemoryJournalTestFullSerialization extends TestSpec {
 
   class ObjectStateActor(id: Int) extends PersistentActor {
     var state: List[String] = Nil

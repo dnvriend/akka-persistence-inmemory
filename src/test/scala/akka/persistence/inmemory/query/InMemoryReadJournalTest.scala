@@ -21,10 +21,10 @@ import akka.event.LoggingReceive
 import akka.pattern._
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.query.{AllPersistenceIds, PersistenceQuery}
+import akka.persistence.query.PersistenceQuery
 import akka.stream.ActorMaterializer
 
-class ReadJournalTest extends TestSpec {
+class InMemoryReadJournalTest extends TestSpec {
 
   implicit val mat = ActorMaterializer()
 
@@ -53,15 +53,15 @@ class ReadJournalTest extends TestSpec {
   }
 
   "ReadJournal" should "support AllPersistenceIds" in {
-    var actor1 = system.actorOf(Props(new MyActor(1)))
-    var actor2 = system.actorOf(Props(new MyActor(2)))
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    val actor2 = system.actorOf(Props(new MyActor(2)))
 
-    val readJournal = PersistenceQuery(system).readJournalFor(InMemoryReadJournal.Identifier)
+    val readJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
     (actor1 ? "state").futureValue shouldBe 0
     (actor2 ? "state").futureValue shouldBe 0
 
-    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
+    readJournal.currentPersistenceIds().runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
 
     actor1 ! 2
     (actor1 ? "state").futureValue shouldBe 2
@@ -69,12 +69,6 @@ class ReadJournalTest extends TestSpec {
     actor2 ! 3
     (actor2 ? "state").futureValue shouldBe 3
 
-    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
+    readJournal.currentPersistenceIds().runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
   }
-
-  //  it should "not support EventsByPersistenceId" in {
-  //    val readJournal = PersistenceQuery(system).readJournalFor(InMemoryReadJournal.Identifier)
-  //    readJournal.query(EventsByPersistenceId("1", 1L, 1L)).runFold(List[String]()) { (acc, ev) => acc.::(ev.event.asInstanceOf[String])}.futureValue.sorted shouldBe List("my-1", "my-2")
-  //  }
-
 }
