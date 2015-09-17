@@ -2,9 +2,12 @@
 Akka-persistence-inmemory is a plugin for [akka-persistence](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html) 
 that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
-Master branch | License | Latest Version
-------------- | ------- | -------------- 
-[![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory) | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) | [ ![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion)
+Service | Status | Description
+------- | ------ | -----------
+License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) | Apache 2.0
+Travis (master) | [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory) | master branch test
+Codacy | [![Codacy Badge](https://api.codacy.com/project/badge/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory) | Code Quality
+Bintray | [ ![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
 # Dependency
 To include the plugin into your sbt project, add the following lines to your build.sbt file:
@@ -26,6 +29,11 @@ akka {
 ```
 
 ## What's new?
+
+## 1.1.0-RC3 (2015-09-17)
+ - Merged Issue #6 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Conditional ability to perform full serialization while adding messages to journal, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC3"` 
 
 ## 1.1.0-RC2 (2015-09-05)
  - Compatibility with Akka 2.4.0-RC2
