@@ -16,17 +16,17 @@
 
 package akka.persistence.inmemory.journal
 
-import akka.actor.{ Actor, ActorLogging, ActorSystem, Props }
+import akka.actor._
 import akka.pattern.ask
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{Persistence, AtomicWrite, PersistentRepr}
-import akka.serialization.SerializationExtension
+import akka.persistence.{ Persistence, AtomicWrite, PersistentRepr }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.Try
+import scala.util.{ Success, Failure, Try }
 
 trait JournalEvent
 
@@ -47,13 +47,8 @@ case class ReplayMessagesResponse(messages: Seq[PersistentRepr])
 case object JournalAck
 
 case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRepr]]) {
-  val serialization = SerializationExtension(system)
-
-  private val doSerialize = Persistence(system).journalConfigFor("inmemory-journal").getBoolean("full-serialization")
-
   def update(event: JournalEvent): JournalCache = event match {
     case WriteMessages(persistenceId, messages) ⇒
-      messages.foreach(m ⇒ if (doSerialize) serialization.serialize(m.payload.asInstanceOf[AnyRef]).get else serialization.findSerializerFor(m.payload.asInstanceOf[AnyRef]))
       if (cache.isDefinedAt(persistenceId)) {
         copy(cache = cache + (persistenceId -> (cache(persistenceId) ++ messages)))
       } else {
@@ -101,14 +96,45 @@ class JournalActor extends Actor {
   }
 }
 
+object InMemoryJournal {
+  def marshal(repr: PersistentRepr)(implicit serialization: Serialization): Try[PersistentRepr] =
+    serialization.serialize(repr.payload.asInstanceOf[AnyRef]).map(_ ⇒ repr)
+
+  def findSerializer(repr: PersistentRepr)(implicit serialization: Serialization): Try[PersistentRepr] =
+    Try(serialization.findSerializerFor(repr.payload.asInstanceOf[AnyRef])).map(_ ⇒ repr)
+
+  def marshalPersistentRepresentation(repr: PersistentRepr, doSerialize: Boolean)(implicit serialization: Serialization): Try[(PersistentRepr)] =
+    if (doSerialize) marshal(repr) else findSerializer(repr)
+
+  def marshalAtomicWrite(atomicWrite: AtomicWrite, doSerialize: Boolean)(implicit serialization: Serialization): Try[WriteMessages] =
+    validateMarshalledAtomicWrite(atomicWrite.persistenceId, atomicWrite.payload.map(repr ⇒ marshalPersistentRepresentation(repr, doSerialize)))
+
+  def validateMarshalledAtomicWrite(persistenceId: String, xs: Seq[Try[PersistentRepr]]): Try[WriteMessages] =
+    if (xs.exists(_.isFailure)) xs.filter(_.isFailure).head.map(_ ⇒ WriteMessages(persistenceId, Nil))
+    else Try(WriteMessages(persistenceId, xs.collect { case Success(repr) ⇒ repr }))
+
+  def writeToJournal(writeMessages: WriteMessages, journal: ActorRef)(implicit ec: ExecutionContext, timeout: Timeout): Future[Try[Unit]] =
+    (journal ? writeMessages).map(_ ⇒ Try(Unit))
+}
+
 class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
-  implicit val timeout = Timeout(100.millis)
-  implicit val ec = context.system.dispatcher
-  val journal = context.actorOf(Props(new JournalActor))
+  import InMemoryJournal._
+  implicit val timeout: Timeout = Timeout(100.millis)
+  implicit val ec: ExecutionContext = context.system.dispatcher
+  implicit val serialization: Serialization = SerializationExtension(context.system)
+  val journal: ActorRef = context.actorOf(Props(new JournalActor))
+  val doSerialize: Boolean = Persistence(context.system).journalConfigFor("inmemory-journal").getBoolean("full-serialization")
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
-    log.debug("Async write messages: {}", messages)
-    Future.sequence(messages.map(m ⇒ journal ? WriteMessages(m.persistenceId, m.payload))).mapTo[Seq[Try[Unit]]]
+    // every AtomicWrite contains a Seq[PersistentRepr], we have a sequence of AtomicWrite
+    // and one AtomicWrite must all fail or all succeed
+    // xsMarshalled is a converted sequence of AtomicWrite, that denotes whether an AtomicWrite
+    // should be persisted (Try = Success) or not (Failed).
+    val xsMarshalled: Seq[Try[WriteMessages]] = messages.map(atomicWrite ⇒ marshalAtomicWrite(atomicWrite, doSerialize))
+    Future.sequence(xsMarshalled.map {
+      case Success(xs) ⇒ writeToJournal(xs, journal)
+      case Failure(t)  ⇒ Future.successful(Failure(t))
+    })
   }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {

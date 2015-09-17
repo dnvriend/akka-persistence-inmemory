@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.journal
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ ActorSystem, Props }
 import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.persistence.PersistentActor
@@ -31,12 +31,12 @@ class MyInnerCmd(val value: String)
 class JournalTestFullSerialization extends TestSpec {
 
   class ObjectStateActor(id: Int) extends PersistentActor {
-    var state : List[String] = Nil
+    var state: List[String] = Nil
 
     override val persistenceId: String = "c-" + id
 
     def updateState(cmd: MyCmd): Unit = {
-      state = state.::(cmd.inner.value)
+      state = cmd.inner.value :: state
     }
 
     override def receiveCommand: Receive = LoggingReceive {
@@ -44,7 +44,18 @@ class JournalTestFullSerialization extends TestSpec {
         sender() ! state
 
       case cmd: MyCmd ⇒
-        persist(cmd) { e => updateState(e) }
+        persist(cmd) { e ⇒ updateState(e) }
+
+      case "atomically_fail" ⇒
+        // all events will be persisted, else none
+        val objSer = new MyCmd(new MyInnerCmd("qwe") with Serializable)
+        val objNonSer = new MyCmd(new MyInnerCmd("asd"))
+        persistAll(List(objSer, objNonSer, objSer)) { e ⇒ updateState(e) }
+
+      case "atomically_success" ⇒
+        // all events will be persisted, else none
+        val objSer = new MyCmd(new MyInnerCmd("qwe") with Serializable)
+        persistAll(List(objSer, objSer, objSer)) { e ⇒ updateState(e) }
     }
 
     override def receiveRecover: Receive = LoggingReceive {
@@ -69,11 +80,49 @@ class JournalTestFullSerialization extends TestSpec {
     (counter2 ? "state").futureValue shouldBe Nil
     counter2 ! objSer
     (counter2 ? "state").futureValue shouldBe List(objSer.inner.value)
+    system2.terminate().futureValue
   }
 
   it should "not be performed by default" in {
-    val actor = system.actorOf(Props(new ObjectStateActor(1)))
+    var actor = system.actorOf(Props(new ObjectStateActor(1)))
     actor ! objNonSer
-    (actor ? "state").futureValue shouldBe List(objNonSer.inner.value)
+    eventually {
+      (actor ? "state").futureValue shouldBe List(objNonSer.inner.value)
+    }
+    cleanup(actor)
+    actor = system.actorOf(Props(new ObjectStateActor(1)))
+    eventually {
+      (actor ? "state").futureValue shouldBe List(objNonSer.inner.value)
+    }
+  }
+
+  it should "ignore messages that can not be written to the journal atomically" in {
+    val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.full-serialization", fromAnyRef("on")))
+    var actor = system2.actorOf(Props(new ObjectStateActor(2)))
+    actor ! "atomically_fail"
+    eventually {
+      (actor ? "state").futureValue shouldBe Nil
+    }
+    cleanup(actor)
+    actor = system2.actorOf(Props(new ObjectStateActor(2)))
+    eventually {
+      (actor ? "state").futureValue shouldBe Nil
+    }
+    system2.terminate().futureValue
+  }
+
+  it should "not ignore messages that can not be written to the journal atomically" in {
+    val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.full-serialization", fromAnyRef("on")))
+    var actor = system2.actorOf(Props(new ObjectStateActor(2)))
+    actor ! "atomically_success"
+    eventually {
+      (actor ? "state").futureValue shouldBe List(objSer.inner.value, objSer.inner.value, objSer.inner.value)
+    }
+    cleanup(actor)
+    actor = system2.actorOf(Props(new ObjectStateActor(2)))
+    eventually {
+      (actor ? "state").futureValue shouldBe List(objSer.inner.value, objSer.inner.value, objSer.inner.value)
+    }
+    system2.terminate().futureValue
   }
 }
