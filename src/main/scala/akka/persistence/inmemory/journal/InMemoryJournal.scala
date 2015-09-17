@@ -18,16 +18,16 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsResponse, AllPersistenceIdsRequest}
+import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsRequest, AllPersistenceIdsResponse}
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{ Persistence, AtomicWrite, PersistentRepr }
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.persistence.{AtomicWrite, Persistence, PersistentRepr}
+import akka.serialization.{Serialization, SerializationExtension}
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.{ Success, Failure, Try }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 trait JournalEvent
 
@@ -129,7 +129,9 @@ object InMemoryJournal {
 }
 
 class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
+
   import InMemoryJournal._
+
   implicit val timeout: Timeout = Timeout(100.millis)
   implicit val ec: ExecutionContext = context.system.dispatcher
   implicit val serialization: Serialization = SerializationExtension(context.system)
@@ -149,7 +151,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
     val xsMarshalled: Seq[Try[WriteMessages]] = messages.map(atomicWrite ⇒ marshalAtomicWrite(atomicWrite, doSerialize))
     Future.sequence(xsMarshalled.map {
       case Success(xs) ⇒ writeToJournal(xs, journal)
-      case Failure(t)  ⇒ Future.successful(Failure(t))
+      case Failure(t) ⇒ Future.successful(Failure(t))
     })
   }
 
