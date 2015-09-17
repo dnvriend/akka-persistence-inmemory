@@ -16,10 +16,11 @@
 
 package akka.persistence.inmemory.journal
 
-import akka.actor.{ Actor, ActorLogging, ActorSystem, Props }
-import akka.pattern.ask
+import akka.actor._
+import akka.pattern._
+import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsResponse, AllPersistenceIdsRequest}
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.persistence.{AtomicWrite, PersistentRepr}
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 
@@ -84,6 +85,7 @@ class JournalActor extends Actor {
       sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) ⇒
+      journal = journal.copy(cache = journal.cache + (persistenceId -> Nil))
       sender() ! ReadHighestSequenceNrResponse(0L)
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) if journal.cache.isDefinedAt(persistenceId) ⇒
@@ -96,6 +98,9 @@ class JournalActor extends Actor {
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒
       sender() ! ReplayMessagesResponse(Seq.empty)
+
+    case AllPersistenceIdsRequest =>
+      sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
   }
 }
 
@@ -103,6 +108,11 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   implicit val timeout = Timeout(100.millis)
   implicit val ec = context.system.dispatcher
   val journal = context.actorOf(Props(new JournalActor))
+
+  override def receivePluginInternal = {
+    case AllPersistenceIdsRequest =>
+      (journal ? AllPersistenceIdsRequest) pipeTo sender()
+  }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
     log.debug("Async write messages: {}", messages)
@@ -125,4 +135,13 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
       .mapTo[ReplayMessagesResponse]
       .map(_.messages.foreach(replayCallback))
   }
+}
+
+object InMemoryJournal {
+  final val Identifier = "inmemory-journal"
+
+  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
+
+  case object AllPersistenceIdsRequest
+
 }
