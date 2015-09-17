@@ -12,6 +12,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %% "akka-actor"                           % akkaVersion,
     "com.typesafe.akka"   %% "akka-slf4j"                           % akkaVersion,
     "com.typesafe.akka"   %% "akka-persistence"                     % akkaVersion,
+    "com.typesafe.akka"   %% "akka-persistence-query-experimental"  % akkaVersion,
     "com.typesafe.akka"   %% "akka-testkit"                         % akkaVersion     % "test",
     "com.typesafe.akka"   %% "akka-persistence-tck"                 % akkaVersion     % "test",
     "org.scalatest"       %% "scalatest"                            % "2.2.4"         % "test"
