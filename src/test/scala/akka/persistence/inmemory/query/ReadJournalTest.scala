@@ -58,7 +58,10 @@ class ReadJournalTest extends TestSpec {
 
     val readJournal = PersistenceQuery(system).readJournalFor(InMemoryReadJournal.Identifier)
 
-//    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s)}.futureValue.sorted shouldBe List("my-1", "my-2")
+    (actor1 ? "state").futureValue shouldBe 0
+    (actor2 ? "state").futureValue shouldBe 0
+
+    readJournal.query(AllPersistenceIds).runFold(List[String]()) { (acc, s) => acc.::(s)}.futureValue.sorted shouldBe List("my-1", "my-2")
 
     actor1 ! 2
     (actor1 ? "state").futureValue shouldBe 2

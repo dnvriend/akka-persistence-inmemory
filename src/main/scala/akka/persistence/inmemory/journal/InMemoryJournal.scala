@@ -85,6 +85,7 @@ class JournalActor extends Actor {
       sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) ⇒
+      journal = journal.copy(cache = journal.cache + (persistenceId -> Nil))
       sender() ! ReadHighestSequenceNrResponse(0L)
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) if journal.cache.isDefinedAt(persistenceId) ⇒
