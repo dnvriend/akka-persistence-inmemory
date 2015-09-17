@@ -24,49 +24,56 @@ import akka.persistence.inmemory.TestSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory.fromAnyRef
 
-class MyCommand(val inner: MyInnerCmd) extends Serializable
+class MyCmd(val inner: MyInnerCmd) extends Serializable
 
 class MyInnerCmd(val value: String)
 
-class JournalTest2 extends TestSpec {
+class JournalTestFullSerialization extends TestSpec {
 
   class ObjectStateActor(id: Int) extends PersistentActor {
-    var state = ""
+    var state : List[String] = Nil
 
     override val persistenceId: String = "c-" + id
 
-    def updateState(cmd: MyCommand): Unit = {
-      state = cmd.inner.value
+    def updateState(cmd: MyCmd): Unit = {
+      state = state.::(cmd.inner.value)
     }
 
     override def receiveCommand: Receive = LoggingReceive {
       case "state" ⇒
         sender() ! state
 
-      case cmd: MyCommand ⇒
+      case cmd: MyCmd ⇒
         persist(cmd) { e => updateState(e) }
     }
 
     override def receiveRecover: Receive = LoggingReceive {
-      case cmd: MyCommand ⇒ updateState(cmd)
+      case cmd: MyCmd ⇒ updateState(cmd)
     }
   }
 
-  wh "Counter" should "persist state" in {
-    val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.doSerialize", fromAnyRef("on")))
-    val objSer = new MyCommand(new MyInnerCmd("qwe") with Serializable)
-    val objNonSer = new MyCommand(new MyInnerCmd("asd"))
+  val objSer = new MyCmd(new MyInnerCmd("qwe") with Serializable)
+  val objNonSer = new MyCmd(new MyInnerCmd("asd"))
+
+  "full serialization" should "be performed when flag ON" in {
+    val system2 = ActorSystem("mySystem", ConfigFactory.load().withValue("inmemory-journal.full-serialization", fromAnyRef("on")))
 
     val counter = system2.actorOf(Props(new ObjectStateActor(1)))
     counter ! objSer
-    (counter ? "state").futureValue shouldBe objSer.inner.value
+    (counter ? "state").futureValue shouldBe List(objSer.inner.value)
     counter ! objNonSer
-    (counter ? "state").futureValue shouldBe objSer.inner.value
+    (counter ? "state").futureValue shouldBe List(objSer.inner.value)
 
     val counter2 = system2.actorOf(Props(new ObjectStateActor(2)))
     counter2 ! objNonSer
-    (counter2 ? "state").futureValue shouldBe ""
+    (counter2 ? "state").futureValue shouldBe Nil
     counter2 ! objSer
-    (counter2 ? "state").futureValue shouldBe objSer.inner.value
+    (counter2 ? "state").futureValue shouldBe List(objSer.inner.value)
+  }
+
+  it should "not be performed by default" in {
+    val actor = system.actorOf(Props(new ObjectStateActor(1)))
+    actor ! objNonSer
+    (actor ? "state").futureValue shouldBe List(objNonSer.inner.value)
   }
 }

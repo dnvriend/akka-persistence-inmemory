@@ -49,7 +49,7 @@ case object JournalAck
 case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRepr]]) {
   val serialization = SerializationExtension(system)
 
-  private val doSerialize = Persistence(system).journalConfigFor("inmemory-journal").getBoolean("doSerialize")
+  private val doSerialize = Persistence(system).journalConfigFor("inmemory-journal").getBoolean("full-serialization")
 
   def update(event: JournalEvent): JournalCache = event match {
     case WriteMessages(persistenceId, messages) ⇒
