@@ -52,11 +52,11 @@ class InMemoryReadJournalTest extends TestSpec {
     }
   }
 
+  val readJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
   "ReadJournal" should "support AllPersistenceIds" in {
     val actor1 = system.actorOf(Props(new MyActor(1)))
     val actor2 = system.actorOf(Props(new MyActor(2)))
-
-    val readJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
     (actor1 ? "state").futureValue shouldBe 0
     (actor2 ? "state").futureValue shouldBe 0
@@ -70,5 +70,23 @@ class InMemoryReadJournalTest extends TestSpec {
     (actor2 ? "state").futureValue shouldBe 3
 
     readJournal.currentPersistenceIds().runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
+  }
+
+  it should "work" in {
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    actor1 ! 1
+    actor1 ! 2
+    actor1 ! 3
+
+    (actor1 ? "state").futureValue shouldBe 6
+
+    readJournal.currentEventsByPersistenceId("my-1").runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, ev) =>  acc.::((ev.sequenceNr, ev.event.asInstanceOf[Int])) }
+      .futureValue.sorted shouldBe List((1L, 1), (2L, 2) , (3L, 3))
+
+    readJournal.currentEventsByPersistenceId("my-1", fromSequenceNr =  2).runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, ev) =>  acc.::((ev.sequenceNr, ev.event.asInstanceOf[Int])) }
+      .futureValue.sorted shouldBe List((2L, 2) , (3L, 3))
+
+    readJournal.currentEventsByPersistenceId("my-1", toSequenceNr =  2).runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, ev) =>  acc.::((ev.sequenceNr, ev.event.asInstanceOf[Int])) }
+      .futureValue.sorted shouldBe List((1L, 1) , (2L, 2))
   }
 }

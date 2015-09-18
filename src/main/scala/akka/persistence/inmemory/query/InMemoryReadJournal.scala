@@ -17,8 +17,8 @@
 package akka.persistence.inmemory.query
 
 import akka.actor.{ExtendedActorSystem, Props}
-import akka.persistence.query.ReadJournalProvider
-import akka.persistence.query.scaladsl.{CurrentPersistenceIdsQuery, ReadJournal}
+import akka.persistence.query.scaladsl.{CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
+import akka.persistence.query.{EventEnvelope, ReadJournalProvider}
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
 
@@ -26,11 +26,19 @@ object InMemoryReadJournal {
   final val Identifier = "inmemory-read-journal"
 }
 
-class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal with CurrentPersistenceIdsQuery {
+class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
+with CurrentPersistenceIdsQuery
+with CurrentEventsByPersistenceIdQuery {
   override def currentPersistenceIds(): Source[String, Unit] = {
     Source.actorPublisher[String](Props[AllPersistenceIdsPublisher])
       .mapMaterializedValue(_ ⇒ ())
-      .named("allPersistenceIds")
+      .named("currentPersistenceIds")
+  }
+
+  override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue) : Source[EventEnvelope, Unit] = {
+    Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, 100))
+      .mapMaterializedValue(_ ⇒ ())
+      .named(s"currentEventsByPersistenceId$persistenceId")
   }
 }
 
