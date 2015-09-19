@@ -28,7 +28,60 @@ akka {
 }
 ```
 
-## What's new?
+# Persistence Query for the Inmemory Plugin
+Please note that persistence queries are only available in version `1.1.0-RC3` and up.
+ 
+## How to get the ReadJournal
+The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
+
+```
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.inmemory.query.InMemoryReadJournal
+ 
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+```
+
+# Supported Queries
+
+## CurrentEventsByPersistenceIdQuery
+`currentEventsByPersistenceIdQuery` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
+
+```
+implicit val mat = ActorMaterializer()(system)
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+ 
+val src: Source[EventEnvelope, Unit] =
+  queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
+ 
+val events: Source[Any, Unit] = src.map(_.event)
+```
+
+You can retrieve a subset of all events by specifying fromSequenceNr and toSequenceNr or use 0L and Long.MaxValue respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the EventEnvelope, which makes it possible to resume the stream at a later point from a given sequence number.
+
+The returned event stream is ordered by sequence number, i.e. the same order as the PersistentActor persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
+
+The stream is completed when it reaches the end of the currently stored events.
+
+## CurrentPersistenceIds
+`currentPersistenceIds` is used for retrieving all persistenceIds of all persistent actors.
+
+```
+implicit val mat = ActorMaterializer()(system)
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+ 
+val src: Source[String, Unit] = queries.allPersistenceIds()
+```
+
+The returned event stream is unordered and you can expect different order for multiple executions of the query. 
+
+The stream is completed when it reaches the end of the currently stored persistenceIds.
+
+# What's new?
+
+## 1.1.1-RC3 (2015-09-19)
+ - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.1-RC3"` 
 
 ## 1.1.0-RC3 (2015-09-17)
  - Merged Issue #6 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Conditional ability to perform full serialization while adding messages to journal, thanks!
