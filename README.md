@@ -12,7 +12,7 @@ To include the plugin into your sbt project, add the following lines to your bui
 
     resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC1"
+    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.1-RC3"
 
 # Configuration
 Add the following to the application.conf:
@@ -27,6 +27,16 @@ akka {
 ```
 
 ## What's new?
+
+## 1.1.1-RC3 (2015-09-19)
+ - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.1-RC3"` 
+
+## 1.1.0-RC3 (2015-09-17)
+ - Merged Issue #6 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Conditional ability to perform full serialization while adding messages to journal, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC3"` 
 
 ## 1.1.0-RC1 (2015-09-02)
  - Compatibility with Akka 2.4.0-RC1
