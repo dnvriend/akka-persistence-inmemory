@@ -20,6 +20,7 @@ import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.event.{ Logging, LoggingAdapter }
+import akka.stream.ActorMaterializer
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -32,6 +33,7 @@ import scala.util.Try
 
 trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues with OptionValues with Eventually {
   implicit val system: ActorSystem = ActorSystem()
+  implicit val mat = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val log: LoggingAdapter = Logging(system, this.getClass)
   implicit val pc: PatienceConfig = PatienceConfig(timeout = 5.seconds)

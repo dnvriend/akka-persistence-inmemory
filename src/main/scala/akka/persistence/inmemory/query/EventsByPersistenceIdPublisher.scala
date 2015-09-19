@@ -16,14 +16,14 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ActorLogging, Props}
-import akka.persistence.JournalProtocol.{RecoverySuccess, ReplayMessages, ReplayMessagesFailure, ReplayedMessage}
+import akka.actor.{ ActorLogging, Props }
+import akka.persistence.JournalProtocol.{ RecoverySuccess, ReplayMessages, ReplayMessagesFailure, ReplayedMessage }
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb._
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 object EventsByPersistenceIdPublisher {
   def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, maxBufSize: Int): Props = {
@@ -34,7 +34,7 @@ object EventsByPersistenceIdPublisher {
 case object Continue
 
 abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String, val fromSequenceNr: Long, val maxBufSize: Int)
-  extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+    extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
 
   val journal = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
 
@@ -46,8 +46,8 @@ abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String,
 
   def init: Receive = {
     case _: Request ⇒ receiveInitialRequest()
-    case Continue ⇒ // skip, wait for first Request
-    case Cancel ⇒ context.stop(self)
+    case Continue   ⇒ // skip, wait for first Request
+    case Cancel     ⇒ context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
@@ -108,7 +108,7 @@ abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String,
 }
 
 class CurrentEventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, var toSeqNr: Long, maxBufSize: Int)
-  extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
 
   override def receiveInitialRequest(): Unit = replay()
 

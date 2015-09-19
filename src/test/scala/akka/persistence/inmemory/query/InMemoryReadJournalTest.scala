@@ -21,12 +21,12 @@ import akka.event.LoggingReceive
 import akka.pattern._
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.query.PersistenceQuery
-import akka.stream.ActorMaterializer
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.TestSink
 
 class InMemoryReadJournalTest extends TestSpec {
-
-  implicit val mat = ActorMaterializer()
+  val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
   class MyActor(id: Int) extends PersistentActor {
     override val persistenceId: String = "my-" + id
@@ -48,11 +48,22 @@ class InMemoryReadJournalTest extends TestSpec {
     }
 
     override def receiveRecover: Receive = LoggingReceive {
-      case event: Int => updateState(event)
+      case event: Int ⇒ updateState(event)
     }
   }
 
-  val readJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+  def mapEventEnvelope: PartialFunction[EventEnvelope, (Long, Int)] = {
+    case EventEnvelope(offset, persistenceId, sequenceNr, event: Int) ⇒ (sequenceNr, event)
+    case _                                                            ⇒ throw new RuntimeException("Unexpected event type")
+  }
+
+  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Int = 0, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+    journal.currentEventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
+      .map(mapEventEnvelope)
+      .runWith(TestSink.probe[(Long, Int)])
+
+  def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
+    journal.currentPersistenceIds().runWith(TestSink.probe[String])
 
   "ReadJournal" should "support currentPersistenceIds" in {
     val actor1 = system.actorOf(Props(new MyActor(1)))
@@ -61,7 +72,10 @@ class InMemoryReadJournalTest extends TestSpec {
     (actor1 ? "state").futureValue shouldBe 0
     (actor2 ? "state").futureValue shouldBe 0
 
-    readJournal.currentPersistenceIds().runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
+    currentPersistenceIds(readJournal)
+      .request(3)
+      .expectNextUnordered("my-1", "my-2")
+      .expectComplete()
 
     actor1 ! 2
     (actor1 ? "state").futureValue shouldBe 2
@@ -69,31 +83,42 @@ class InMemoryReadJournalTest extends TestSpec {
     actor2 ! 3
     (actor2 ? "state").futureValue shouldBe 3
 
-    readJournal.currentPersistenceIds().runFold(List[String]()) { (acc, s) => acc.::(s) }.futureValue.sorted shouldBe List("my-1", "my-2")
+    currentPersistenceIds(readJournal)
+      .request(3)
+      .expectNextUnordered("my-1", "my-2")
+      .expectComplete()
+
+    cleanup(actor1, actor2)
   }
 
   it should "support currentEventsByPersistenceId" in {
-    val actor1 = system.actorOf(Props(new MyActor(1)))
-    actor1 ! 1
-    actor1 ! 2
-    actor1 ! 3
+    val actor3 = system.actorOf(Props(new MyActor(3)))
+    actor3 ! 1
+    actor3 ! 2
+    actor3 ! 3
 
-    (actor1 ? "state").futureValue shouldBe 6
+    (actor3 ? "state").futureValue shouldBe 6
 
-    readJournal.currentEventsByPersistenceId("my-1")
-      .map(ev => (ev.sequenceNr, ev.event.asInstanceOf[Int]))
-      .runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, tuple) =>  acc.::(tuple)}
-      .futureValue.sorted shouldBe List((1L, 1), (2L, 2) , (3L, 3))
+    currentEventsByPersistenceId(readJournal, "my-3")
+      .request(4)
+      .expectNextUnordered((1L, 1), (2L, 2), (3L, 3))
+      .expectComplete()
 
-    readJournal.currentEventsByPersistenceId("my-1", fromSequenceNr =  2)
-      .map(ev => (ev.sequenceNr, ev.event.asInstanceOf[Int]))
-      .runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, tuple) =>  acc.::(tuple)}
-      .futureValue.sorted shouldBe List((2L, 2) , (3L, 3))
+    currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 2)
+      .request(3)
+      .expectNextUnordered((2L, 2), (3L, 3))
+      .expectComplete()
 
-    readJournal.currentEventsByPersistenceId("my-1", toSequenceNr =  2)
-      .map(ev => (ev.sequenceNr, ev.event.asInstanceOf[Int]))
-      .runFold(Nil.asInstanceOf[List[(Long, Int)]]) { (acc, tuple) =>  acc.::(tuple)}
-      .futureValue.sorted shouldBe List((1L, 1), (2L, 2))
+    currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 3)
+      .request(2)
+      .expectNext((3L, 3))
+      .expectComplete()
 
+    currentEventsByPersistenceId(readJournal, "my-3", toSequenceNr = 2)
+      .request(3)
+      .expectNextUnordered((1L, 1), (2L, 2))
+      .expectComplete()
+
+    cleanup(actor3)
   }
 }

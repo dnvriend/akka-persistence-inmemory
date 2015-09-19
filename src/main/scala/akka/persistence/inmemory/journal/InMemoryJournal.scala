@@ -18,16 +18,16 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsRequest, AllPersistenceIdsResponse}
+import akka.persistence.inmemory.journal.InMemoryJournal.{ AllPersistenceIdsRequest, AllPersistenceIdsResponse }
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{AtomicWrite, Persistence, PersistentRepr}
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
 
 trait JournalEvent
 
@@ -96,7 +96,7 @@ class JournalActor extends Actor {
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒
       sender() ! ReplayMessagesResponse(Seq.empty)
 
-    case AllPersistenceIdsRequest =>
+    case AllPersistenceIdsRequest ⇒
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
   }
 }
@@ -139,7 +139,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor("inmemory-journal").getBoolean("full-serialization")
 
   override def receivePluginInternal = {
-    case AllPersistenceIdsRequest =>
+    case AllPersistenceIdsRequest ⇒
       (journal ? AllPersistenceIdsRequest) pipeTo sender()
   }
 
@@ -151,7 +151,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
     val xsMarshalled: Seq[Try[WriteMessages]] = messages.map(atomicWrite ⇒ marshalAtomicWrite(atomicWrite, doSerialize))
     Future.sequence(xsMarshalled.map {
       case Success(xs) ⇒ writeToJournal(xs, journal)
-      case Failure(t) ⇒ Future.successful(Failure(t))
+      case Failure(t)  ⇒ Future.successful(Failure(t))
     })
   }
 

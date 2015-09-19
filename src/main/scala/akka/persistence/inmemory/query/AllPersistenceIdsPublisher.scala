@@ -16,12 +16,12 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ActorLogging, ActorRef}
+import akka.actor.{ ActorLogging, ActorRef }
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 class AllPersistenceIdsPublisher extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
