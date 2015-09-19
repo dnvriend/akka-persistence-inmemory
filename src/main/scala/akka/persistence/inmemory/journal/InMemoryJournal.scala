@@ -17,16 +17,17 @@
 package akka.persistence.inmemory.journal
 
 import akka.actor._
-import akka.pattern.ask
+import akka.pattern._
+import akka.persistence.inmemory.journal.InMemoryJournal.{ AllPersistenceIdsRequest, AllPersistenceIdsResponse }
 import akka.persistence.journal.AsyncWriteJournal
-import akka.persistence.{ Persistence, AtomicWrite, PersistentRepr }
+import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.{ Success, Failure, Try }
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
 
 trait JournalEvent
 
@@ -81,6 +82,7 @@ class JournalActor extends Actor {
       sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) ⇒
+      journal = journal.copy(cache = journal.cache + (persistenceId -> Nil))
       sender() ! ReadHighestSequenceNrResponse(0L)
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) if journal.cache.isDefinedAt(persistenceId) ⇒
@@ -93,10 +95,19 @@ class JournalActor extends Actor {
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒
       sender() ! ReplayMessagesResponse(Seq.empty)
+
+    case AllPersistenceIdsRequest ⇒
+      sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
   }
 }
 
 object InMemoryJournal {
+  final val Identifier = "inmemory-journal"
+
+  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
+
+  case object AllPersistenceIdsRequest
+
   def marshal(repr: PersistentRepr)(implicit serialization: Serialization): Try[PersistentRepr] =
     serialization.serialize(repr.payload.asInstanceOf[AnyRef]).map(_ ⇒ repr)
 
@@ -118,12 +129,19 @@ object InMemoryJournal {
 }
 
 class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
+
   import InMemoryJournal._
+
   implicit val timeout: Timeout = Timeout(100.millis)
   implicit val ec: ExecutionContext = context.system.dispatcher
   implicit val serialization: Serialization = SerializationExtension(context.system)
   val journal: ActorRef = context.actorOf(Props(new JournalActor))
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor("inmemory-journal").getBoolean("full-serialization")
+
+  override def receivePluginInternal = {
+    case AllPersistenceIdsRequest ⇒
+      (journal ? AllPersistenceIdsRequest) pipeTo sender()
+  }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
     // every AtomicWrite contains a Seq[PersistentRepr], we have a sequence of AtomicWrite

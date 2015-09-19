@@ -1,0 +1,136 @@
+/*
+ * Copyright 2015 Dennis Vriend
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package akka.persistence.inmemory.query
+
+import akka.actor.{ ActorLogging, Props }
+import akka.persistence.JournalProtocol.{ RecoverySuccess, ReplayMessages, ReplayMessagesFailure, ReplayedMessage }
+import akka.persistence.Persistence
+import akka.persistence.inmemory.journal.InMemoryJournal
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.journal.leveldb._
+import akka.stream.actor.ActorPublisher
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
+
+object EventsByPersistenceIdPublisher {
+  def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, maxBufSize: Int): Props = {
+    Props(new CurrentEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, maxBufSize))
+  }
+}
+
+case object Continue
+
+abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String, val fromSequenceNr: Long, val maxBufSize: Int)
+    extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+
+  val journal = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
+
+  var currSeqNo = fromSequenceNr
+
+  def toSequenceNr: Long
+
+  def receive = init
+
+  def init: Receive = {
+    case _: Request ⇒ receiveInitialRequest()
+    case Continue   ⇒ // skip, wait for first Request
+    case Cancel     ⇒ context.stop(self)
+  }
+
+  def receiveInitialRequest(): Unit
+
+  def idle: Receive = {
+    case Continue ⇒
+      if (timeForReplay)
+        replay()
+
+    case _: Request ⇒
+      receiveIdleRequest()
+
+    case Cancel ⇒
+      context.stop(self)
+  }
+
+  def timeForReplay: Boolean =
+    (buf.isEmpty || buf.size <= maxBufSize / 2) && (currSeqNo <= toSequenceNr)
+
+  def replay(): Unit = {
+    val limit = maxBufSize - buf.size
+    log.debug("request replay for persistenceId [{}] from [{}] to [{}] limit [{}]", persistenceId, currSeqNo, toSequenceNr, limit)
+    journal ! ReplayMessages(currSeqNo, toSequenceNr, limit, persistenceId, self)
+    context.become(replaying(limit))
+  }
+
+  def replaying(limit: Int): Receive = {
+    case ReplayedMessage(p) ⇒
+      buf :+= EventEnvelope(
+        offset = p.sequenceNr,
+        persistenceId = persistenceId,
+        sequenceNr = p.sequenceNr,
+        event = p.payload)
+      currSeqNo = p.sequenceNr + 1
+      deliverBuf()
+
+    case RecoverySuccess(highestSeqNr) ⇒
+      log.debug("replay completed for persistenceId [{}], currSeqNo [{}]", persistenceId, currSeqNo)
+      receiveRecoverySuccess(highestSeqNr)
+
+    case ReplayMessagesFailure(cause) ⇒
+      log.debug("replay failed for persistenceId [{}], due to [{}]", persistenceId, cause.getMessage)
+      deliverBuf()
+      onErrorThenStop(cause)
+
+    case _: Request ⇒
+      deliverBuf()
+
+    case Continue ⇒ // skip during replay
+
+    case Cancel ⇒
+      context.stop(self)
+  }
+
+  def receiveIdleRequest(): Unit
+
+  def receiveRecoverySuccess(highestSeqNr: Long): Unit
+}
+
+class CurrentEventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, var toSeqNr: Long, maxBufSize: Int)
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
+
+  override def receiveInitialRequest(): Unit = replay()
+
+  override def receiveIdleRequest(): Unit = {
+    deliverBuf()
+    if (buf.isEmpty && currSeqNo > toSequenceNr)
+      onCompleteThenStop()
+    else
+      self ! Continue
+  }
+
+  override def toSequenceNr: Long = toSeqNr
+
+  override def receiveRecoverySuccess(highestSeqNr: Long): Unit = {
+    deliverBuf()
+    if (highestSeqNr < toSequenceNr)
+      toSeqNr = highestSeqNr
+    if (highestSeqNr == 0L || (buf.isEmpty && currSeqNo > toSequenceNr))
+      onCompleteThenStop()
+    else
+      self ! Continue // more to fetch
+    context.become(idle)
+  }
+
+}

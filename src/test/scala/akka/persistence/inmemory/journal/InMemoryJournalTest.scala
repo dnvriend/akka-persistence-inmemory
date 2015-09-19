@@ -22,7 +22,7 @@ import akka.pattern.ask
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
 
-class JournalTest extends TestSpec {
+class InMemoryJournalTest extends TestSpec {
 
   case class CounterState(counter: Long) {
     def update(event: String): CounterState = event match {
