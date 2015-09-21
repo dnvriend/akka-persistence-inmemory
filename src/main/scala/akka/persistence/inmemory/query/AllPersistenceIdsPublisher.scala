@@ -16,14 +16,21 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ ActorLogging, ActorRef }
+import akka.actor.{Props, ActorLogging, ActorRef}
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
-import akka.persistence.query.journal.leveldb.DeliveryBuffer
+import akka.persistence.journal.leveldb.LeveldbJournal
+import akka.persistence.query.journal.leveldb.{AllPersistenceIdsPublisher, DeliveryBuffer}
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
+import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 
-class AllPersistenceIdsPublisher extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+object AllPersistenceIdsPublisher {
+  def props(liveQuery: Boolean, maxBufSize: Int): Props =
+    Props(new AllPersistenceIdsPublisher(liveQuery, maxBufSize))
+}
+
+private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int)
+  extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
 
@@ -40,14 +47,21 @@ class AllPersistenceIdsPublisher extends ActorPublisher[String] with DeliveryBuf
     case InMemoryJournal.AllPersistenceIdsResponse(allPersistenceIds) ⇒
       buf ++= allPersistenceIds
       deliverBuf()
-      if (buf.isEmpty) onCompleteThenStop()
+      if (!liveQuery && buf.isEmpty)
+        onCompleteThenStop()
+
+    case InMemoryJournal.PersistenceIdAdded(persistenceId) ⇒
+      if (liveQuery) {
+        buf :+= persistenceId
+        deliverBuf()
+      }
 
     case _: Request ⇒
       deliverBuf()
-      if (buf.isEmpty) onCompleteThenStop()
+      if (!liveQuery && buf.isEmpty)
+        onCompleteThenStop()
 
     case Cancel ⇒ context.stop(self)
   }
 
 }
-
