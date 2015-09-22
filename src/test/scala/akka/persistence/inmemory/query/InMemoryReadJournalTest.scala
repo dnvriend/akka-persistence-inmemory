@@ -111,6 +111,22 @@ class InMemoryReadJournalTest extends TestSpec {
     cleanup(actor1, actor2, actor3)
   }
 
+  it should "support allPersistenceIds with demand limitation" in {
+    val source = allPersistenceIds(readJournal)
+
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    source.request(1).expectNext("my-1")
+    source.expectNoMsg()
+
+    val actor2 = system.actorOf(Props(new MyActor(2)))
+    val actor3 = system.actorOf(Props(new MyActor(3)))
+
+    source.request(1).expectNext("my-2")
+    source.cancel().expectNoMsg()
+
+    cleanup(actor1, actor2, actor3)
+  }
+
   it should "support currentEventsByPersistenceId" in {
     val actor3 = system.actorOf(Props(new MyActor(3)))
     actor3 ! 1
