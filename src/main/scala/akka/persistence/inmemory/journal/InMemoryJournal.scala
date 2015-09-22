@@ -18,7 +18,7 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsRequest, AllPersistenceIdsResponse}
+import akka.persistence.inmemory.journal.InMemoryJournal.{PersistenceIdAdded, AllPersistenceIdsRequest, AllPersistenceIdsResponse}
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{AtomicWrite, Persistence, PersistentRepr}
 import akka.serialization.{Serialization, SerializationExtension}
@@ -85,6 +85,7 @@ class JournalActor extends Actor {
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) ⇒
       journal = journal.copy(cache = journal.cache + (persistenceId -> Nil))
+      allPersistenceIdsSubscribers.foreach(_ ! PersistenceIdAdded(persistenceId))
       sender() ! ReadHighestSequenceNrResponse(0L)
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) if journal.cache.isDefinedAt(persistenceId) ⇒
@@ -100,10 +101,10 @@ class JournalActor extends Actor {
 
     case AllPersistenceIdsRequest ⇒
       allPersistenceIdsSubscribers += sender()
-//      context.watch(sender())
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
+      context.watch(sender())
 
-    case Terminated ⇒
+    case x : Terminated =>
       allPersistenceIdsSubscribers -= sender()
   }
 }
@@ -150,8 +151,6 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   override def receivePluginInternal = {
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
-    case m: Terminated ⇒
-      journal.forward(m)
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
