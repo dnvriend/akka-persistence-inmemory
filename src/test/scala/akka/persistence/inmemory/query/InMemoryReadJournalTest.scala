@@ -95,35 +95,20 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "support allPersistenceIds" in {
-    val actor1 = system.actorOf(Props(new MyActor(1)))
-    val actor2 = system.actorOf(Props(new MyActor(2)))
-
-    (actor1 ? "state").futureValue shouldBe 0
-    (actor2 ? "state").futureValue shouldBe 0
-
     val source = allPersistenceIds(readJournal)
 
-    source.request(3)
-      .expectNextUnordered("my-1", "my-2")
-//      .expectComplete()
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    source.request(3).expectNext("my-1")
 
+    val actor2 = system.actorOf(Props(new MyActor(2)))
+    source.expectNext("my-2")
+
+    source.cancel()
     val actor3 = system.actorOf(Props(new MyActor(3)))
 
-    source.expectNext("my-3")
-      .cancel()
-      .expectComplete()
+    source.expectNoMsg()
 
-//    actor1 ! 2
-//    (actor1 ? "state").futureValue shouldBe 2
-//
-//    actor2 ! 3
-//    (actor2 ? "state").futureValue shouldBe 3
-//
-//    currentPersistenceIds(readJournal)
-//      .request(3)
-//      .expectNextUnordered("my-1", "my-2")
-//      .expectComplete()
-
+    cleanup(actor1, actor2, actor3)
   }
 
   it should "support currentEventsByPersistenceId" in {
