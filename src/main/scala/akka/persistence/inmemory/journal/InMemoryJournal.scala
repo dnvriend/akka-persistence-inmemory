@@ -150,8 +150,8 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   override def receivePluginInternal = {
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
-//    case m: Terminated ⇒
-//      journal.forward(m)
+    case m: Terminated ⇒
+      journal.forward(m)
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
