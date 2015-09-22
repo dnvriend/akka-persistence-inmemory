@@ -65,6 +65,9 @@ class InMemoryReadJournalTest extends TestSpec {
   def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
     journal.currentPersistenceIds().runWith(TestSink.probe[String])
 
+  def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
+    journal.allPersistenceIds().runWith(TestSink.probe[String])
+
   "ReadJournal" should "support currentPersistenceIds" in {
     val actor1 = system.actorOf(Props(new MyActor(1)))
     val actor2 = system.actorOf(Props(new MyActor(2)))
@@ -83,12 +86,44 @@ class InMemoryReadJournalTest extends TestSpec {
     actor2 ! 3
     (actor2 ? "state").futureValue shouldBe 3
 
+    currentPersistenceIds(readJournal)
+      .request(3)
+      .expectNextUnordered("my-1", "my-2")
+      .expectComplete()
+
+    cleanup(actor1, actor2)
+  }
+
+  it should "support allPersistenceIds" in {
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    val actor2 = system.actorOf(Props(new MyActor(2)))
+
+    (actor1 ? "state").futureValue shouldBe 0
+    (actor2 ? "state").futureValue shouldBe 0
+
+    val source = allPersistenceIds(readJournal)
+
+    source.request(3)
+      .expectNextUnordered("my-1", "my-2")
+//      .expectComplete()
+
+    val actor3 = system.actorOf(Props(new MyActor(3)))
+
+    source.expectNext("my-3")
+      .cancel()
+      .expectComplete()
+
+//    actor1 ! 2
+//    (actor1 ? "state").futureValue shouldBe 2
+//
+//    actor2 ! 3
+//    (actor2 ? "state").futureValue shouldBe 3
+//
 //    currentPersistenceIds(readJournal)
 //      .request(3)
 //      .expectNextUnordered("my-1", "my-2")
 //      .expectComplete()
 
-    cleanup(actor1, actor2)
   }
 
   it should "support currentEventsByPersistenceId" in {
