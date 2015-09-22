@@ -71,6 +71,8 @@ case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRe
 class JournalActor extends Actor {
   var journal = JournalCache(context.system, Map.empty[String, Seq[PersistentRepr]])
 
+  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
+
   override def receive: Receive = {
     case event: JournalEvent ⇒
       sender() ! Try({
@@ -97,7 +99,12 @@ class JournalActor extends Actor {
       sender() ! ReplayMessagesResponse(Seq.empty)
 
     case AllPersistenceIdsRequest ⇒
+      allPersistenceIdsSubscribers += sender()
+//      context.watch(sender())
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
+
+    case Terminated ⇒
+      allPersistenceIdsSubscribers -= sender()
   }
 }
 
@@ -140,15 +147,11 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   val journal: ActorRef = context.actorOf(Props(new JournalActor))
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor(InMemoryJournal.Identifier).getBoolean("full-serialization")
 
-  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
-
   override def receivePluginInternal = {
     case AllPersistenceIdsRequest ⇒
-      allPersistenceIdsSubscribers += sender()
-      (journal ? AllPersistenceIdsRequest) pipeTo sender()
-      context.watch(sender())
-    case Terminated =>
-      allPersistenceIdsSubscribers -= sender()
+      journal.forward(AllPersistenceIdsRequest)
+//    case m: Terminated ⇒
+//      journal.forward(m)
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {

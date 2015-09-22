@@ -16,20 +16,14 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{Props, ActorLogging, ActorRef}
+import akka.actor.{ActorLogging, ActorRef}
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
-import akka.persistence.journal.leveldb.LeveldbJournal
-import akka.persistence.query.journal.leveldb.{AllPersistenceIdsPublisher, DeliveryBuffer}
+import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
 
-object AllPersistenceIdsPublisher {
-  def props(liveQuery: Boolean, maxBufSize: Int): Props =
-    Props(new AllPersistenceIdsPublisher(liveQuery, maxBufSize))
-}
-
-private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean, maxBufSize: Int)
+private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
   extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
