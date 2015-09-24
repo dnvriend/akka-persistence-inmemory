@@ -25,6 +25,8 @@ import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 
+import scala.concurrent.duration._
+
 class InMemoryReadJournalTest extends TestSpec {
   val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
@@ -65,6 +67,9 @@ class InMemoryReadJournalTest extends TestSpec {
   def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
     journal.currentPersistenceIds().runWith(TestSink.probe[String])
 
+  def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
+    journal.allPersistenceIds().runWith(TestSink.probe[String])
+
   "ReadJournal" should "support currentPersistenceIds" in {
     val actor1 = system.actorOf(Props(new MyActor(1)))
     val actor2 = system.actorOf(Props(new MyActor(2)))
@@ -89,6 +94,39 @@ class InMemoryReadJournalTest extends TestSpec {
       .expectComplete()
 
     cleanup(actor1, actor2)
+  }
+
+  it should "support allPersistenceIds" in {
+    val source = allPersistenceIds(readJournal)
+
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    source.request(1).expectNext("my-1")
+
+    val actor2 = system.actorOf(Props(new MyActor(2)))
+    source.request(1).expectNext("my-2")
+
+    source.cancel()
+    val actor3 = system.actorOf(Props(new MyActor(3)))
+
+    source.expectNoMsg(100.millis)
+
+    cleanup(actor1, actor2, actor3)
+  }
+
+  it should "support allPersistenceIds with demand limitation" in {
+    val source = allPersistenceIds(readJournal)
+
+    val actor1 = system.actorOf(Props(new MyActor(1)))
+    source.request(1).expectNext("my-1")
+    source.expectNoMsg(100.millis)
+
+    val actor2 = system.actorOf(Props(new MyActor(2)))
+    val actor3 = system.actorOf(Props(new MyActor(3)))
+
+    source.request(1).expectNext("my-2")
+    source.cancel().expectNoMsg(100.millis)
+
+    cleanup(actor1, actor2, actor3)
   }
 
   it should "support currentEventsByPersistenceId" in {

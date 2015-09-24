@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.query
 
 import akka.actor.{ ExtendedActorSystem, Props }
-import akka.persistence.query.scaladsl.{ CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
+import akka.persistence.query.scaladsl.{ AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
 import akka.persistence.query.{ EventEnvelope, ReadJournalProvider }
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config
@@ -28,9 +28,17 @@ object InMemoryReadJournal {
 
 class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
     with CurrentPersistenceIdsQuery
+    with AllPersistenceIdsQuery
     with CurrentEventsByPersistenceIdQuery {
+
+  override def allPersistenceIds(): Source[String, Unit] = {
+    Source.actorPublisher[String](Props(classOf[AllPersistenceIdsPublisher], true))
+      .mapMaterializedValue(_ ⇒ ())
+      .named("allPersistenceIds")
+  }
+
   override def currentPersistenceIds(): Source[String, Unit] = {
-    Source.actorPublisher[String](Props[AllPersistenceIdsPublisher])
+    Source.actorPublisher[String](Props(classOf[AllPersistenceIdsPublisher], false))
       .mapMaterializedValue(_ ⇒ ())
       .named("currentPersistenceIds")
   }
@@ -40,6 +48,7 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
       .mapMaterializedValue(_ ⇒ ())
       .named(s"currentEventsByPersistenceId$persistenceId")
   }
+
 }
 
 class InMemoryReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {

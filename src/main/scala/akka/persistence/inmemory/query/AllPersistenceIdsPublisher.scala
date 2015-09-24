@@ -23,7 +23,8 @@ import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
-class AllPersistenceIdsPublisher extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
+    extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
 
@@ -39,15 +40,24 @@ class AllPersistenceIdsPublisher extends ActorPublisher[String] with DeliveryBuf
   def active: Receive = {
     case InMemoryJournal.AllPersistenceIdsResponse(allPersistenceIds) ⇒
       buf ++= allPersistenceIds
+      buf = buf.sorted // allPersistenceIds must return a sorted list of ids
       deliverBuf()
-      if (buf.isEmpty) onCompleteThenStop()
+      if (!liveQuery && buf.isEmpty)
+        onCompleteThenStop()
+
+    case InMemoryJournal.PersistenceIdAdded(persistenceId) ⇒
+      if (liveQuery) {
+        buf :+= persistenceId
+        buf = buf.sorted // allPersistenceIds must return a sorted list of ids
+        deliverBuf()
+      }
 
     case _: Request ⇒
       deliverBuf()
-      if (buf.isEmpty) onCompleteThenStop()
+      if (!liveQuery && buf.isEmpty)
+        onCompleteThenStop()
 
     case Cancel ⇒ context.stop(self)
   }
 
 }
-
