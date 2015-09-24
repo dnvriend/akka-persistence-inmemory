@@ -40,7 +40,6 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
   def active: Receive = {
     case InMemoryJournal.AllPersistenceIdsResponse(allPersistenceIds) ⇒
       buf ++= allPersistenceIds
-      buf = buf.sorted // allPersistenceIds must return a sorted list of ids
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
@@ -48,7 +47,6 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
     case InMemoryJournal.PersistenceIdAdded(persistenceId) ⇒
       if (liveQuery) {
         buf :+= persistenceId
-        buf = buf.sorted // allPersistenceIds must return a sorted list of ids
         deliverBuf()
       }
 

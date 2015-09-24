@@ -100,10 +100,16 @@ class InMemoryReadJournalTest extends TestSpec {
     val source = allPersistenceIds(readJournal)
 
     val actor1 = system.actorOf(Props(new MyActor(1)))
-    source.request(1).expectNext("my-1")
+    source.request(1).expectNext() mustBe {
+      case "my-1" ⇒
+      case "my-2" ⇒
+    }
 
     val actor2 = system.actorOf(Props(new MyActor(2)))
-    source.request(1).expectNext("my-2")
+    source.request(1).expectNext() mustBe {
+      case "my-1" ⇒
+      case "my-2" ⇒
+    }
 
     source.cancel()
     val actor3 = system.actorOf(Props(new MyActor(3)))
@@ -117,13 +123,20 @@ class InMemoryReadJournalTest extends TestSpec {
     val source = allPersistenceIds(readJournal)
 
     val actor1 = system.actorOf(Props(new MyActor(1)))
-    source.request(1).expectNext("my-1")
+    source.request(1).expectNext() mustBe {
+      case "my-1" ⇒
+      case "my-2" ⇒
+    }
     source.expectNoMsg(100.millis)
 
     val actor2 = system.actorOf(Props(new MyActor(2)))
     val actor3 = system.actorOf(Props(new MyActor(3)))
 
-    source.request(1).expectNext("my-2")
+    source.request(1).expectNext() mustBe {
+      case "my-1" ⇒
+      case "my-2" ⇒
+      case "my-3" ⇒
+    }
     source.cancel().expectNoMsg(100.millis)
 
     cleanup(actor1, actor2, actor3)
