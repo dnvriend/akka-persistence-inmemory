@@ -18,7 +18,7 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{PersistenceIdAdded, AllPersistenceIdsRequest, AllPersistenceIdsResponse}
+import akka.persistence.inmemory.journal.InMemoryJournal.{AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded}
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{AtomicWrite, Persistence, PersistentRepr}
 import akka.serialization.{Serialization, SerializationExtension}
@@ -70,8 +70,7 @@ case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRe
 
 class JournalActor extends Actor {
   var journal = JournalCache(context.system, Map.empty[String, Seq[PersistentRepr]])
-
-  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
+  var allPersistenceIdsSubscribers = Set.empty[ActorRef]
 
   override def receive: Receive = {
     case event: JournalEvent ⇒
@@ -104,7 +103,7 @@ class JournalActor extends Actor {
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
       context.watch(sender())
 
-    case x : Terminated =>
+    case x: Terminated ⇒
       allPersistenceIdsSubscribers -= sender()
   }
 }
@@ -161,7 +160,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
     val xsMarshalled: Seq[Try[WriteMessages]] = messages.map(atomicWrite ⇒ marshalAtomicWrite(atomicWrite, doSerialize))
     Future.sequence(xsMarshalled.map {
       case Success(xs) ⇒ writeToJournal(xs, journal)
-      case Failure(t) ⇒ Future.successful(Failure(t))
+      case Failure(t)  ⇒ Future.successful(Failure(t))
     })
   }
 

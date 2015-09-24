@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.query
 
 import akka.actor.{ ExtendedActorSystem, Props }
-import akka.persistence.query.scaladsl.{AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal}
+import akka.persistence.query.scaladsl.{ AllPersistenceIdsQuery, CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery, ReadJournal }
 import akka.persistence.query.{ EventEnvelope, ReadJournalProvider }
 import akka.stream.scaladsl.Source
 import com.typesafe.config.Config

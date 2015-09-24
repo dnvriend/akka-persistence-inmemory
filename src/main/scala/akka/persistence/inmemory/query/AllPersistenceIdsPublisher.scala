@@ -16,15 +16,15 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ActorLogging, ActorRef}
+import akka.actor.{ ActorLogging, ActorRef }
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
-  extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+    extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
 
   val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
 
@@ -40,6 +40,7 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
   def active: Receive = {
     case InMemoryJournal.AllPersistenceIdsResponse(allPersistenceIds) ⇒
       buf ++= allPersistenceIds
+      buf = buf.sorted // allPersistenceIds must return a sorted list of ids
       deliverBuf()
       if (!liveQuery && buf.isEmpty)
         onCompleteThenStop()
@@ -47,6 +48,7 @@ private[akka] class AllPersistenceIdsPublisher(liveQuery: Boolean)
     case InMemoryJournal.PersistenceIdAdded(persistenceId) ⇒
       if (liveQuery) {
         buf :+= persistenceId
+        buf = buf.sorted // allPersistenceIds must return a sorted list of ids
         deliverBuf()
       }
 
