@@ -60,6 +60,8 @@ You can retrieve a subset of all events by specifying fromSequenceNr and toSeque
 
 The returned event stream is ordered by sequence number, i.e. the same order as the PersistentActor persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
 
+The query supports two different completion modes:
+
 The stream is completed when it reaches the end of the currently stored events.
 
 ## CurrentPersistenceIds
@@ -77,6 +79,11 @@ The returned event stream is unordered and you can expect different order for mu
 The stream is completed when it reaches the end of the currently stored persistenceIds.
 
 # What's new?
+
+## 1.1.2-RC3 (2015-09-24)
+ - Merged Issue #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) "Live" version of allPersistenceIds, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.2-RC3"` 
 
 ## 1.1.1-RC3 (2015-09-19)
  - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
