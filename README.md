@@ -65,25 +65,47 @@ The query supports two different completion modes:
 The stream is completed when it reaches the end of the currently stored events.
 
 ## CurrentPersistenceIds
-`currentPersistenceIds` is used for retrieving all persistenceIds of all persistent actors.
+`currentPersistenceIds` is used for retrieving all persistenceIds of all persistent actors. 
 
 ```
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[String, Unit] = queries.allPersistenceIds()
+val src: Source[String, Unit] = queries.currentPersistenceIds()
 ```
 
-The returned event stream is unordered and you can expect different order for multiple executions of the query. 
+The returned event stream is unordered. The stream is completed when it reaches the end of the currently stored persistenceIds.
 
-The stream is completed when it reaches the end of the currently stored persistenceIds.
+# AllPersistenceIdsQuery
+`allPersistenceIdsQuery` is used for retrieving all persistenceIds of all persistent actors. It does exactly the same
+ as the `currentPersistenceIds` query, except the stream does not complete.
+
+```
+implicit val mat = ActorMaterializer()(system)
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+ 
+val src: Source[String, Unit] = queries.allPersistenceIdsQuery()
+```
+
+The returned event stream is unordered, the stream will only complete when there are no persistenceIds or the stream
+ has explicitly been canceled by the subscriber:
+ 
+```
+implicit val mat = ActorMaterializer()(system)
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+ 
+val src: Source[String, Unit] = queries.allPersistenceIdsQuery()
+
+// cancel / terminate the stream
+src.cancel()
+```
 
 # What's new?
 
-## 1.1.2-RC3 (2015-09-24)
+## 1.1.3-RC3 (2015-09-24)
  - Merged Issue #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) "Live" version of allPersistenceIds, thanks!
  - Compatibility with Akka 2.4.0-RC3
- - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.2-RC3"` 
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.3-RC3"` 
 
 ## 1.1.1-RC3 (2015-09-19)
  - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
