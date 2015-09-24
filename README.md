@@ -28,6 +28,11 @@ akka {
 
 ## What's new?
 
+## 1.1.2-RC3 (2015-09-24)
+ - Merged Issue #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) "Live" version of allPersistenceIds, thanks!
+ - Compatibility with Akka 2.4.0-RC3
+ - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.2-RC3"` 
+
 ## 1.1.1-RC3 (2015-09-19)
  - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
  - Compatibility with Akka 2.4.0-RC3
