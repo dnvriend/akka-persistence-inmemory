@@ -67,8 +67,8 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 
 ```
 dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.10:1.0.5 // Scala 2.10    
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.0.5 // Scala 2.11 and above
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.10:1.0.5' // Scala 2.10    
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.0.5' // Scala 2.11 and above
 }
 ```
 
@@ -94,7 +94,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 
 ```
 dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.3
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.3'
 }
 ```
 
