@@ -9,12 +9,67 @@ Travis (master) | [![Build Status](https://travis-ci.org/dnvriend/akka-persisten
 Codacy | [![Codacy Badge](https://api.codacy.com/project/badge/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory) | Code Quality
 Bintray | [ ![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
-# Dependency
-To include the plugin into your sbt project, add the following lines to your build.sbt file:
+# Repository
+To include the JDBC plugin into your sbt project, add the following lines to your build.sbt file:
 
-    resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
+## SBT
 
-    libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.5"
+```
+resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
+```
+
+## Maven
+
+```
+<repository>
+  <snapshots><enabled>false</enabled></snapshots>
+  <id>central</id>
+  <name>bintray</name>
+  <url>http://dl.bintray.com/dnvriend/maven</url>
+</repository>
+```
+
+## Latest stable release for Akka 2.3.x  
+
+### SBT
+
+```
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.5"
+```
+
+### Maven
+
+```
+<dependency>
+    <groupId>com.github.dnvriend</groupId>
+    <artifactId>akka-persistence-inmemory_2.10</artifactId>
+    <version>1.0.5</version>
+</dependency>
+
+<dependency>
+    <groupId>com.github.dnvriend</groupId>
+    <artifactId>akka-persistence-inmemory_2.11</artifactId>
+    <version>1.0.5</version>
+</dependency>
+```
+
+## Latest stable release for Akka 2.4.x
+
+### SBT
+
+```
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.3"
+```
+
+### Maven
+
+```
+<dependency>
+    <groupId>com.github.dnvriend</groupId>
+    <artifactId>akka-persistence-inmemory_2.11</artifactId>
+    <version>1.1.3</version>
+</dependency>
+```
 
 # Configuration
 Add the following to the application.conf:
@@ -29,7 +84,7 @@ akka {
 ```
 
 # Persistence Query for the Inmemory Plugin
-Please note that persistence queries are only available in version `1.1.0-RC3` and up.
+Please note that persistence queries are only available in version `1.1.3` and up.
  
 ## How to get the ReadJournal
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
@@ -102,6 +157,10 @@ src.cancel()
 
 # What's new?
 
+## 1.1.3 (2015-10-02)
+ - Compatibility with Akka 2.4.0
+ - Akka 2.4.0-RC3 -> 2.4.0
+ 
 ## 1.1.3-RC3 (2015-09-24)
  - Merged Issue #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) "Live" version of allPersistenceIds, thanks!
  - Compatibility with Akka 2.4.0-RC3
