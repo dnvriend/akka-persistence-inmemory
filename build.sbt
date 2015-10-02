@@ -2,12 +2,12 @@ organization := "com.github.dnvriend"
 
 name := "akka-persistence-inmemory"
 
-version := "1.1.3-RC3"
+version := "1.1.3"
 
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
-    val akkaVersion = "2.4.0-RC3"
+    val akkaVersion = "2.4.0"
     Seq(
     "com.typesafe.akka"   %% "akka-actor"                           % akkaVersion,
     "com.typesafe.akka"   %% "akka-slf4j"                           % akkaVersion,
@@ -29,6 +29,9 @@ publishMavenStyle := true
 licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
 
 parallelExecution in Test := false
+
+// enable sbt-dependency-graph
+net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 // enable scala code formatting //
 import scalariform.formatter.preferences._
