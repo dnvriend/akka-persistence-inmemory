@@ -10,7 +10,7 @@ Codacy | [![Codacy Badge](https://api.codacy.com/project/badge/2cedef156eaf441fb
 Bintray | [ ![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
 # Repository
-To include the JDBC plugin into your sbt project, add the following lines to your build.sbt file:
+To include the plugin into your project, add the following lines to your build file:
 
 ## SBT
 
@@ -27,6 +27,16 @@ resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
   <name>bintray</name>
   <url>http://dl.bintray.com/dnvriend/maven</url>
 </repository>
+```
+
+## Gradle
+
+```
+repositories {
+    maven {
+        url "http://dl.bintray.com/dnvriend/maven"
+    }
+}
 ```
 
 ## Latest stable release for Akka 2.3.x  
@@ -53,6 +63,15 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 </dependency>
 ```
 
+### Gradle
+
+```
+dependencies {
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.10:1.0.5 // Scala 2.10    
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.0.5 // Scala 2.11 and above
+}
+```
+
 ## Latest stable release for Akka 2.4.x
 
 ### SBT
@@ -69,6 +88,14 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
     <artifactId>akka-persistence-inmemory_2.11</artifactId>
     <version>1.1.3</version>
 </dependency>
+```
+
+### Gradle
+
+```
+dependencies {
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.3
+}
 ```
 
 # Configuration
