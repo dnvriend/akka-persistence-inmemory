@@ -64,6 +64,11 @@ class InMemoryReadJournalTest extends TestSpec {
       .map(mapEventEnvelope)
       .runWith(TestSink.probe[(Long, Int)])
 
+  def eventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Int = 0, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+    journal.eventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
+      .map(mapEventEnvelope)
+      .runWith(TestSink.probe[(Long, Int)])
+
   def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
     journal.currentPersistenceIds().runWith(TestSink.probe[String])
 
@@ -171,5 +176,36 @@ class InMemoryReadJournalTest extends TestSpec {
       .expectComplete()
 
     cleanup(actor3)
+  }
+
+  it should "support eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(1)))
+    actor ! 1
+    actor ! 2
+    actor ! 3
+
+    (actor ? "state").futureValue shouldBe 6
+
+    eventsByPersistenceId(readJournal, "my-1")
+      .request(4)
+      .expectNextUnordered((1L, 1), (2L, 2), (3L, 3))
+      .expectComplete()
+
+    eventsByPersistenceId(readJournal, "my-1", fromSequenceNr = 2)
+      .request(3)
+      .expectNextUnordered((2L, 2), (3L, 3))
+      .expectComplete()
+
+    eventsByPersistenceId(readJournal, "my-1", fromSequenceNr = 3)
+      .request(2)
+      .expectNext((3L, 3))
+      .expectComplete()
+
+    eventsByPersistenceId(readJournal, "my-1", toSequenceNr = 2)
+      .request(3)
+      .expectNextUnordered((1L, 1), (2L, 2))
+      .expectComplete()
+
+    cleanup(actor)
   }
 }
