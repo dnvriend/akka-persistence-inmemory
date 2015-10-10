@@ -179,7 +179,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "find new events via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(1)))
+    val actor = system.actorOf(Props(new MyActor(4)))
 
     actor ! 1
     actor ! 2
@@ -187,7 +187,7 @@ class InMemoryReadJournalTest extends TestSpec {
 
     (actor ? "state").futureValue shouldBe 6
 
-    val src = eventsByPersistenceId(readJournal, "my-1", 0L, Long.MaxValue)
+    val src = eventsByPersistenceId(readJournal, "my-4", 0L, Long.MaxValue)
     src.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
 
     actor ! 4
@@ -198,8 +198,24 @@ class InMemoryReadJournalTest extends TestSpec {
     cleanup(actor)
   }
 
+  it should "find new events after stream is created via eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(5)))
+
+    val src = eventsByPersistenceId(readJournal, "my-5")
+    src.request(2).expectNoMsg(100.millis)
+
+    actor ! 1
+    actor ! 2
+
+    (actor ? "state").futureValue shouldBe 3
+
+    src.expectNext((1L, 1), (2L, 2)).expectComplete()
+
+    cleanup(actor)
+  }
+
   it should "find new events up to a sequence number via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(1)))
+    val actor = system.actorOf(Props(new MyActor(6)))
 
     actor ! 1
     actor ! 2
@@ -207,7 +223,7 @@ class InMemoryReadJournalTest extends TestSpec {
 
     (actor ? "state").futureValue shouldBe 6
 
-    val probe = eventsByPersistenceId(readJournal, "my-1", 0L, 4L)
+    val probe = eventsByPersistenceId(readJournal, "my-6", 0L, 4L)
     probe.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
 
     actor ! 4
@@ -219,7 +235,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "find new events after demand request via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(1)))
+    val actor = system.actorOf(Props(new MyActor(7)))
 
     actor ! 1
     actor ! 2
@@ -227,7 +243,7 @@ class InMemoryReadJournalTest extends TestSpec {
 
     (actor ? "state").futureValue shouldBe 6
 
-    val probe = eventsByPersistenceId(readJournal, "my-1")
+    val probe = eventsByPersistenceId(readJournal, "my-7")
     probe.request(2).expectNext((1L, 1), (2L, 2)).expectNoMsg(100.millis)
 
     actor ! 4

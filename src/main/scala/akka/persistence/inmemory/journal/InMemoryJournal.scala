@@ -111,11 +111,12 @@ class JournalActor extends Actor {
 object InMemoryJournal {
   final val Identifier = "inmemory-journal"
 
-  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
-
-  final case class PersistenceIdAdded(persistenceId: String)
+  final case class SubscribePersistenceId(persistenceId: String)
+  final case class EventAppended(persistenceId: String)
 
   case object AllPersistenceIdsRequest
+  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
+  final case class PersistenceIdAdded(persistenceId: String)
 
   def marshal(repr: PersistentRepr)(implicit serialization: Serialization): Try[PersistentRepr] =
     serialization.serialize(repr.payload.asInstanceOf[AnyRef]).map(_ ⇒ repr)

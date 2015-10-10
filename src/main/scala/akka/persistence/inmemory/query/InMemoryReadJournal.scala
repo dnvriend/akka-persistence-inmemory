@@ -45,14 +45,16 @@ with EventsByPersistenceIdQuery {
   }
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
-    Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, 100))
+    Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, None, 100))
       .mapMaterializedValue(_ ⇒ ())
       .named(s"currentEventsByPersistenceId-$persistenceId")
   }
 
+    import scala.concurrent.duration._
+
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
                                      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
-    Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, 100))
+    Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, Some(3.seconds), 100))
       .mapMaterializedValue(_ ⇒ ())
       .named(s"eventsByPersistenceId-$persistenceId")
   }
