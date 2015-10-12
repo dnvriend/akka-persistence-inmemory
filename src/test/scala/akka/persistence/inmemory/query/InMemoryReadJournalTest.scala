@@ -201,7 +201,7 @@ class InMemoryReadJournalTest extends TestSpec {
   it should "find new events after stream is created via eventsByPersistenceId" in {
     val actor = system.actorOf(Props(new MyActor(5)))
 
-    val src = eventsByPersistenceId(readJournal, "my-5")
+    val src = eventsByPersistenceId(readJournal, "my-5", 0L, 2L)
     src.request(2).expectNoMsg(100.millis)
 
     actor ! 1
