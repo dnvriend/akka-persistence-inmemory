@@ -59,8 +59,13 @@ class InMemoryReadJournalTest extends TestSpec {
     case _                                                            ⇒ throw new RuntimeException("Unexpected event type")
   }
 
-  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Int = 0, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
     journal.currentEventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
+      .map(mapEventEnvelope)
+      .runWith(TestSink.probe[(Long, Int)])
+
+  def eventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+    journal.eventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
       .map(mapEventEnvelope)
       .runWith(TestSink.probe[(Long, Int)])
 
@@ -171,5 +176,81 @@ class InMemoryReadJournalTest extends TestSpec {
       .expectComplete()
 
     cleanup(actor3)
+  }
+
+  it should "find new events via eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(4)))
+
+    actor ! 1
+    actor ! 2
+    actor ! 3
+
+    (actor ? "state").futureValue shouldBe 6
+
+    val src = eventsByPersistenceId(readJournal, "my-4", 0L, Long.MaxValue)
+    src.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
+
+    actor ! 4
+    (actor ? "state").futureValue shouldBe 10
+
+    src.expectNext((4L, 4))
+
+    cleanup(actor)
+  }
+
+  it should "find new events after stream is created via eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(5)))
+
+    val src = eventsByPersistenceId(readJournal, "my-5", 0L, 2L)
+    src.request(2).expectNoMsg(100.millis)
+
+    actor ! 1
+    actor ! 2
+
+    (actor ? "state").futureValue shouldBe 3
+
+    src.expectNext((1L, 1), (2L, 2)).expectComplete()
+
+    cleanup(actor)
+  }
+
+  it should "find new events up to a sequence number via eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(6)))
+
+    actor ! 1
+    actor ! 2
+    actor ! 3
+
+    (actor ? "state").futureValue shouldBe 6
+
+    val probe = eventsByPersistenceId(readJournal, "my-6", 0L, 4L)
+    probe.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
+
+    actor ! 4
+    (actor ? "state").futureValue shouldBe 10
+
+    probe.expectNext((4L, 4)).expectComplete()
+
+    cleanup(actor)
+  }
+
+  it should "find new events after demand request via eventsByPersistenceId" in {
+    val actor = system.actorOf(Props(new MyActor(7)))
+
+    actor ! 1
+    actor ! 2
+    actor ! 3
+
+    (actor ? "state").futureValue shouldBe 6
+
+    val probe = eventsByPersistenceId(readJournal, "my-7")
+    probe.request(2).expectNext((1L, 1), (2L, 2)).expectNoMsg(100.millis)
+
+    actor ! 4
+    (actor ? "state").futureValue shouldBe 10
+
+    probe.expectNoMsg(100.millis).request(5).expectNext((3L, 3), (4L, 4))
+
+    cleanup(actor)
   }
 }

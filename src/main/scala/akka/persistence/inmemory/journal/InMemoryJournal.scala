@@ -18,13 +18,14 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{ AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded }
+import akka.persistence.inmemory.journal.InMemoryJournal.{ SubscribePersistenceId, AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.util.Timeout
 
 import scala.collection.immutable.Seq
+import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
@@ -70,7 +71,10 @@ case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRe
 
 class JournalActor extends Actor {
   var journal = JournalCache(context.system, Map.empty[String, Seq[PersistentRepr]])
-  var allPersistenceIdsSubscribers = Set.empty[ActorRef]
+
+  private val eventByPersistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
+
+  private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
 
   override def receive: Receive = {
     case event: JournalEvent ⇒
@@ -98,12 +102,20 @@ class JournalActor extends Actor {
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒
       sender() ! ReplayMessagesResponse(Seq.empty)
 
+    case SubscribePersistenceId(persistenceId) ⇒
+      eventByPersistenceIdSubscribers.addBinding(persistenceId, sender())
+      context.watch(sender())
+
     case AllPersistenceIdsRequest ⇒
       allPersistenceIdsSubscribers += sender()
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
       context.watch(sender())
 
-    case x: Terminated ⇒
+    case Terminated(subscriber) ⇒
+      eventByPersistenceIdSubscribers
+        .collect { case (k, s) if s.contains(subscriber) ⇒ k }
+        .foreach { key ⇒ eventByPersistenceIdSubscribers.removeBinding(key, subscriber) }
+
       allPersistenceIdsSubscribers -= sender()
   }
 }
@@ -111,11 +123,12 @@ class JournalActor extends Actor {
 object InMemoryJournal {
   final val Identifier = "inmemory-journal"
 
-  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
-
-  final case class PersistenceIdAdded(persistenceId: String)
+  final case class SubscribePersistenceId(persistenceId: String)
+  final case class EventAppended(persistenceId: String)
 
   case object AllPersistenceIdsRequest
+  final case class AllPersistenceIdsResponse(allPersistenceIds: Set[String])
+  final case class PersistenceIdAdded(persistenceId: String)
 
   def marshal(repr: PersistentRepr)(implicit serialization: Serialization): Try[PersistentRepr] =
     serialization.serialize(repr.payload.asInstanceOf[AnyRef]).map(_ ⇒ repr)
@@ -150,6 +163,8 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   override def receivePluginInternal = {
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
+    case m: SubscribePersistenceId ⇒
+      journal.forward(m)
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
