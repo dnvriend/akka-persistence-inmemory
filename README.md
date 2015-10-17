@@ -159,8 +159,7 @@ val src: Source[String, Unit] = queries.currentPersistenceIds()
 The returned event stream is unordered. The stream is completed when it reaches the end of the currently stored persistenceIds.
 
 # AllPersistenceIdsQuery
-`allPersistenceIdsQuery` is used for retrieving all persistenceIds of all persistent actors. It does exactly the same
- as the `currentPersistenceIds` query, except the stream does not complete.
+`allPersistenceIdsQuery` is used for retrieving all persistenceIds of all persistent actors. It does exactly the same as the `currentPersistenceIds` query, except the stream does not complete.
 
 ```
 implicit val mat = ActorMaterializer()(system)
@@ -182,14 +181,40 @@ val src: Source[String, Unit] = queries.allPersistenceIdsQuery()
 src.cancel()
 ```
 
+# EventsByPersistenceIdQuery
+`eventsByPersistenceId` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
+
+```
+implicit val mat = ActorMaterializer()(system)
+val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+ 
+val src: Source[EventEnvelope, Unit] =
+  queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
+ 
+val events: Source[Any, Unit] = src.map(_.event)
+```
+
+You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr` or use `0L` and `Long.MaxValue` respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the `EventEnvelope`, which makes it possible to resume the stream at a later point from a given sequence number.
+
+The returned event stream is ordered by sequence number, i.e. the same order as the `PersistentActor` persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
+
+The stream is not completed when it reaches the end of the currently stored events, but it continues to push new events when new events are persisted. 
+
+# CurrentEventsByPersistenceIdQuery
+`currentEventsByPersistenceId` does the same as `eventsByPersistenceId` with the only difference that it completes the stream when it reaches the end of the currently stored events.
+
 # What's new?
 
+## 1.1.4 (2015-10-17)
+ - Compatibility with Akka 2.4.0
+ - Merged PR #12 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of eventsByPersistenceId , thanks!
+ 
 ## 1.1.3 (2015-10-02)
  - Compatibility with Akka 2.4.0
  - Akka 2.4.0-RC3 -> 2.4.0
  
 ## 1.1.3-RC3 (2015-09-24)
- - Merged Issue #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) "Live" version of allPersistenceIds, thanks!
+ - Merged PR #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of allPersistenceIds, thanks!
  - Compatibility with Akka 2.4.0-RC3
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.3-RC3"` 
 
