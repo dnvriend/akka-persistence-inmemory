@@ -16,14 +16,14 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{ ActorLogging, ActorRef, Props }
 import akka.persistence.JournalProtocol._
 import akka.persistence.Persistence
 import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
-import akka.stream.actor.ActorPublisherMessage.{Cancel, Request}
+import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
 import scala.concurrent.duration._
 
@@ -42,7 +42,7 @@ object EventsByPersistenceIdPublisher {
 }
 
 abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String, val fromSequenceNr: Long, val maxBufSize: Int)
-  extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+    extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
 
   import EventsByPersistenceIdPublisher._
 
@@ -56,8 +56,8 @@ abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String,
 
   def init: Receive = {
     case _: Request ⇒ receiveInitialRequest()
-    case Continue ⇒ // skip, wait for first Request
-    case Cancel ⇒ context.stop(self)
+    case Continue   ⇒ // skip, wait for first Request
+    case Cancel     ⇒ context.stop(self)
   }
 
   def receiveInitialRequest(): Unit
@@ -118,9 +118,9 @@ abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String,
 }
 
 class LiveEventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, override val toSequenceNr: Long,
-                                          refreshInterval: FiniteDuration,
-                                          maxBufSize: Int)
-  extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
+  refreshInterval: FiniteDuration,
+  maxBufSize: Int)
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
 
   import EventsByPersistenceIdPublisher._
 
@@ -151,7 +151,7 @@ class LiveEventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: 
 }
 
 class CurrentEventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, var toSeqNr: Long, maxBufSize: Int)
-  extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
+    extends AbstractEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, maxBufSize) {
 
   import EventsByPersistenceIdPublisher._
 

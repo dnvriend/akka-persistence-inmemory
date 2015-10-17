@@ -18,7 +18,7 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{SubscribePersistenceId, AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded}
+import akka.persistence.inmemory.journal.InMemoryJournal.{ SubscribePersistenceId, AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
 import akka.serialization.{ Serialization, SerializationExtension }
@@ -163,7 +163,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   override def receivePluginInternal = {
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
-    case m : SubscribePersistenceId ⇒
+    case m: SubscribePersistenceId ⇒
       journal.forward(m)
   }
 
