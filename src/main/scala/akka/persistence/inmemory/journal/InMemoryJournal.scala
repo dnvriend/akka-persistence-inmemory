@@ -48,29 +48,31 @@ case class ReplayMessagesResponse(messages: Seq[PersistentRepr])
 // general ack
 case object JournalAck
 
-case class JournalCache(system: ActorSystem, cache: Map[String, Seq[PersistentRepr]]) {
+case class JournalCache(system: ActorSystem, cache: Map[String, (Long, Seq[PersistentRepr])]) {
   def update(event: JournalEvent): JournalCache = event match {
     case WriteMessages(persistenceId, messages) ⇒
       if (cache.isDefinedAt(persistenceId)) {
-        copy(cache = cache + (persistenceId -> (cache(persistenceId) ++ messages)))
+        copy(cache = cache + (persistenceId -> (messages.map(_.sequenceNr).max, cache(persistenceId)._2 ++ messages)))
       } else {
-        copy(cache = cache + (persistenceId -> messages))
+        copy(cache = cache + (persistenceId -> (messages.map(_.sequenceNr).max, messages)))
       }
 
     case DeleteMessagesTo(persistenceId, toSequenceNr, true) if cache.isDefinedAt(persistenceId) ⇒
-      copy(cache = cache + (persistenceId -> cache(persistenceId).filterNot(_.sequenceNr <= toSequenceNr)))
+      val entry = cache(persistenceId)
+      copy(cache = cache + (persistenceId -> (entry._1, entry._2.filterNot(_.sequenceNr <= toSequenceNr))))
 
     case DeleteMessagesTo(persistenceId, toSequenceNr, false) if cache.isDefinedAt(persistenceId) ⇒
-      val xs1 = cache(persistenceId).filterNot(_.sequenceNr <= toSequenceNr)
-      val xs2 = cache(persistenceId).filter(_.sequenceNr <= toSequenceNr).map(_.update(deleted = true))
-      copy(cache = cache + (persistenceId -> (xs1 ++ xs2)))
+      val entry = cache(persistenceId)
+      val xs1 = entry._2.filterNot(_.sequenceNr <= toSequenceNr)
+      val xs2 = entry._2.filter(_.sequenceNr <= toSequenceNr).map(_.update(deleted = true))
+      copy(cache = cache + (persistenceId -> (entry._1, (xs1 ++ xs2))))
 
     case DeleteMessagesTo(_, _, _) ⇒ this
   }
 }
 
 class JournalActor extends Actor {
-  var journal = JournalCache(context.system, Map.empty[String, Seq[PersistentRepr]])
+  var journal = JournalCache(context.system, Map.empty[String, (Long, Seq[PersistentRepr])])
 
   private val eventByPersistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
 
@@ -83,17 +85,17 @@ class JournalActor extends Actor {
         JournalAck
       })
 
-    case ReadHighestSequenceNr(persistenceId, fromSequenceNr) if journal.cache.get(persistenceId).exists(_.nonEmpty) ⇒
-      sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId).map(_.sequenceNr).max)
+    case ReadHighestSequenceNr(persistenceId, fromSequenceNr) if journal.cache.isDefinedAt(persistenceId) ⇒
+      sender() ! ReadHighestSequenceNrResponse(journal.cache(persistenceId)._1)
 
     case ReadHighestSequenceNr(persistenceId, fromSequenceNr) ⇒
-      journal = journal.copy(cache = journal.cache + (persistenceId -> Nil))
+      journal = journal.copy(cache = journal.cache + (persistenceId -> (0L, Nil)))
       allPersistenceIdsSubscribers.foreach(_ ! PersistenceIdAdded(persistenceId))
       sender() ! ReadHighestSequenceNrResponse(0L)
 
     case ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) if journal.cache.isDefinedAt(persistenceId) ⇒
       val takeMax = if (max >= java.lang.Integer.MAX_VALUE) java.lang.Integer.MAX_VALUE else max.toInt
-      val messages = journal.cache(persistenceId)
+      val messages = journal.cache(persistenceId)._2
         .filter(repr ⇒ repr.sequenceNr >= fromSequenceNr && repr.sequenceNr <= toSequenceNr)
         .sortBy(_.sequenceNr)
         .take(takeMax)
@@ -161,6 +163,8 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor(InMemoryJournal.Identifier).getBoolean("full-serialization")
 
   override def receivePluginInternal = {
+    case m : ReadHighestSequenceNr =>
+      asyncReadHighestSequenceNr(m.persistenceId, m.fromSequenceNr).pipeTo(sender)
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
     case m: SubscribePersistenceId ⇒
