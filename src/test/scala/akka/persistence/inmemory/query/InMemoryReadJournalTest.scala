@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.Props
+import akka.actor.{ ActorRef, Props }
 import akka.event.LoggingReceive
 import akka.pattern._
 import akka.persistence.PersistentActor
@@ -30,6 +30,8 @@ import scala.concurrent.duration._
 class InMemoryReadJournalTest extends TestSpec {
   val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
+  case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
+
   class MyActor(id: Int) extends PersistentActor {
     override val persistenceId: String = "my-" + id
 
@@ -38,6 +40,10 @@ class InMemoryReadJournalTest extends TestSpec {
     override def receiveCommand: Receive = LoggingReceive {
       case "state" ⇒
         sender() ! state
+
+      case DeleteCmd(toSequenceNr) ⇒
+        deleteMessages(toSequenceNr)
+        sender() ! s"deleted-$toSequenceNr"
 
       case event: Int ⇒
         persist(event) { (event: Int) ⇒
@@ -75,9 +81,22 @@ class InMemoryReadJournalTest extends TestSpec {
   def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
     journal.allPersistenceIds().runWith(TestSink.probe[String])
 
+  def setupEmpty(persistenceId: Int): ActorRef = {
+    system.actorOf(Props(new MyActor(persistenceId)))
+  }
+
+  def setup(persistenceId: Int): ActorRef = {
+    val actor = setupEmpty(persistenceId)
+    actor ! 1
+    actor ! 2
+    actor ! 3
+    (actor ? "state").futureValue shouldBe 6
+    actor
+  }
+
   "ReadJournal" should "support currentPersistenceIds" in {
-    val actor1 = system.actorOf(Props(new MyActor(1)))
-    val actor2 = system.actorOf(Props(new MyActor(2)))
+    val actor1 = setupEmpty(1)
+    val actor2 = setupEmpty(2)
 
     (actor1 ? "state").futureValue shouldBe 0
     (actor2 ? "state").futureValue shouldBe 0
@@ -104,20 +123,20 @@ class InMemoryReadJournalTest extends TestSpec {
   it should "support allPersistenceIds" in {
     val source = allPersistenceIds(readJournal)
 
-    val actor1 = system.actorOf(Props(new MyActor(1)))
+    val actor1 = setupEmpty(1)
     source.request(1).expectNext() mustBe {
       case "my-1" ⇒
       case "my-2" ⇒
     }
 
-    val actor2 = system.actorOf(Props(new MyActor(2)))
+    val actor2 = setupEmpty(2)
     source.request(1).expectNext() mustBe {
       case "my-1" ⇒
       case "my-2" ⇒
     }
 
     source.cancel()
-    val actor3 = system.actorOf(Props(new MyActor(3)))
+    val actor3 = setupEmpty(3)
 
     source.expectNoMsg(100.millis)
 
@@ -127,15 +146,15 @@ class InMemoryReadJournalTest extends TestSpec {
   it should "support allPersistenceIds with demand limitation" in {
     val source = allPersistenceIds(readJournal)
 
-    val actor1 = system.actorOf(Props(new MyActor(1)))
+    val actor1 = setupEmpty(1)
     source.request(1).expectNext() mustBe {
       case "my-1" ⇒
       case "my-2" ⇒
     }
     source.expectNoMsg(100.millis)
 
-    val actor2 = system.actorOf(Props(new MyActor(2)))
-    val actor3 = system.actorOf(Props(new MyActor(3)))
+    val actor2 = setupEmpty(2)
+    val actor3 = setupEmpty(3)
 
     source.request(1).expectNext() mustBe {
       case "my-1" ⇒
@@ -148,12 +167,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "support currentEventsByPersistenceId" in {
-    val actor3 = system.actorOf(Props(new MyActor(3)))
-    actor3 ! 1
-    actor3 ! 2
-    actor3 ! 3
-
-    (actor3 ? "state").futureValue shouldBe 6
+    val actor3 = setup(3)
 
     currentEventsByPersistenceId(readJournal, "my-3")
       .request(4)
@@ -178,14 +192,53 @@ class InMemoryReadJournalTest extends TestSpec {
     cleanup(actor3)
   }
 
+  it should "return empty stream for cleaned journal from 0 to MaxLong" in {
+    val actor = setup(31)
+    (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
+    currentEventsByPersistenceId(readJournal, "my-31").request(1).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return empty stream for cleaned journal from 0 to 0" in {
+    val actor = setup(32)
+    (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
+    currentEventsByPersistenceId(readJournal, "my-32", 0L, 0L).request(1).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return remaining values after partial journal cleanup" in {
+    val actor = setup(33)
+    (actor ? DeleteCmd(2L)).futureValue shouldBe s"deleted-2"
+    currentEventsByPersistenceId(readJournal, "my-33", 0L, Long.MaxValue).request(1).expectNext((3, 3)).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return empty stream for empty journal" in {
+    val actor = setupEmpty(34)
+    currentEventsByPersistenceId(readJournal, "my-34", 0L, Long.MaxValue).request(1).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return empty stream for journal from 0 to 0" in {
+    val actor = setup(35)
+    currentEventsByPersistenceId(readJournal, "my-35", 0L, 0L).request(1).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return empty stream for empty journal from 0 to 0" in {
+    val actor = setupEmpty(36)
+    currentEventsByPersistenceId(readJournal, "my-36", 0L, 0L).request(1).expectComplete()
+    cleanup(actor)
+  }
+
+  it should "return empty stream for journal from seqNo greater than highestSeqNo" in {
+    val actor = setup(37)
+    currentEventsByPersistenceId(readJournal, "my-37", 4L, 3L).request(1).expectComplete()
+    cleanup(actor)
+  }
+
   it should "find new events via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(4)))
-
-    actor ! 1
-    actor ! 2
-    actor ! 3
-
-    (actor ? "state").futureValue shouldBe 6
+    val actor = setup(4)
 
     val src = eventsByPersistenceId(readJournal, "my-4", 0L, Long.MaxValue)
     src.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
@@ -199,7 +252,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "find new events after stream is created via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(5)))
+    val actor = setupEmpty(5)
 
     val src = eventsByPersistenceId(readJournal, "my-5", 0L, 2L)
     src.request(2).expectNoMsg(100.millis)
@@ -215,13 +268,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "find new events up to a sequence number via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(6)))
-
-    actor ! 1
-    actor ! 2
-    actor ! 3
-
-    (actor ? "state").futureValue shouldBe 6
+    val actor = setup(6)
 
     val probe = eventsByPersistenceId(readJournal, "my-6", 0L, 4L)
     probe.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
@@ -235,13 +282,7 @@ class InMemoryReadJournalTest extends TestSpec {
   }
 
   it should "find new events after demand request via eventsByPersistenceId" in {
-    val actor = system.actorOf(Props(new MyActor(7)))
-
-    actor ! 1
-    actor ! 2
-    actor ! 3
-
-    (actor ? "state").futureValue shouldBe 6
+    val actor = setup(7)
 
     val probe = eventsByPersistenceId(readJournal, "my-7")
     probe.request(2).expectNext((1L, 1), (2L, 2)).expectNoMsg(100.millis)
