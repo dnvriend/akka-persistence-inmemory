@@ -205,9 +205,14 @@ The stream is not completed when it reaches the end of the currently stored even
 
 # What's new?
 
+## 1.1.5 (2015-10-24)
+ - Compatibility with Akka 2.4.0
+ - Merged PR #13 [Evgeny Shepelyuk](https://github.com/eshepelyuk) HighestSequenceNo should be kept on message deletion, thanks!
+ - Should be a fix for [Issue #13 - HighestSequenceNo should be kept on message deletion](https://github.com/dnvriend/akka-persistence-inmemory/issues/13) as per [Akka issue #18559](https://github.com/akka/akka/issues/18559) 
+
 ## 1.1.4 (2015-10-17)
  - Compatibility with Akka 2.4.0
- - Merged PR #12 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of eventsByPersistenceId , thanks!
+ - Merged PR #12 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of eventsByPersistenceId, thanks!
  
 ## 1.1.3 (2015-10-02)
  - Compatibility with Akka 2.4.0
