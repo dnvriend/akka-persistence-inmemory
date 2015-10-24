@@ -77,7 +77,7 @@ dependencies {
 ### SBT
 
 ```
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.3"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.5"
 ```
 
 ### Maven
@@ -86,7 +86,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 <dependency>
     <groupId>com.github.dnvriend</groupId>
     <artifactId>akka-persistence-inmemory_2.11</artifactId>
-    <version>1.1.3</version>
+    <version>1.1.5</version>
 </dependency>
 ```
 
@@ -94,7 +94,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 
 ```
 dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.3'
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.5'
 }
 ```
 
