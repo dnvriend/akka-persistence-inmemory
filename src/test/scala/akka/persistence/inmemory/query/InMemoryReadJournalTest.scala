@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ ActorRef, Props }
 import akka.event.LoggingReceive
 import akka.pattern._
 import akka.persistence.PersistentActor
@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 class InMemoryReadJournalTest extends TestSpec {
   val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
-  case class DeleteCmd(toSequenceNr : Long = Long.MaxValue) extends Serializable
+  case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
   class MyActor(id: Int) extends PersistentActor {
     override val persistenceId: String = "my-" + id
@@ -41,7 +41,7 @@ class InMemoryReadJournalTest extends TestSpec {
       case "state" ⇒
         sender() ! state
 
-      case DeleteCmd(toSequenceNr) =>
+      case DeleteCmd(toSequenceNr) ⇒
         deleteMessages(toSequenceNr)
         sender() ! s"deleted-$toSequenceNr"
 

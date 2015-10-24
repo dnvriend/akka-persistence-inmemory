@@ -19,7 +19,7 @@ package akka.persistence.inmemory.journal
 import akka.actor.Props
 import akka.event.LoggingReceive
 import akka.pattern.ask
-import akka.persistence.{Persistence, PersistentActor}
+import akka.persistence.{ Persistence, PersistentActor }
 import akka.persistence.inmemory.TestSpec
 
 class InMemoryJournalTest extends TestSpec {
@@ -32,7 +32,7 @@ class InMemoryJournalTest extends TestSpec {
     }
   }
 
-  case class DeleteCmd(toSequenceNr : Long = Long.MaxValue) extends Serializable
+  case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
   class Counter(id: Int) extends PersistentActor {
     var state = CounterState(0)
@@ -50,7 +50,7 @@ class InMemoryJournalTest extends TestSpec {
       case "lastSequenceNr" ⇒
         sender() ! lastSequenceNr
 
-      case DeleteCmd(toSequenceNr) =>
+      case DeleteCmd(toSequenceNr) ⇒
         deleteMessages(toSequenceNr)
         sender() ! s"deleted-$toSequenceNr"
 

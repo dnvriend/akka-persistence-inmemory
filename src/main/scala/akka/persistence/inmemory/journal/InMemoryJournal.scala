@@ -163,7 +163,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor(InMemoryJournal.Identifier).getBoolean("full-serialization")
 
   override def receivePluginInternal = {
-    case m : ReadHighestSequenceNr =>
+    case m: ReadHighestSequenceNr ⇒
       asyncReadHighestSequenceNr(m.persistenceId, m.fromSequenceNr).pipeTo(sender)
     case AllPersistenceIdsRequest ⇒
       journal.forward(AllPersistenceIdsRequest)
