@@ -2,12 +2,12 @@ organization := "com.github.dnvriend"
 
 name := "akka-persistence-inmemory"
 
-version := "1.1.5"
+version := "1.1.6"
 
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
-    val akkaVersion = "2.4.0"
+    val akkaVersion = "2.4.1"
     Seq(
     "com.typesafe.akka"   %% "akka-actor"                           % akkaVersion,
     "com.typesafe.akka"   %% "akka-slf4j"                           % akkaVersion,
