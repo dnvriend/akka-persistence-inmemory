@@ -18,8 +18,10 @@ package akka.persistence.inmemory.journal
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.{ SubscribePersistenceId, AllPersistenceIdsRequest, AllPersistenceIdsResponse, PersistenceIdAdded }
-import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.JournalProtocol.{ RecoverySuccess, ReplayMessagesFailure }
+import akka.persistence.inmemory.journal.InMemoryJournal._
+import akka.persistence.journal.leveldb.LeveldbJournal.{ ReplayTaggedMessages, ReplayedTaggedMessage, SubscribeTag }
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.util.Timeout
@@ -44,6 +46,8 @@ case class ReadHighestSequenceNrResponse(seqNo: Long)
 case class ReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
 
 case class ReplayMessagesResponse(messages: Seq[PersistentRepr])
+
+case class ReplayTaggedMessagesResponse(messages: Seq[ReplayedTaggedMessage])
 
 // general ack
 case object JournalAck
@@ -75,13 +79,15 @@ class JournalActor extends Actor {
   var journal = JournalCache(context.system, Map.empty[String, (Long, Seq[PersistentRepr])])
 
   private val eventByPersistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
-
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
+  private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
+  private var tagSequenceNr = Map.empty[String, Long]
 
   override def receive: Receive = {
     case event: JournalEvent ⇒
       sender() ! Try({
         journal = journal.update(event)
+        tagEvents(event) foreach { te ⇒ journal = journal.update(te) }
         JournalAck
       })
 
@@ -113,12 +119,55 @@ class JournalActor extends Actor {
       sender() ! AllPersistenceIdsResponse(journal.cache.keySet)
       context.watch(sender())
 
+    case SubscribeTag(tag) ⇒
+      tagSubscribers.addBinding(tag, sender())
+      context.watch(sender())
+
+    case ReplayTaggedMessages(from, to, max, tag, _) if journal.cache.isDefinedAt(tagAsPersistenceId(tag)) ⇒
+      val takeMax = if (max >= java.lang.Integer.MAX_VALUE) java.lang.Integer.MAX_VALUE else max.toInt
+      val messages = journal.cache(tagAsPersistenceId(tag))._2
+        .filter(repr ⇒ repr.sequenceNr >= from && repr.sequenceNr <= to)
+        .sortBy(_.sequenceNr)
+        .map(m ⇒ ReplayedTaggedMessage(m, tag, m.sequenceNr))
+        .take(takeMax)
+      sender() ! ReplayTaggedMessagesResponse(messages)
+
+    case ReplayTaggedMessages(_, _, _, tag, _) ⇒
+      sender() ! ReplayTaggedMessagesResponse(Seq.empty)
+
     case Terminated(subscriber) ⇒
       eventByPersistenceIdSubscribers
         .collect { case (k, s) if s.contains(subscriber) ⇒ k }
         .foreach { key ⇒ eventByPersistenceIdSubscribers.removeBinding(key, subscriber) }
 
       allPersistenceIdsSubscribers -= sender()
+
+      tagSubscribers
+        .collect { case (k, s) if s.contains(subscriber) ⇒ k }
+        .foreach { key ⇒ tagSubscribers.removeBinding(key, subscriber) }
+  }
+
+  def tagEvents(event: JournalEvent): Seq[JournalEvent] = event match {
+    case WriteMessages(_, ms) ⇒
+      for {
+        m ← ms
+        Tagged(p, ts) = m.payload
+        t ← ts
+      } yield {
+        val tpid = tagAsPersistenceId(t)
+        val nextSequenceNr = nextTagSequenceNr(t)
+        WriteMessages(tpid, Seq(m.withPayload(p).update(persistenceId = tpid, sequenceNr = nextSequenceNr)))
+      }
+    case _ ⇒ Seq.empty
+  }
+
+  def nextTagSequenceNr(tag: String): Long = {
+    val n = tagSequenceNr.get(tag) match {
+      case Some(n) ⇒ n
+      case None    ⇒ journal.cache(tagAsPersistenceId(tag))._1
+    }
+    tagSequenceNr = tagSequenceNr.updated(tag, n + 1)
+    n + 1
   }
 }
 
@@ -150,6 +199,9 @@ object InMemoryJournal {
 
   def writeToJournal(writeMessages: WriteMessages, journal: ActorRef)(implicit ec: ExecutionContext, timeout: Timeout): Future[Try[Unit]] =
     (journal ? writeMessages).map(_ ⇒ Try(Unit))
+
+  val TagPersistenceIdPrefix = "$$$"
+  def tagAsPersistenceId(tag: String) = TagPersistenceIdPrefix + tag
 }
 
 class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
@@ -169,6 +221,28 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
       journal.forward(AllPersistenceIdsRequest)
     case m: SubscribePersistenceId ⇒
       journal.forward(m)
+    case m: SubscribeTag ⇒
+      journal.forward(m)
+    case r @ ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, replyTo) ⇒
+      val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
+      asyncReadHighestSequenceNr(tagAsPersistenceId(tag), readHighestSequenceNrFrom)
+        .flatMap { highSeqNr ⇒
+          val toSeqNr = math.min(toSequenceNr, highSeqNr)
+          if (highSeqNr == 0L || fromSequenceNr > toSeqNr)
+            Future.successful(highSeqNr)
+          else {
+            asyncReplayTaggedMessages(tag, fromSequenceNr, toSeqNr, max) {
+              case ReplayedTaggedMessage(p, tag, offset) ⇒
+                adaptFromJournal(p).foreach { adaptedPersistentRepr ⇒
+                  replyTo.tell(ReplayedTaggedMessage(adaptedPersistentRepr, tag, offset), Actor.noSender)
+                }
+            }.map(_ ⇒ highSeqNr)
+          }
+        }.map {
+          highSeqNr ⇒ RecoverySuccess(highSeqNr)
+        }.recover {
+          case e ⇒ ReplayMessagesFailure(e)
+        }.pipeTo(replyTo)
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {
@@ -197,6 +271,13 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
     log.debug("Async replay for processorId {}, from sequenceNr: {}, to sequenceNr: {} with max records: {}", persistenceId, fromSequenceNr, toSequenceNr, max)
     (journal ? ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max))
       .mapTo[ReplayMessagesResponse]
+      .map(_.messages.foreach(replayCallback))
+  }
+
+  def asyncReplayTaggedMessages(tag: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: ReplayedTaggedMessage ⇒ Unit): Future[Unit] = {
+    log.debug("Async replay tagged messages for tag {}, from sequenceNr: {}, to sequenceNr: {} with max records: {}", tag, fromSequenceNr, toSequenceNr, max)
+    (journal ? ReplayTaggedMessages(fromSequenceNr, toSequenceNr, max, tag, Actor.noSender))
+      .mapTo[ReplayTaggedMessagesResponse]
       .map(_.messages.foreach(replayCallback))
   }
 }
