@@ -205,6 +205,10 @@ The stream is not completed when it reaches the end of the currently stored even
 
 # What's new?
 
+## 1.1.6 (2015-12-02)
+ - Compatibility with Akka 2.4.1
+ - Merged PR #17 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Upgrade to AKKA 2.4.1, thanks!
+
 ## 1.1.5 (2015-10-24)
  - Compatibility with Akka 2.4.0
  - Merged PR #13 [Evgeny Shepelyuk](https://github.com/eshepelyuk) HighestSequenceNo should be kept on message deletion, thanks!
