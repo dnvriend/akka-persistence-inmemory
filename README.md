@@ -43,7 +43,9 @@ repositories {
 
 ### SBT
 
-```
+```scala
+resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
+
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.5"
 ```
 
@@ -76,7 +78,9 @@ dependencies {
 
 ### SBT
 
-```
+```scala
+resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
+
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.5"
 ```
 
