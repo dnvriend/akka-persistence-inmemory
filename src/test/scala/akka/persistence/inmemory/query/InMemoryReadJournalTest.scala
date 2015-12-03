@@ -19,8 +19,10 @@ package akka.persistence.inmemory.query
 import akka.actor.{ ActorRef, Props }
 import akka.event.LoggingReceive
 import akka.pattern._
-import akka.persistence.PersistentActor
+import akka.persistence.inmemory.journal.InMemoryJournal.ResetJournal
+import akka.persistence.{ Persistence, PersistentActor }
 import akka.persistence.inmemory.TestSpec
+import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
@@ -29,6 +31,7 @@ import scala.concurrent.duration._
 
 class InMemoryReadJournalTest extends TestSpec {
   val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+  val journal: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
 
   case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
@@ -94,6 +97,17 @@ class InMemoryReadJournalTest extends TestSpec {
     actor
   }
 
+  /**
+   * Clears the journal
+   */
+  def clearJournal: Unit = {
+    journal ! ResetJournal
+    allPersistenceIds(readJournal)
+      .request(1)
+      .expectNoMsg(100.millis)
+      .cancel()
+  }
+
   "ReadJournal" should "support currentPersistenceIds" in {
     val actor1 = setupEmpty(1)
     val actor2 = setupEmpty(2)
@@ -118,52 +132,65 @@ class InMemoryReadJournalTest extends TestSpec {
       .expectComplete()
 
     cleanup(actor1, actor2)
+    clearJournal
   }
 
   it should "support allPersistenceIds" in {
-    val source = allPersistenceIds(readJournal)
+    val probe = allPersistenceIds(readJournal)
 
+    // create an actor
     val actor1 = setupEmpty(1)
-    source.request(1).expectNext() mustBe {
-      case "my-1" ⇒
-      case "my-2" ⇒
-    }
+    // the stream will emit the persistence Id "my-1"
+    probe.request(1).expectNext("my-1")
+    probe.expectNoMsg(100.millis)
 
+    // create a second actor
     val actor2 = setupEmpty(2)
-    source.request(1).expectNext() mustBe {
-      case "my-1" ⇒
-      case "my-2" ⇒
-    }
+    // the stream will emit the persistence Id "my-2"
+    probe.request(1).expectNext("my-2")
+    probe.expectNoMsg(100.millis)
 
-    source.cancel()
+    // cancel the stream, the stream is now terminated and will not emit
+    // any persistence ids
+    probe.cancel()
+
+    // create a new actor
     val actor3 = setupEmpty(3)
 
-    source.expectNoMsg(100.millis)
+    // prove that the stream will emit no more elements
+    probe.expectNoMsg(100.millis)
 
+    // create a new stream
+    val newProbe = allPersistenceIds(readJournal)
+    newProbe.request(3).expectNextUnordered("my-1", "my-2", "my-3")
+    // cancel the new stream
+    newProbe.cancel()
+
+    // terminates the actors
     cleanup(actor1, actor2, actor3)
+    clearJournal
   }
 
   it should "support allPersistenceIds with demand limitation" in {
-    val source = allPersistenceIds(readJournal)
+    val probe = allPersistenceIds(readJournal)
 
+    // create an actor
     val actor1 = setupEmpty(1)
-    source.request(1).expectNext() mustBe {
-      case "my-1" ⇒
-      case "my-2" ⇒
-    }
-    source.expectNoMsg(100.millis)
 
+    // the stream should emit only the persistence id "my-1"
+    probe.request(1).expectNext("my-1")
+    probe.expectNoMsg(100.millis)
+
+    // create two actors
     val actor2 = setupEmpty(2)
     val actor3 = setupEmpty(3)
 
-    source.request(1).expectNext() mustBe {
-      case "my-1" ⇒
-      case "my-2" ⇒
-      case "my-3" ⇒
-    }
-    source.cancel().expectNoMsg(100.millis)
+    // the stream should emit (in no specific order)
+    probe.request(2).expectNextUnordered("my-2", "my-3")
+    probe.cancel().expectNoMsg(100.millis)
 
     cleanup(actor1, actor2, actor3)
+    clearJournal
   }
 
   it should "support currentEventsByPersistenceId" in {
@@ -190,6 +217,7 @@ class InMemoryReadJournalTest extends TestSpec {
       .expectComplete()
 
     cleanup(actor3)
+    clearJournal
   }
 
   it should "return empty stream for cleaned journal from 0 to MaxLong" in {
@@ -197,6 +225,7 @@ class InMemoryReadJournalTest extends TestSpec {
     (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
     currentEventsByPersistenceId(readJournal, "my-31").request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return empty stream for cleaned journal from 0 to 0" in {
@@ -204,6 +233,7 @@ class InMemoryReadJournalTest extends TestSpec {
     (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
     currentEventsByPersistenceId(readJournal, "my-32", 0L, 0L).request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return remaining values after partial journal cleanup" in {
@@ -211,30 +241,35 @@ class InMemoryReadJournalTest extends TestSpec {
     (actor ? DeleteCmd(2L)).futureValue shouldBe s"deleted-2"
     currentEventsByPersistenceId(readJournal, "my-33", 0L, Long.MaxValue).request(1).expectNext((3, 3)).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return empty stream for empty journal" in {
     val actor = setupEmpty(34)
     currentEventsByPersistenceId(readJournal, "my-34", 0L, Long.MaxValue).request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return empty stream for journal from 0 to 0" in {
     val actor = setup(35)
     currentEventsByPersistenceId(readJournal, "my-35", 0L, 0L).request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return empty stream for empty journal from 0 to 0" in {
     val actor = setupEmpty(36)
     currentEventsByPersistenceId(readJournal, "my-36", 0L, 0L).request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "return empty stream for journal from seqNo greater than highestSeqNo" in {
     val actor = setup(37)
     currentEventsByPersistenceId(readJournal, "my-37", 4L, 3L).request(1).expectComplete()
     cleanup(actor)
+    clearJournal
   }
 
   it should "find new events via eventsByPersistenceId" in {
@@ -248,7 +283,9 @@ class InMemoryReadJournalTest extends TestSpec {
 
     src.expectNext((4L, 4))
 
+    src.cancel()
     cleanup(actor)
+    clearJournal
   }
 
   it should "find new events after stream is created via eventsByPersistenceId" in {
@@ -265,6 +302,7 @@ class InMemoryReadJournalTest extends TestSpec {
     src.expectNext((1L, 1), (2L, 2)).expectComplete()
 
     cleanup(actor)
+    clearJournal
   }
 
   it should "find new events up to a sequence number via eventsByPersistenceId" in {
@@ -278,7 +316,9 @@ class InMemoryReadJournalTest extends TestSpec {
 
     probe.expectNext((4L, 4)).expectComplete()
 
+    probe.cancel()
     cleanup(actor)
+    clearJournal
   }
 
   it should "find new events after demand request via eventsByPersistenceId" in {
@@ -292,6 +332,8 @@ class InMemoryReadJournalTest extends TestSpec {
 
     probe.expectNoMsg(100.millis).request(5).expectNext((3L, 3), (4L, 4))
 
+    probe.cancel()
     cleanup(actor)
+    clearJournal
   }
 }

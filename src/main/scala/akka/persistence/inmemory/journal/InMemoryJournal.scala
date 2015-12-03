@@ -125,6 +125,8 @@ class JournalActor extends Actor {
 object InMemoryJournal {
   final val Identifier = "inmemory-journal"
 
+  final case object ResetJournal
+
   final case class SubscribePersistenceId(persistenceId: String)
   final case class EventAppended(persistenceId: String)
 
@@ -159,7 +161,7 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
   implicit val timeout: Timeout = Timeout(100.millis)
   implicit val ec: ExecutionContext = context.system.dispatcher
   implicit val serialization: Serialization = SerializationExtension(context.system)
-  val journal: ActorRef = context.actorOf(Props(new JournalActor))
+  var journal: ActorRef = context.actorOf(Props(new JournalActor))
   val doSerialize: Boolean = Persistence(context.system).journalConfigFor(InMemoryJournal.Identifier).getBoolean("full-serialization")
 
   override def receivePluginInternal = {
@@ -169,6 +171,9 @@ class InMemoryJournal extends AsyncWriteJournal with ActorLogging {
       journal.forward(AllPersistenceIdsRequest)
     case m: SubscribePersistenceId ⇒
       journal.forward(m)
+    case ResetJournal ⇒
+      journal ! PoisonPill
+      journal = context.actorOf(Props(new JournalActor))
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] = {

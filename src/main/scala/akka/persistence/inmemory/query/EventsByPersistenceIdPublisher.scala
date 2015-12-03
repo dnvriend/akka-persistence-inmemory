@@ -28,17 +28,14 @@ import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 import scala.concurrent.duration._
 
 object EventsByPersistenceIdPublisher {
-  def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: Option[FiniteDuration], maxBufSize: Int): Props = {
-    refreshInterval match {
-      case Some(interval) ⇒
-        Props(new LiveEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, interval, maxBufSize))
-      case None ⇒
-        Props(new CurrentEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, maxBufSize))
-    }
-  }
 
+  def props(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshIntervalOption: Option[FiniteDuration], maxBufSize: Int): Props =
+    refreshIntervalOption
+      .map(refreshInterval ⇒ Props(new LiveEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, refreshInterval, maxBufSize)))
+      .getOrElse(Props(new CurrentEventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, maxBufSize)))
+
+  // messages
   case object Continue
-
 }
 
 abstract class AbstractEventsByPersistenceIdPublisher(val persistenceId: String, val fromSequenceNr: Long, val maxBufSize: Int)

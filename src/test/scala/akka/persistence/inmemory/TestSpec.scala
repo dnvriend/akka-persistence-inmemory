@@ -36,7 +36,7 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
   implicit val mat = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val log: LoggingAdapter = Logging(system, this.getClass)
-  implicit val pc: PatienceConfig = PatienceConfig(timeout = 30.seconds)
+  implicit val pc: PatienceConfig = PatienceConfig(timeout = 3.seconds)
   implicit val timeout = Timeout(30.seconds)
 
   /**
