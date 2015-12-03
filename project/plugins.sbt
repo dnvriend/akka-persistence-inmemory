@@ -6,9 +6,9 @@ resolvers += "bintray-sbt-plugin-releases" at "http://dl.bintray.com/content/sbt
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
 
 // to show a dependency graph
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.4")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.1.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.3.3")
 
 // to format scala source code
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")

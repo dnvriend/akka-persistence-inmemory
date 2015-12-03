@@ -2,23 +2,21 @@ organization := "com.github.dnvriend"
 
 name := "akka-persistence-inmemory"
 
-version := "1.0.5"
+version := "1.1.6"
 
 scalaVersion := "2.11.7"
 
-crossScalaVersions := Seq("2.10.5", "2.11.7")
-
-resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
-
 libraryDependencies ++= {
-    val akkaVersion = "2.3.13"
+    val akkaVersion = "2.4.1"
     Seq(
-    "com.typesafe.akka"   %% "akka-actor"                    % akkaVersion,
-    "com.typesafe.akka"   %% "akka-slf4j"                    % akkaVersion,
-    "com.typesafe.akka"   %% "akka-persistence-experimental" % akkaVersion,
-    "com.typesafe.akka"   %% "akka-testkit"                  % akkaVersion     % "test",
-    "org.scalatest"       %% "scalatest"                     % "2.1.4"         % "test",
-    "com.github.krasserm" %% "akka-persistence-testkit"      % "0.3.4"         % "test"
+    "com.typesafe.akka"   %% "akka-actor"                           % akkaVersion,
+    "com.typesafe.akka"   %% "akka-slf4j"                           % akkaVersion,
+    "com.typesafe.akka"   %% "akka-persistence"                     % akkaVersion,
+    "com.typesafe.akka"   %% "akka-persistence-query-experimental"  % akkaVersion,
+    "com.typesafe.akka"   %% "akka-stream-testkit-experimental"     % "1.0"           % Test,
+    "com.typesafe.akka"   %% "akka-testkit"                         % akkaVersion     % Test,
+    "com.typesafe.akka"   %% "akka-persistence-tck"                 % akkaVersion     % Test,
+    "org.scalatest"       %% "scalatest"                            % "2.2.4"         % Test
   )
 }
 
