@@ -19,19 +19,14 @@ package akka.persistence.inmemory.query
 import akka.actor.{ ActorRef, Props }
 import akka.event.LoggingReceive
 import akka.pattern._
-import akka.persistence.inmemory.journal.InMemoryJournal.ResetJournal
-import akka.persistence.{ Persistence, PersistentActor }
+import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.inmemory.journal.InMemoryJournal
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
-import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.TestSink
+import akka.persistence.query.PersistenceQuery
 
 import scala.concurrent.duration._
 
 class InMemoryReadJournalTest extends TestSpec {
   val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
-  val journal: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
 
   case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
@@ -63,30 +58,8 @@ class InMemoryReadJournalTest extends TestSpec {
     }
   }
 
-  def mapEventEnvelope: PartialFunction[EventEnvelope, (Long, Int)] = {
-    case EventEnvelope(offset, persistenceId, sequenceNr, event: Int) ⇒ (sequenceNr, event)
-    case _                                                            ⇒ throw new RuntimeException("Unexpected event type")
-  }
-
-  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
-    journal.currentEventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
-      .map(mapEventEnvelope)
-      .runWith(TestSink.probe[(Long, Int)])
-
-  def eventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
-    journal.eventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
-      .map(mapEventEnvelope)
-      .runWith(TestSink.probe[(Long, Int)])
-
-  def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
-    journal.currentPersistenceIds().runWith(TestSink.probe[String])
-
-  def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
-    journal.allPersistenceIds().runWith(TestSink.probe[String])
-
-  def setupEmpty(persistenceId: Int): ActorRef = {
+  def setupEmpty(persistenceId: Int): ActorRef =
     system.actorOf(Props(new MyActor(persistenceId)))
-  }
 
   def setup(persistenceId: Int): ActorRef = {
     val actor = setupEmpty(persistenceId)
@@ -97,243 +70,182 @@ class InMemoryReadJournalTest extends TestSpec {
     actor
   }
 
-  /**
-   * Clears the journal
-   */
-  def clearJournal: Unit = {
-    journal ! ResetJournal
-    allPersistenceIds(readJournal)
-      .request(1)
-      .expectNoMsg(100.millis)
-      .cancel()
-  }
-
   "ReadJournal" should "support currentPersistenceIds" in {
-    val actor1 = setupEmpty(1)
-    val actor2 = setupEmpty(2)
+    withActors(setupEmpty(1), setupEmpty(2)) {
+      case actor1 :: actor2 :: tail ⇒
+        (actor1 ? "state").futureValue shouldBe 0
+        (actor2 ? "state").futureValue shouldBe 0
 
-    (actor1 ? "state").futureValue shouldBe 0
-    (actor2 ? "state").futureValue shouldBe 0
+        currentPersistenceIds(readJournal)
+          .request(3)
+          .expectNextUnordered("my-1", "my-2")
+          .expectComplete()
+          .cancel()
 
-    currentPersistenceIds(readJournal)
-      .request(3)
-      .expectNextUnordered("my-1", "my-2")
-      .expectComplete()
+        actor1 ! 2
+        (actor1 ? "state").futureValue shouldBe 2
 
-    actor1 ! 2
-    (actor1 ? "state").futureValue shouldBe 2
+        actor2 ! 3
+        (actor2 ? "state").futureValue shouldBe 3
 
-    actor2 ! 3
-    (actor2 ? "state").futureValue shouldBe 3
-
-    currentPersistenceIds(readJournal)
-      .request(3)
-      .expectNextUnordered("my-1", "my-2")
-      .expectComplete()
-
-    cleanup(actor1, actor2)
-    clearJournal
+        currentPersistenceIds(readJournal)
+          .request(3)
+          .expectNextUnordered("my-1", "my-2")
+          .expectComplete()
+          .cancel()
+    }
   }
 
   it should "support allPersistenceIds" in {
-    val probe = allPersistenceIds(readJournal)
-
-    // create an actor
-    val actor1 = setupEmpty(1)
-    // the stream will emit the persistence Id "my-1"
-    probe.request(1).expectNext("my-1")
-    probe.expectNoMsg(100.millis)
-
-    // create a second actor
-    val actor2 = setupEmpty(2)
-    // the stream will emit the persistence Id "my-2"
-    probe.request(1).expectNext("my-2")
-    probe.expectNoMsg(100.millis)
-
-    // cancel the stream, the stream is now terminated and will not emit
-    // any persistence ids
-    probe.cancel()
-
-    // create a new actor
-    val actor3 = setupEmpty(3)
-
-    // prove that the stream will emit no more elements
-    probe.expectNoMsg(100.millis)
-
-    // create a new stream
-    val newProbe = allPersistenceIds(readJournal)
-    newProbe.request(3).expectNextUnordered("my-1", "my-2", "my-3")
-    // cancel the new stream
-    newProbe.cancel()
-
-    // terminates the actors
-    cleanup(actor1, actor2, actor3)
-    clearJournal
+    withActors(setupEmpty(1), setupEmpty(2), setupEmpty(3)) {
+      case actor1 :: actor2 :: actor3 :: tail ⇒
+        allPersistenceIds(readJournal)
+          .request(3)
+          .expectNextUnordered("my-1", "my-2", "my-3")
+          .cancel()
+    }
   }
 
   it should "support allPersistenceIds with demand limitation" in {
-    val probe = allPersistenceIds(readJournal)
-
-    // create an actor
-    val actor1 = setupEmpty(1)
-
-    // the stream should emit only the persistence id "my-1"
-    probe.request(1).expectNext("my-1")
-    probe.expectNoMsg(100.millis)
-
-    // create two actors
-    val actor2 = setupEmpty(2)
-    val actor3 = setupEmpty(3)
-
-    // the stream should emit (in no specific order)
-    probe.request(2).expectNextUnordered("my-2", "my-3")
-    probe.cancel().expectNoMsg(100.millis)
-
-    cleanup(actor1, actor2, actor3)
-    clearJournal
+    withActors(setupEmpty(1), setupEmpty(2), setupEmpty(3)) {
+      case actor1 :: actor2 :: actor3 :: _ ⇒
+        val probe = allPersistenceIds(readJournal)
+        probe.request(1).expectNext("my-1")
+        probe.request(2).expectNextUnordered("my-2", "my-3")
+        probe.cancel()
+    }
   }
 
   it should "support currentEventsByPersistenceId" in {
-    val actor3 = setup(3)
+    withActors(setup(3)) {
+      case actor1 :: _ ⇒
+        currentEventsByPersistenceId(readJournal, "my-3")
+          .request(4)
+          .expectNextUnordered((1L, 1), (2L, 2), (3L, 3))
+          .expectComplete()
 
-    currentEventsByPersistenceId(readJournal, "my-3")
-      .request(4)
-      .expectNextUnordered((1L, 1), (2L, 2), (3L, 3))
-      .expectComplete()
+        currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 2)
+          .request(3)
+          .expectNextUnordered((2L, 2), (3L, 3))
+          .expectComplete()
 
-    currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 2)
-      .request(3)
-      .expectNextUnordered((2L, 2), (3L, 3))
-      .expectComplete()
+        currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 3)
+          .request(2)
+          .expectNext((3L, 3))
+          .expectComplete()
 
-    currentEventsByPersistenceId(readJournal, "my-3", fromSequenceNr = 3)
-      .request(2)
-      .expectNext((3L, 3))
-      .expectComplete()
-
-    currentEventsByPersistenceId(readJournal, "my-3", toSequenceNr = 2)
-      .request(3)
-      .expectNextUnordered((1L, 1), (2L, 2))
-      .expectComplete()
-
-    cleanup(actor3)
-    clearJournal
+        currentEventsByPersistenceId(readJournal, "my-3", toSequenceNr = 2)
+          .request(3)
+          .expectNextUnordered((1L, 1), (2L, 2))
+          .expectComplete()
+    }
   }
 
   it should "return empty stream for cleaned journal from 0 to MaxLong" in {
-    val actor = setup(31)
-    (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
-    currentEventsByPersistenceId(readJournal, "my-31").request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setup(31)) {
+      case actor1 :: _ ⇒
+        (actor1 ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
+        currentEventsByPersistenceId(readJournal, "my-31").request(1).expectComplete()
+    }
   }
 
   it should "return empty stream for cleaned journal from 0 to 0" in {
-    val actor = setup(32)
-    (actor ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
-    currentEventsByPersistenceId(readJournal, "my-32", 0L, 0L).request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setup(32)) {
+      case actor1 :: _ ⇒
+        (actor1 ? DeleteCmd(3L)).futureValue shouldBe s"deleted-3"
+        currentEventsByPersistenceId(readJournal, "my-32", 0L, 0L).request(1).expectComplete()
+    }
   }
 
   it should "return remaining values after partial journal cleanup" in {
-    val actor = setup(33)
-    (actor ? DeleteCmd(2L)).futureValue shouldBe s"deleted-2"
-    currentEventsByPersistenceId(readJournal, "my-33", 0L, Long.MaxValue).request(1).expectNext((3, 3)).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setup(33)) {
+      case actor1 :: _ ⇒
+        (actor1 ? DeleteCmd(2L)).futureValue shouldBe s"deleted-2"
+        currentEventsByPersistenceId(readJournal, "my-33", 0L, Long.MaxValue).request(1).expectNext((3, 3)).expectComplete()
+    }
   }
 
   it should "return empty stream for empty journal" in {
-    val actor = setupEmpty(34)
-    currentEventsByPersistenceId(readJournal, "my-34", 0L, Long.MaxValue).request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setupEmpty(34)) {
+      case actor1 :: _ ⇒
+        currentEventsByPersistenceId(readJournal, "my-34", 0L, Long.MaxValue).request(1).expectComplete()
+    }
   }
 
   it should "return empty stream for journal from 0 to 0" in {
-    val actor = setup(35)
-    currentEventsByPersistenceId(readJournal, "my-35", 0L, 0L).request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setup(35)) {
+      case actor1 :: _ ⇒
+        currentEventsByPersistenceId(readJournal, "my-35", 0L, 0L).request(1).expectComplete()
+    }
   }
 
   it should "return empty stream for empty journal from 0 to 0" in {
-    val actor = setupEmpty(36)
-    currentEventsByPersistenceId(readJournal, "my-36", 0L, 0L).request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setupEmpty(36)) {
+      case actor1 :: _ ⇒
+        currentEventsByPersistenceId(readJournal, "my-36", 0L, 0L).request(1).expectComplete()
+    }
   }
 
   it should "return empty stream for journal from seqNo greater than highestSeqNo" in {
-    val actor = setup(37)
-    currentEventsByPersistenceId(readJournal, "my-37", 4L, 3L).request(1).expectComplete()
-    cleanup(actor)
-    clearJournal
+    withActors(setup(37)) {
+      case actor1 :: _ ⇒
+        currentEventsByPersistenceId(readJournal, "my-37", 4L, 3L).request(1).expectComplete()
+    }
   }
 
   it should "find new events via eventsByPersistenceId" in {
-    val actor = setup(4)
+    withActors(setup(4)) {
+      case actor1 :: _ ⇒
+        val src = eventsByPersistenceId(readJournal, "my-4", 0L, Long.MaxValue)
+        src.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
+        actor1 ! 4
+        (actor1 ? "state").futureValue shouldBe 10
 
-    val src = eventsByPersistenceId(readJournal, "my-4", 0L, Long.MaxValue)
-    src.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
-
-    actor ! 4
-    (actor ? "state").futureValue shouldBe 10
-
-    src.expectNext((4L, 4))
-
-    src.cancel()
-    cleanup(actor)
-    clearJournal
+        src.expectNext((4L, 4))
+        src.cancel()
+    }
   }
 
   it should "find new events after stream is created via eventsByPersistenceId" in {
-    val actor = setupEmpty(5)
+    withActors(setupEmpty(5)) {
+      case actor1 :: _ ⇒
+        val src = eventsByPersistenceId(readJournal, "my-5", 0L, 2L)
+        src.request(2).expectNoMsg(100.millis)
 
-    val src = eventsByPersistenceId(readJournal, "my-5", 0L, 2L)
-    src.request(2).expectNoMsg(100.millis)
+        actor1 ! 1
+        actor1 ! 2
 
-    actor ! 1
-    actor ! 2
+        (actor1 ? "state").futureValue shouldBe 3
 
-    (actor ? "state").futureValue shouldBe 3
-
-    src.expectNext((1L, 1), (2L, 2)).expectComplete()
-
-    cleanup(actor)
-    clearJournal
+        src.expectNext((1L, 1), (2L, 2)).expectComplete()
+    }
   }
 
   it should "find new events up to a sequence number via eventsByPersistenceId" in {
-    val actor = setup(6)
+    withActors(setup(6)) {
+      case actor1 :: _ ⇒
+        val probe = eventsByPersistenceId(readJournal, "my-6", 0L, 4L)
+        probe.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
 
-    val probe = eventsByPersistenceId(readJournal, "my-6", 0L, 4L)
-    probe.request(5).expectNext((1L, 1), (2L, 2), (3L, 3))
+        actor1 ! 4
+        (actor1 ? "state").futureValue shouldBe 10
 
-    actor ! 4
-    (actor ? "state").futureValue shouldBe 10
-
-    probe.expectNext((4L, 4)).expectComplete()
-
-    probe.cancel()
-    cleanup(actor)
-    clearJournal
+        probe.expectNext((4L, 4)).expectComplete()
+        probe.cancel()
+    }
   }
 
   it should "find new events after demand request via eventsByPersistenceId" in {
-    val actor = setup(7)
+    withActors(setup(7)) {
+      case actor :: _ ⇒
+        val probe = eventsByPersistenceId(readJournal, "my-7")
+        probe.request(2).expectNext((1L, 1), (2L, 2)).expectNoMsg(100.millis)
 
-    val probe = eventsByPersistenceId(readJournal, "my-7")
-    probe.request(2).expectNext((1L, 1), (2L, 2)).expectNoMsg(100.millis)
+        actor ! 4
+        (actor ? "state").futureValue shouldBe 10
 
-    actor ! 4
-    (actor ? "state").futureValue shouldBe 10
-
-    probe.expectNoMsg(100.millis).request(5).expectNext((3L, 3), (4L, 4))
-
-    probe.cancel()
-    cleanup(actor)
-    clearJournal
+        probe.expectNoMsg(100.millis).request(5).expectNext((3L, 3), (4L, 4))
+        probe.cancel()
+    }
   }
 }

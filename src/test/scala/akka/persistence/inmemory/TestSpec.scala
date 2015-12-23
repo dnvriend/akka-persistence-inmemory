@@ -20,7 +20,14 @@ import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.Persistence
+import akka.persistence.inmemory.journal.InMemoryJournal
+import akka.persistence.inmemory.journal.InMemoryJournal.ResetJournal
+import akka.persistence.inmemory.query.InMemoryReadJournal
+import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -39,6 +46,8 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
   implicit val pc: PatienceConfig = PatienceConfig(timeout = 3.seconds)
   implicit val timeout = Timeout(30.seconds)
 
+  val journal: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
+
   /**
    * TestKit-based probe which allows sending, reception and reply.
    */
@@ -53,11 +62,47 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
    * Sends the PoisonPill command to an actor and waits for it to die
    */
   def cleanup(actors: ActorRef*): Unit = {
+    val probe = TestProbe()
     actors.foreach { (actor: ActorRef) ⇒
       actor ! PoisonPill
       probe watch actor
+      probe.expectTerminated(actor)
     }
   }
+
+  /**
+   * Clears the journal
+   */
+  def clearJournal: Unit = {
+    journal ! ResetJournal
+  }
+
+  def withActors(actors: ActorRef*)(pf: PartialFunction[List[ActorRef], Unit]): Unit = {
+    pf.applyOrElse(actors.toList, PartialFunction.empty)
+    cleanup(actors: _*)
+    clearJournal
+  }
+
+  def mapEventEnvelope: PartialFunction[EventEnvelope, (Long, Int)] = {
+    case EventEnvelope(offset, persistenceId, sequenceNr, event: Int) ⇒ (sequenceNr, event)
+    case _                                                            ⇒ throw new RuntimeException("Unexpected event type")
+  }
+
+  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+    journal.currentEventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
+      .map(mapEventEnvelope)
+      .runWith(TestSink.probe[(Long, Int)])
+
+  def eventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
+    journal.eventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
+      .map(mapEventEnvelope)
+      .runWith(TestSink.probe[(Long, Int)])
+
+  def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
+    journal.currentPersistenceIds().runWith(TestSink.probe[String])
+
+  def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
+    journal.allPersistenceIds().runWith(TestSink.probe[String])
 
   implicit class PimpedByteArray(self: Array[Byte]) {
     def getString: String = new String(self)
