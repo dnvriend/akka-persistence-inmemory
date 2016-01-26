@@ -81,7 +81,7 @@ dependencies {
 ```scala
 resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.5"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.0"
 ```
 
 ### Maven
@@ -90,7 +90,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 <dependency>
     <groupId>com.github.dnvriend</groupId>
     <artifactId>akka-persistence-inmemory_2.11</artifactId>
-    <version>1.1.5</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -98,7 +98,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 
 ```
 dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.1.5'
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.2.0'
 }
 ```
 
@@ -136,10 +136,10 @@ val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMem
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[EventEnvelope, Unit] =
+val src: Source[EventEnvelope, NotUsed] =
   queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
  
-val events: Source[Any, Unit] = src.map(_.event)
+val events: Source[Any, NotUsed] = src.map(_.event)
 ```
 
 You can retrieve a subset of all events by specifying fromSequenceNr and toSequenceNr or use 0L and Long.MaxValue respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the EventEnvelope, which makes it possible to resume the stream at a later point from a given sequence number.
@@ -157,7 +157,7 @@ The stream is completed when it reaches the end of the currently stored events.
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[String, Unit] = queries.currentPersistenceIds()
+val src: Source[String, NotUsed] = queries.currentPersistenceIds()
 ```
 
 The returned event stream is unordered. The stream is completed when it reaches the end of the currently stored persistenceIds.
@@ -169,7 +169,7 @@ The returned event stream is unordered. The stream is completed when it reaches 
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[String, Unit] = queries.allPersistenceIdsQuery()
+val src: Source[String, NotUsed] = queries.allPersistenceIdsQuery()
 ```
 
 The returned event stream is unordered, the stream will only complete when there are no persistenceIds or the stream
@@ -179,7 +179,7 @@ The returned event stream is unordered, the stream will only complete when there
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[String, Unit] = queries.allPersistenceIdsQuery()
+val src: Source[String, NotUsed] = queries.allPersistenceIdsQuery()
 
 // cancel / terminate the stream
 src.cancel()
@@ -192,10 +192,10 @@ src.cancel()
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
-val src: Source[EventEnvelope, Unit] =
+val src: Source[EventEnvelope, NotUsed] =
   queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
  
-val events: Source[Any, Unit] = src.map(_.event)
+val events: Source[Any, NotUsed] = src.map(_.event)
 ```
 
 You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr` or use `0L` and `Long.MaxValue` respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the `EventEnvelope`, which makes it possible to resume the stream at a later point from a given sequence number.
