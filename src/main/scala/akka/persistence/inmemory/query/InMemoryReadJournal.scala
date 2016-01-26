@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Dennis Vriend
+ * Copyright 2016 Dennis Vriend
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package akka.persistence.inmemory.query
 
 import java.util.concurrent.TimeUnit
 
+import akka.NotUsed
 import akka.actor.{ ExtendedActorSystem, Props }
 import akka.event.Logging
 import akka.persistence.query.scaladsl._
@@ -44,9 +45,9 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
    * The stream is not completed when it reaches the end of the currently used `persistenceIds`,
    * but it continues to push new `persistenceIds` when new persistent actors are created.
    */
-  override def allPersistenceIds(): Source[String, Unit] = {
+  override def allPersistenceIds(): Source[String, NotUsed] = {
     Source.actorPublisher[String](Props(classOf[AllPersistenceIdsPublisher], true))
-      .mapMaterializedValue(_ ⇒ ())
+      .mapMaterializedValue(_ ⇒ NotUsed)
       .named("allPersistenceIds")
   }
 
@@ -54,9 +55,9 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
    * Same type of query as [[AllPersistenceIdsQuery#allPersistenceIds]] but the stream
    * is completed immediately when it reaches the end of the "result set".
    */
-  override def currentPersistenceIds(): Source[String, Unit] = {
+  override def currentPersistenceIds(): Source[String, NotUsed] = {
     Source.actorPublisher[String](Props(classOf[AllPersistenceIdsPublisher], false))
-      .mapMaterializedValue(_ ⇒ ())
+      .mapMaterializedValue(_ ⇒ NotUsed)
       .named("currentPersistenceIds")
   }
 
@@ -66,9 +67,9 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
    * the "result set". Events that are stored after the query is completed are
    * not included in the event stream.
    */
-  override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
+  override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, None, 100))
-      .mapMaterializedValue(_ ⇒ ())
+      .mapMaterializedValue(_ ⇒ NotUsed)
       .named(s"currentEventsByPersistenceId-$persistenceId")
   }
 
@@ -84,9 +85,9 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
    * but it continues to push new events when new events are persisted.
    */
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long = 0L,
-    toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, Unit] = {
+    toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.actorPublisher[EventEnvelope](EventsByPersistenceIdPublisher.props(persistenceId, fromSequenceNr, toSequenceNr, Option(readJournalRefreshIntervalInMillis), 100))
-      .mapMaterializedValue(_ ⇒ ())
+      .mapMaterializedValue(_ ⇒ NotUsed)
       .named(s"eventsByPersistenceId-$persistenceId")
   }
 }
@@ -95,4 +96,3 @@ class InMemoryReadJournalProvider(system: ExtendedActorSystem, config: Config) e
   override val scaladslReadJournal = new InMemoryReadJournal(system, config)
   override val javadslReadJournal = null
 }
-

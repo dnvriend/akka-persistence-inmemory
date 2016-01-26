@@ -209,6 +209,9 @@ The stream is not completed when it reaches the end of the currently stored even
 
 # What's new?
 
+## 1.2.0 (2016-01-26)
+  - Compatibility with Akka 2.4.2-RC1 
+
 ## 1.1.6 (2015-12-02)
  - Compatibility with Akka 2.4.1
  - Merged PR #17 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Upgrade to AKKA 2.4.1, thanks!
