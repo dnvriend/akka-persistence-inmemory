@@ -46,7 +46,7 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
   implicit val pc: PatienceConfig = PatienceConfig(timeout = 3.seconds)
   implicit val timeout = Timeout(30.seconds)
 
-  val journal: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
+  val journalRef: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
 
   /**
    * TestKit-based probe which allows sending, reception and reply.
@@ -74,7 +74,7 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
    * Clears the journal
    */
   def clearJournal: Unit = {
-    journal ! ResetJournal
+    journalRef ! ResetJournal
   }
 
   def withActors(actors: ActorRef*)(pf: PartialFunction[List[ActorRef], Unit]): Unit = {
@@ -82,27 +82,6 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
     cleanup(actors: _*)
     clearJournal
   }
-
-  def mapEventEnvelope: PartialFunction[EventEnvelope, (Long, Int)] = {
-    case EventEnvelope(offset, persistenceId, sequenceNr, event: Int) ⇒ (sequenceNr, event)
-    case _                                                            ⇒ throw new RuntimeException("Unexpected event type")
-  }
-
-  def currentEventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
-    journal.currentEventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
-      .map(mapEventEnvelope)
-      .runWith(TestSink.probe[(Long, Int)])
-
-  def eventsByPersistenceId(journal: InMemoryReadJournal, id: String, fromSequenceNr: Long = 0L, toSequenceNr: Long = Long.MaxValue): TestSubscriber.Probe[(Long, Int)] =
-    journal.eventsByPersistenceId(id, fromSequenceNr, toSequenceNr)
-      .map(mapEventEnvelope)
-      .runWith(TestSink.probe[(Long, Int)])
-
-  def currentPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
-    journal.currentPersistenceIds().runWith(TestSink.probe[String])
-
-  def allPersistenceIds(journal: InMemoryReadJournal): TestSubscriber.Probe[String] =
-    journal.allPersistenceIds().runWith(TestSink.probe[String])
 
   implicit class PimpedByteArray(self: Array[Byte]) {
     def getString: String = new String(self)

@@ -30,6 +30,11 @@ object InMemoryReadJournal {
   final val Identifier = "inmemory-read-journal"
 }
 
+class InMemoryReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
+  override val scaladslReadJournal: akka.persistence.query.scaladsl.ReadJournal = new InMemoryReadJournal(system, config)
+  override val javadslReadJournal: akka.persistence.query.javadsl.ReadJournal = new JavaDslInMemoryReadJournal(new InMemoryReadJournal(system, config))
+}
+
 class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends ReadJournal
     with CurrentPersistenceIdsQuery
     with AllPersistenceIdsQuery
@@ -90,9 +95,4 @@ class InMemoryReadJournal(system: ExtendedActorSystem, config: Config) extends R
       .mapMaterializedValue(_ ⇒ NotUsed)
       .named(s"eventsByPersistenceId-$persistenceId")
   }
-}
-
-class InMemoryReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
-  override val scaladslReadJournal = new InMemoryReadJournal(system, config)
-  override val javadslReadJournal = null
 }

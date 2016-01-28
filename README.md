@@ -117,14 +117,24 @@ akka {
 # Persistence Query for the Inmemory Plugin
 Please note that persistence queries are only available in version `1.1.3` and up.
  
-## How to get the ReadJournal
+## How to get the ReadJournal using Scala
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
 
-```
+```scala
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.inmemory.query.InMemoryReadJournal
  
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+```
+
+## How to get the ReadJournal using Java
+The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
+
+```java
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.inmemory.query.JavaDslInMemoryReadJournal
+
+final JavaDslInMemoryReadJournal query = PersistenceQuery.get(system).getReadJournalFor(JavaDslInMemoryReadJournal.class, InMemoryReadJournal.Identifier);
 ```
 
 # Supported Queries
@@ -132,7 +142,7 @@ val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMem
 ## CurrentEventsByPersistenceIdQuery
 `currentEventsByPersistenceIdQuery` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
 
-```
+```scala
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
@@ -153,7 +163,7 @@ The stream is completed when it reaches the end of the currently stored events.
 ## CurrentPersistenceIds
 `currentPersistenceIds` is used for retrieving all persistenceIds of all persistent actors. 
 
-```
+```scala
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
@@ -165,7 +175,7 @@ The returned event stream is unordered. The stream is completed when it reaches 
 # AllPersistenceIdsQuery
 `allPersistenceIdsQuery` is used for retrieving all persistenceIds of all persistent actors. It does exactly the same as the `currentPersistenceIds` query, except the stream does not complete.
 
-```
+```scala
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
@@ -175,7 +185,7 @@ val src: Source[String, NotUsed] = queries.allPersistenceIdsQuery()
 The returned event stream is unordered, the stream will only complete when there are no persistenceIds or the stream
  has explicitly been canceled by the subscriber:
  
-```
+```scala
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
@@ -188,7 +198,7 @@ src.cancel()
 # EventsByPersistenceIdQuery
 `eventsByPersistenceId` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
 
-```
+```scala
 implicit val mat = ActorMaterializer()(system)
 val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
  
@@ -208,6 +218,9 @@ The stream is not completed when it reaches the end of the currently stored even
 `currentEventsByPersistenceId` does the same as `eventsByPersistenceId` with the only difference that it completes the stream when it reaches the end of the currently stored events.
 
 # What's new?
+
+## 1.2.1 (2016-01-28)
+  - Supports for the javadsl query API
 
 ## 1.2.0 (2016-01-26)
   - Compatibility with Akka 2.4.2-RC1 
