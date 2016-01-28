@@ -81,7 +81,7 @@ dependencies {
 ```scala
 resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.1"
 ```
 
 ### Maven
@@ -90,7 +90,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 <dependency>
     <groupId>com.github.dnvriend</groupId>
     <artifactId>akka-persistence-inmemory_2.11</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.1</version>
 </dependency>
 ```
 
@@ -98,7 +98,7 @@ libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1
 
 ```
 dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.2.0'
+    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.2.1'
 }
 ```
 
