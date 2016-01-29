@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.snapshot
+package akka.persistence.inmemory.journal
 
 import akka.actor.ActorSystem
-import akka.persistence.inmemory.dao.SnapshotDao
-import akka.persistence.inmemory.extension.DaoRepository
-import akka.persistence.inmemory.serialization.AkkaSerializationProxy
-import akka.serialization.SerializationExtension
+import akka.persistence.inmemory.dao.JournalDao
+import akka.persistence.inmemory.extension.{ AkkaPersistenceConfig, DaoRepository }
+import akka.persistence.inmemory.serialization.SerializationFacade
 import akka.stream.{ ActorMaterializer, Materializer }
 
 import scala.concurrent.ExecutionContext
 
-class InMemorySnapshotStore extends SlickSnapshotStore {
+class InMemoryAsyncWriteJournal extends SlickAsyncWriteJournal {
   implicit val ec: ExecutionContext = context.dispatcher
 
   implicit val system: ActorSystem = context.system
 
   override implicit val mat: Materializer = ActorMaterializer()
 
-  override val snapshotDao: SnapshotDao = DaoRepository(system).snapshotDao
+  override val journalDao: JournalDao = DaoRepository(system).journalDao
 
-  override val serializationProxy = new AkkaSerializationProxy(SerializationExtension(system))
+  override val serializationFacade: SerializationFacade =
+    SerializationFacade(system, AkkaPersistenceConfig(context.system).persistenceQueryConfiguration.separator)
 }

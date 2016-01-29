@@ -14,12 +14,25 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.journal
+package akka.persistence.inmemory.query
 
-import akka.persistence.CapabilityFlag
-import akka.persistence.journal.JournalSpec
-import com.typesafe.config.ConfigFactory
+import akka.persistence.inmemory.query.TaggingEventAdapter.TagEvent
+import akka.persistence.journal.{ Tagged, WriteEventAdapter }
 
-class InMemoryJournalSpec extends JournalSpec(config = ConfigFactory.load("application.conf")) {
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on()
+object TaggingEventAdapter {
+  case class TagEvent(payload: Any, tags: Set[String])
+}
+
+/**
+ * The TaggingEventAdapter will instruct persistence
+ * to tag the received event.
+ */
+class TaggingEventAdapter extends WriteEventAdapter {
+  override def manifest(event: Any): String = ""
+
+  override def toJournal(event: Any): Any = event match {
+    case TagEvent(payload, tags) ⇒
+      Tagged(payload, tags)
+    case _ ⇒ event
+  }
 }

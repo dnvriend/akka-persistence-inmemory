@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.snapshot
+package akka.persistence.inmemory.query.journal
 
-import akka.persistence.snapshot.SnapshotStoreSpec
-import com.typesafe.config.ConfigFactory
+import akka.actor.ExtendedActorSystem
+import akka.persistence.query.ReadJournalProvider
+import com.typesafe.config.Config
 
-class InMemorySnapshotStoreSpec extends SnapshotStoreSpec(config = ConfigFactory.load("application.conf"))
+class JdbcReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
+  override val scaladslReadJournal = new scaladsl.JdbcReadJournal(config)(system)
+
+  override val javadslReadJournal = new javadsl.JdbcReadJournal(scaladslReadJournal)
+}

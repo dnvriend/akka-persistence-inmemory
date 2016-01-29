@@ -1,37 +1,51 @@
-organization := "com.github.dnvriend"
+/*
+ * Copyright 2016 Dennis Vriend
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 name := "akka-persistence-inmemory"
 
-version := "1.2.1"
+organization := "com.github.dnvriend"
+
+version := "1.2.2"
 
 scalaVersion := "2.11.7"
+
+resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-releases/"
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.2-RC1"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
+    "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
+    "ch.qos.logback" % "logback-classic" % "1.1.2" % Test,
+    "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
-    "org.scalatest" %% "scalatest" % "2.2.4" % Test
+    "org.scalatest" %% "scalatest" % "2.2.4" % Test,
+    "org.scalacheck" %% "scalacheck" % "1.12.5" % Test
   )
 }
 
-autoCompilerPlugins := true
+fork in Test := true
 
-scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
-
-publishMavenStyle := true
+parallelExecution in Test := false
 
 licenses +=("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
-
-parallelExecution := false
-
-// see: http://www.scalatest.org/user_guide/using_scalatest_with_sbt
-testOptions in Test += Tests.Argument("-oDF")
 
 // enable scala code formatting //
 import scalariform.formatter.preferences._

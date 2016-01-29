@@ -20,33 +20,24 @@ import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.event.{ Logging, LoggingAdapter }
-import akka.persistence.Persistence
-import akka.persistence.inmemory.journal.InMemoryJournal
-import akka.persistence.inmemory.journal.InMemoryJournal.ResetJournal
-import akka.persistence.inmemory.query.InMemoryReadJournal
-import akka.persistence.query.EventEnvelope
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.TestSink
+import akka.serialization.SerializationExtension
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.exceptions.TestFailedException
-import org.scalatest.{ FlatSpec, Matchers, OptionValues, TryValues }
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.util.Try
 
-trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues with OptionValues with Eventually {
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val mat = ActorMaterializer()
+abstract class TestSpec(config: String = "postgres-application.conf") extends SimpleSpec {
+  implicit val system: ActorSystem = ActorSystem("test", ConfigFactory.load(config))
+  implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val log: LoggingAdapter = Logging(system, this.getClass)
   implicit val pc: PatienceConfig = PatienceConfig(timeout = 3.seconds)
   implicit val timeout = Timeout(30.seconds)
-
-  val journalRef: ActorRef = Persistence(system).journalFor(InMemoryJournal.Identifier)
+  val serialization = SerializationExtension(system)
 
   /**
    * TestKit-based probe which allows sending, reception and reply.
@@ -62,25 +53,12 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
    * Sends the PoisonPill command to an actor and waits for it to die
    */
   def cleanup(actors: ActorRef*): Unit = {
-    val probe = TestProbe()
+    val tp = probe
     actors.foreach { (actor: ActorRef) ⇒
       actor ! PoisonPill
-      probe watch actor
-      probe.expectTerminated(actor)
+      tp watch actor
+      tp.expectTerminated(actor)
     }
-  }
-
-  /**
-   * Clears the journal
-   */
-  def clearJournal: Unit = {
-    journalRef ! ResetJournal
-  }
-
-  def withActors(actors: ActorRef*)(pf: PartialFunction[List[ActorRef], Unit]): Unit = {
-    pf.applyOrElse(actors.toList, PartialFunction.empty)
-    cleanup(actors: _*)
-    clearJournal
   }
 
   implicit class PimpedByteArray(self: Array[Byte]) {
@@ -89,10 +67,5 @@ trait TestSpec extends FlatSpec with Matchers with ScalaFutures with TryValues w
 
   implicit class PimpedFuture[T](self: Future[T]) {
     def toTry: Try[T] = Try(self.futureValue)
-  }
-
-  implicit class MustBeWord[T](self: T) {
-    def mustBe(pf: PartialFunction[T, Unit]): Unit =
-      if (!pf.isDefinedAt(self)) throw new TestFailedException("Unexpected: " + self, 0)
   }
 }
