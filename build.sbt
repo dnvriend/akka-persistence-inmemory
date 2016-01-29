@@ -30,6 +30,9 @@ licenses +=("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
 
 parallelExecution := false
 
+// see: http://www.scalatest.org/user_guide/using_scalatest_with_sbt
+testOptions in Test += Tests.Argument("-oDF")
+
 // enable scala code formatting //
 import scalariform.formatter.preferences._
 
