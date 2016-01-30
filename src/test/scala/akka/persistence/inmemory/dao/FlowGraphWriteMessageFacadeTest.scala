@@ -21,10 +21,12 @@ import akka.persistence.inmemory.generator.AkkaPersistenceGen
 import akka.persistence.inmemory.serialization.Serialized
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import org.scalatest.Ignore
 
 import scala.util.{ Try, Success }
 import scala.concurrent.duration._
 
+@Ignore
 class FlowGraphWriteMessageFacadeTest extends TestSpec {
   it should "successfully write messages when the DAO returns success for each write operation" in {
     val facade = new FlowGraphWriteMessagesFacade(new MockJournalDao(fail = false))

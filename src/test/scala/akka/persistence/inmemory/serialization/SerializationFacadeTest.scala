@@ -21,10 +21,12 @@ import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.generator.AkkaPersistenceGen
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
+import org.scalatest.Ignore
 
 import scala.concurrent.duration._
 import scala.util.Try
 
+@Ignore
 class SerializationFacadeTest extends TestSpec("postgres-application.conf") {
 
   it should "serialize successfully" in {
