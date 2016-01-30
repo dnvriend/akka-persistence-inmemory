@@ -13,7 +13,6 @@ The latest version is `v1.2.2`
 - It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
   - For serializing, please split the domain model from the storage model, and use a binary format for the storage model that support schema versioning like [Google's protocol buffers](https://developers.google.com/protocol-buffers/docs/overview), as it is used by Akka Persistence, and is available as a dependent library. For an example on how to use Akka Serialization with protocol buffers, you can examine the [akka-serialization-test](https://github.com/dnvriend/akka-serialization-test) study project,
 - It supports the `Persistence Query` interface for both Java and Scala thus providing a universal asynchronous stream based query interface,
-- Table, column and schema names are configurable, but note, if you change those, you'll need to change the DDL scripts.
 
 ## Installation
 Add the following to your `build.sbt`:
@@ -137,7 +136,7 @@ val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentE
 
 To tag events you'll need to create an [Event Adapter](http://doc.akka.io/docs/akka/2.4.1/scala/persistence.html#event-adapters-scala) 
 that will wrap the event in a [akka.persistence.journal.Tagged](http://doc.akka.io/api/akka/2.4.1/#akka.persistence.journal.Tagged) 
-class with the given tags. The `Tagged` class will instruct `akka-persistence-jdbc` to tag the event with the given set of tags.
+class with the given tags. The `Tagged` class will instruct the persistence plugin to tag the event with the given set of tags.
 The persistence plugin will __not__ store the `Tagged` class in the journal. It will strip the `tags` and `payload` from the `Tagged` class,
 and use the class only as an instruction to tag the event with the given tags and store the `payload` in the 
 `message` field of the journal table. 
