@@ -48,6 +48,5 @@ class DaoRegistryImpl()(implicit val system: ExtendedActorSystem) extends DaoReg
 
   override val journalDao: JournalDao = JournalDao(StorageExtension(system).journalStorage)
 
-//  override val snapshotDao: SnapshotDao = ???
-  override def snapshotDao: SnapshotDao = ???
+  override val snapshotDao: SnapshotDao = SnapshotDao(StorageExtension(system).snapshotStorage)
 }

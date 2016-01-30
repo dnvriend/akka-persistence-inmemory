@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.extension
 
 import akka.actor._
-import akka.persistence.inmemory.dao.JournalStorage
+import akka.persistence.inmemory.dao.{SnapshotStorage, JournalStorage}
 
 object StorageExtension extends ExtensionId[StorageExtensionImpl] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): StorageExtensionImpl = new StorageExtensionImpl()(system)
@@ -27,4 +27,6 @@ object StorageExtension extends ExtensionId[StorageExtensionImpl] with Extension
 
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends Extension {
   lazy val journalStorage: ActorRef = system.actorOf(Props(new JournalStorage), "JournalStorage")
+
+  lazy val snapshotStorage: ActorRef = system.actorOf(Props(new SnapshotStorage), "SnapshotStorage")
 }

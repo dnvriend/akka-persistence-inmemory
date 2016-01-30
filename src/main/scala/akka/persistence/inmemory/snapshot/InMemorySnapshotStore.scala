@@ -25,7 +25,7 @@ import akka.stream.{ ActorMaterializer, Materializer }
 
 import scala.concurrent.ExecutionContext
 
-class InMemorySnapshotStore extends SlickSnapshotStore {
+class InMemorySnapshotStore extends InMemorySnapshotStoreLike {
   implicit val ec: ExecutionContext = context.dispatcher
 
   implicit val system: ActorSystem = context.system

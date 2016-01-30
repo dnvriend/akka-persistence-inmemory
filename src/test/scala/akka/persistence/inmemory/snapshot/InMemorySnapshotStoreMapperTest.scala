@@ -30,7 +30,7 @@ class InMemorySnapshotStoreMapperTest extends TestSpec() {
     val serializedSnapshot: Array[Byte] = serializationProxy.serialize(snapshot).success.value
     val data = SnapshotData("pid", 1L, 1L, serializedSnapshot)
 
-    SlickSnapshotStore.mapToSelectedSnapshot(data, serializationProxy).success.value shouldBe
+    InMemorySnapshotStoreLike.mapToSelectedSnapshot(data, serializationProxy).success.value shouldBe
       SelectedSnapshot(SnapshotMetadata(data.persistenceId, data.sequenceNumber, data.created), snapshot.data)
   }
 
@@ -40,7 +40,7 @@ class InMemorySnapshotStoreMapperTest extends TestSpec() {
     val serializedSnapshot: Array[Byte] = serializationProxy.serialize(snapshot).success.value
     val data = SnapshotData("pid", 1L, 1L, serializedSnapshot)
 
-    SlickSnapshotStore.mapToSelectedSnapshot(data, serializationProxy).success.value shouldBe
+    InMemorySnapshotStoreLike.mapToSelectedSnapshot(data, serializationProxy).success.value shouldBe
       SelectedSnapshot(SnapshotMetadata(data.persistenceId, data.sequenceNumber, data.created), snapshot.data)
   }
 }

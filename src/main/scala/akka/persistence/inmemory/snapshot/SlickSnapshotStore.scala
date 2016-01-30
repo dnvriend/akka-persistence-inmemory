@@ -27,14 +27,14 @@ import akka.stream.Materializer
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-object SlickSnapshotStore {
+object InMemorySnapshotStoreLike {
   def mapToSelectedSnapshot(data: SnapshotData, serializationProxy: SerializationProxy): Try[SelectedSnapshot] = for {
     snapshot ← serializationProxy.deserialize(data.snapshot, classOf[Snapshot])
   } yield SelectedSnapshot(SnapshotMetadata(data.persistenceId, data.sequenceNumber, data.created), snapshot.data)
 }
 
-trait SlickSnapshotStore extends SnapshotStore {
-  import SlickSnapshotStore._
+trait InMemorySnapshotStoreLike extends SnapshotStore {
+  import InMemorySnapshotStoreLike._
 
   def snapshotDao: SnapshotDao
 
@@ -45,6 +45,7 @@ trait SlickSnapshotStore extends SnapshotStore {
   def serializationProxy: SerializationProxy
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+    log.debug(s"[loadAsync]: pid: $persistenceId, criteria: $criteria")
     val result = criteria match {
       case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) ⇒
         snapshotDao.snapshotForMaxSequenceNr(persistenceId)

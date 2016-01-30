@@ -16,19 +16,9 @@
 
 package akka.persistence.inmemory.snapshot
 
-import akka.persistence.inmemory.util.ClasspathResources
 import akka.persistence.snapshot.SnapshotStoreSpec
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.duration._
+abstract class AbstractInMemorySnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config)
 
-abstract class JdbcSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config) with BeforeAndAfterAll with ScalaFutures with ClasspathResources {
-
-  implicit val pc: PatienceConfig = PatienceConfig(timeout = 10.seconds)
-
-  implicit val ec = system.dispatcher
-}
-
-class PostgresSnapshotStoreSpec extends JdbcSnapshotStoreSpec(ConfigFactory.load("postgres-application.conf"))
+class InmemorySnapshotStoreSpec extends AbstractInMemorySnapshotStoreSpec(ConfigFactory.load("application.conf"))

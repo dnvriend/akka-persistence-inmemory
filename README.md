@@ -1,107 +1,30 @@
 # akka-persistence-inmemory
-Akka-persistence-inmemory is a plugin for [akka-persistence](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html) 
-that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
+Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 Service | Status | Description
 ------- | ------ | -----------
 License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) | Apache 2.0
-Travis (master) | [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory) | master branch test
-Codacy | [![Codacy Badge](https://api.codacy.com/project/badge/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory) | Code Quality
-Bintray | [ ![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
+Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
-# Repository
-To include the plugin into your project, add the following lines to your build file:
+## New release
+The latest version is `v1.2.2`
 
-## SBT
+- It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but has a [Scala MultiMap](http://www.scala-lang.org/api/2.11.7/index.html#scala.collection.mutable.MultiMap) as the storage engine.
+- It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
+  - For serializing, please split the domain model from the storage model, and use a binary format for the storage model that support schema versioning like [Google's protocol buffers](https://developers.google.com/protocol-buffers/docs/overview), as it is used by Akka Persistence, and is available as a dependent library. For an example on how to use Akka Serialization with protocol buffers, you can examine the [akka-serialization-test](https://github.com/dnvriend/akka-serialization-test) study project,
+- It supports the `Persistence Query` interface for both Java and Scala thus providing a universal asynchronous stream based query interface,
+- Table, column and schema names are configurable, but note, if you change those, you'll need to change the DDL scripts.
 
-```
-resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
-```
-
-## Maven
-
-```
-<repository>
-  <snapshots><enabled>false</enabled></snapshots>
-  <id>central</id>
-  <name>bintray</name>
-  <url>http://dl.bintray.com/dnvriend/maven</url>
-</repository>
-```
-
-## Gradle
-
-```
-repositories {
-    maven {
-        url "http://dl.bintray.com/dnvriend/maven"
-    }
-}
-```
-
-## Latest stable release for Akka 2.3.x  
-
-### SBT
+## Installation
+Add the following to your `build.sbt`:
 
 ```scala
 resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.5"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.2"
 ```
 
-### Maven
-
-```
-<dependency>
-    <groupId>com.github.dnvriend</groupId>
-    <artifactId>akka-persistence-inmemory_2.10</artifactId>
-    <version>1.0.5</version>
-</dependency>
-
-<dependency>
-    <groupId>com.github.dnvriend</groupId>
-    <artifactId>akka-persistence-inmemory_2.11</artifactId>
-    <version>1.0.5</version>
-</dependency>
-```
-
-### Gradle
-
-```
-dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.10:1.0.5' // Scala 2.10    
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.0.5' // Scala 2.11 and above
-}
-```
-
-## Latest stable release for Akka 2.4.x
-
-### SBT
-
-```scala
-resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
-
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.1"
-```
-
-### Maven
-
-```
-<dependency>
-    <groupId>com.github.dnvriend</groupId>
-    <artifactId>akka-persistence-inmemory_2.11</artifactId>
-    <version>1.2.1</version>
-</dependency>
-```
-
-### Gradle
-
-```
-dependencies {
-    compile 'com.github.dnvriend:akka-persistence-inmemory_2.11:1.2.1'
-}
-```
-
+## Configuration
 # Configuration
 Add the following to the application.conf:
 
@@ -112,19 +35,16 @@ akka {
     snapshot-store.plugin = "inmemory-snapshot-store"
   }
 }
-```
+```   
 
-# Persistence Query for the Inmemory Plugin
-Please note that persistence queries are only available in version `1.1.3` and up.
- 
 ## How to get the ReadJournal using Scala
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
 
 ```scala
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.inmemory.query.InMemoryReadJournal
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
  
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 ```
 
 ## How to get the ReadJournal using Java
@@ -132,93 +52,177 @@ The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery`
 
 ```java
 import akka.persistence.query.PersistenceQuery
-import akka.persistence.inmemory.query.JavaDslInMemoryReadJournal
+import akka.persistence.inmemory.query.journal.javadsl.InMemoryReadJournal
 
-final JavaDslInMemoryReadJournal query = PersistenceQuery.get(system).getReadJournalFor(JavaDslInMemoryReadJournal.class, InMemoryReadJournal.Identifier);
+final InMemoryReadJournal readJournal = PersistenceQuery.get(system).getReadJournalFor(InMemoryReadJournal.class, InMemoryReadJournal.Identifier());
 ```
 
-# Supported Queries
+## Persistence Query
+The plugin supports the following queries:
 
-## CurrentEventsByPersistenceIdQuery
-`currentEventsByPersistenceIdQuery` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
+## AllPersistenceIdsQuery and CurrentPersistenceIdsQuery
+`allPersistenceIds` and `currentPersistenceIds` are used for retrieving all persistenceIds of all persistent actors.
 
 ```scala
-implicit val mat = ActorMaterializer()(system)
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
- 
-val src: Source[EventEnvelope, NotUsed] =
-  queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
- 
-val events: Source[Any, NotUsed] = src.map(_.event)
+import akka.actor.ActorSystem
+import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.scaladsl.Source
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+
+implicit val system: ActorSystem = ActorSystem()
+implicit val mat: Materializer = ActorMaterializer()(system)
+val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
+val willNotCompleteTheStream: Source[String, NotUsed] = readJournal.allPersistenceIds()
+
+val willCompleteTheStream: Source[String, NotUsed] = readJournal.currentPersistenceIds()
 ```
 
-You can retrieve a subset of all events by specifying fromSequenceNr and toSequenceNr or use 0L and Long.MaxValue respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the EventEnvelope, which makes it possible to resume the stream at a later point from a given sequence number.
+The returned event stream is unordered and you can expect different order for multiple executions of the query.
 
-The returned event stream is ordered by sequence number, i.e. the same order as the PersistentActor persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
+When using the `allPersistenceIds` query, the stream is not completed when it reaches the end of the currently used persistenceIds, 
+but it continues to push new persistenceIds when new persistent actors are created. 
 
-The query supports two different completion modes:
+When using the `currentPersistenceIds` query, the stream is completed when the end of the current list of persistenceIds is reached,
+thus it is not a `live` query.
 
-The stream is completed when it reaches the end of the currently stored events.
+The stream is completed with failure if there is a failure in executing the query in the backend journal.
 
-## CurrentPersistenceIds
-`currentPersistenceIds` is used for retrieving all persistenceIds of all persistent actors. 
-
-```scala
-implicit val mat = ActorMaterializer()(system)
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
- 
-val src: Source[String, NotUsed] = queries.currentPersistenceIds()
-```
-
-The returned event stream is unordered. The stream is completed when it reaches the end of the currently stored persistenceIds.
-
-# AllPersistenceIdsQuery
-`allPersistenceIdsQuery` is used for retrieving all persistenceIds of all persistent actors. It does exactly the same as the `currentPersistenceIds` query, except the stream does not complete.
+## EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
+`eventsByPersistenceId` and `currentEventsByPersistenceId` is used for retrieving events for 
+a specific PersistentActor identified by persistenceId.
 
 ```scala
-implicit val mat = ActorMaterializer()(system)
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
- 
-val src: Source[String, NotUsed] = queries.allPersistenceIdsQuery()
-```
+import akka.actor.ActorSystem
+import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.scaladsl.Source
+import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
 
-The returned event stream is unordered, the stream will only complete when there are no persistenceIds or the stream
- has explicitly been canceled by the subscriber:
- 
-```scala
-implicit val mat = ActorMaterializer()(system)
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
- 
-val src: Source[String, NotUsed] = queries.allPersistenceIdsQuery()
+implicit val system: ActorSystem = ActorSystem()
+implicit val mat: Materializer = ActorMaterializer()(system)
+val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
-// cancel / terminate the stream
-src.cancel()
-```
+val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
 
-# EventsByPersistenceIdQuery
-`eventsByPersistenceId` is used for retrieving events for a specific `PersistentActor` identified by `persistenceId`.
-
-```scala
-implicit val mat = ActorMaterializer()(system)
-val queries = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
- 
-val src: Source[EventEnvelope, NotUsed] =
-  queries.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
- 
-val events: Source[Any, NotUsed] = src.map(_.event)
+val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
 ```
 
 You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr` or use `0L` and `Long.MaxValue` respectively to retrieve all events. Note that the corresponding sequence number of each event is provided in the `EventEnvelope`, which makes it possible to resume the stream at a later point from a given sequence number.
 
-The returned event stream is ordered by sequence number, i.e. the same order as the `PersistentActor` persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
+The returned event stream is ordered by sequence number, i.e. the same order as the PersistentActor persisted the events. The same prefix of stream elements (in same order) are returned for multiple executions of the query, except for when events have been deleted.
 
-The stream is not completed when it reaches the end of the currently stored events, but it continues to push new events when new events are persisted. 
+The stream is completed with failure if there is a failure in executing the query in the backend journal.
 
-# CurrentEventsByPersistenceIdQuery
-`currentEventsByPersistenceId` does the same as `eventsByPersistenceId` with the only difference that it completes the stream when it reaches the end of the currently stored events.
+## EventsByTag and CurrentEventsByTag
+`eventsByTag` and `currentEventsByTag` are used for retrieving events that were marked with a given 
+`tag`, e.g. all domain events of an Aggregate Root type.
+
+```scala
+import akka.actor.ActorSystem
+import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.scaladsl.Source
+import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+
+implicit val system: ActorSystem = ActorSystem()
+implicit val mat: Materializer = ActorMaterializer()(system)
+val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
+val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByTag("apple", 0L)
+
+val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByTag("apple", 0L)
+```
+
+To tag events you'll need to create an [Event Adapter](http://doc.akka.io/docs/akka/2.4.1/scala/persistence.html#event-adapters-scala) 
+that will wrap the event in a [akka.persistence.journal.Tagged](http://doc.akka.io/api/akka/2.4.1/#akka.persistence.journal.Tagged) 
+class with the given tags. The `Tagged` class will instruct `akka-persistence-jdbc` to tag the event with the given set of tags.
+The persistence plugin will __not__ store the `Tagged` class in the journal. It will strip the `tags` and `payload` from the `Tagged` class,
+and use the class only as an instruction to tag the event with the given tags and store the `payload` in the 
+`message` field of the journal table. 
+
+```scala
+import akka.persistence.journal.{ Tagged, WriteEventAdapter }
+import com.github.dnvriend.Person.{ LastNameChanged, FirstNameChanged, PersonCreated }
+
+class TaggingEventAdapter extends WriteEventAdapter {
+  override def manifest(event: Any): String = ""
+
+  def withTag(event: Any, tag: String) = Tagged(event, Set(tag))
+
+  override def toJournal(event: Any): Any = event match {
+    case _: PersonCreated ⇒
+      withTag(event, "person-created")
+    case _: FirstNameChanged ⇒
+      withTag(event, "first-name-changed")
+    case _: LastNameChanged ⇒
+      withTag(event, "last-name-changed")
+    case _ ⇒ event
+  }
+}
+```
+
+The `EventAdapter` must be registered by adding the following to the root of `application.conf` Please see the 
+[demo-akka-persistence-jdbc](https://github.com/dnvriend/demo-akka-persistence-jdbc) project for more information.
+
+```bash
+jdbc-journal {
+  event-adapters {
+    tagging = "com.github.dnvriend.TaggingEventAdapter"
+  }
+  event-adapter-bindings {
+    "com.github.dnvriend.Person$PersonCreated" = tagging
+    "com.github.dnvriend.Person$FirstNameChanged" = tagging
+    "com.github.dnvriend.Person$LastNameChanged" = tagging
+  }
+}
+```
+
+You can retrieve a subset of all events by specifying offset, or use 0L to retrieve all events with a given tag. 
+The offset corresponds to an ordered sequence number for the specific tag. Note that the corresponding offset of each 
+event is provided in the EventEnvelope, which makes it possible to resume the stream at a later point from a given offset.
+
+In addition to the offset the EventEnvelope also provides persistenceId and sequenceNr for each event. The sequenceNr is 
+the sequence number for the persistent actor with the persistenceId that persisted the event. The persistenceId + sequenceNr 
+is an unique identifier for the event.
+
+The returned event stream contains only events that correspond to the given tag, and is ordered by the creation time of the events, 
+The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
+from the tagged event stream. 
+
+## EventsByPersistenceIdAndTag and CurrentEventsByPersistenceIdAndTag
+`eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag` is used for retrieving specific events identified 
+by a specific tag for a specific PersistentActor identified by persistenceId. These two queries basically are 
+convenience operations that optimize the lookup of events because the database can efficiently filter out the initial 
+persistenceId/tag combination. 
+
+```scala
+import akka.actor.ActorSystem
+import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.scaladsl.Source
+import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+
+implicit val system: ActorSystem = ActorSystem()
+implicit val mat: Materializer = ActorMaterializer()(system)
+val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
+val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByPersistenceIdAndTag("fruitbasket", "apple", 0L)
+
+val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByPersistenceIdAndTag("fruitbasket", "apple", 0L)
+```
 
 # What's new?
 
+## 1.2.2 (2016-01-30)
+  - Code is based on [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc)
+  - Supports the following queries:
+    - `allPersistenceIds` and `currentPersistenceIds`
+    - `eventsByPersistenceId` and `currentEventsByPersistenceId`
+    - `eventsByTag` and `currentEventsByTag`
+    - `eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag`
+  
 ## 1.2.1 (2016-01-28)
   - Supports for the javadsl query API
 

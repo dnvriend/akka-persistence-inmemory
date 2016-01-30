@@ -25,7 +25,7 @@ import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import scala.concurrent.duration._
 
-abstract class JdbcJournalSpec(config: Config) extends JournalSpec(config)
+abstract class AbstractInMemoryJournalSpec(config: Config) extends JournalSpec(config)
     with BeforeAndAfterAll
     with BeforeAndAfterEach
     with ScalaFutures
@@ -38,4 +38,4 @@ abstract class JdbcJournalSpec(config: Config) extends JournalSpec(config)
   implicit val ec = system.dispatcher
 }
 
-class InMemoryJournalSpec extends JdbcJournalSpec(ConfigFactory.load("application.conf"))
+class InMemoryJournalSpec extends AbstractInMemoryJournalSpec(ConfigFactory.load("application.conf"))
