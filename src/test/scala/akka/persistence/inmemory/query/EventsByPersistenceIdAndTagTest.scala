@@ -81,4 +81,4 @@ abstract class EventsByPersistenceIdAndTagTest(config: String) extends QueryTest
     }
 }
 
-class PostgresScalaEventsByPersistenceIdAndTagTest extends EventsByPersistenceIdAndTagTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryScalaEventsByPersistenceIdAndTagTest extends EventsByPersistenceIdAndTagTest("application.conf") with ScalaInMemoryReadJournalOperations

@@ -17,16 +17,16 @@
 package akka.persistence.inmemory.query.journal.javadsl
 
 import akka.NotUsed
-import akka.persistence.inmemory.query.journal.scaladsl.{ JdbcReadJournal ⇒ ScalaJdbcReadJournal }
+import akka.persistence.inmemory.query.journal.scaladsl.{ InMemoryReadJournal ⇒ ScalaInMemoryReadJournal }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.javadsl._
 import akka.stream.javadsl.Source
 
-object JdbcReadJournal {
-  final val Identifier = ScalaJdbcReadJournal.Identifier
+object InMemoryReadJournal {
+  final val Identifier = ScalaInMemoryReadJournal.Identifier
 }
 
-class JdbcReadJournal(journal: ScalaJdbcReadJournal) extends ReadJournal
+class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
     with CurrentPersistenceIdsQuery
     with AllPersistenceIdsQuery
     with CurrentEventsByPersistenceIdQuery

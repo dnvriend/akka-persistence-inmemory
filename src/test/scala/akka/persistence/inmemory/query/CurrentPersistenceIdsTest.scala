@@ -40,4 +40,4 @@ abstract class CurrentPersistenceIdsTest(config: String) extends QueryTestSpec(c
     }
 }
 
-class PostgresScalaCurrentPersistenceIdsTest extends CurrentPersistenceIdsTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryScalaCurrentPersistenceIdsTest extends CurrentPersistenceIdsTest("application.conf") with ScalaInMemoryReadJournalOperations

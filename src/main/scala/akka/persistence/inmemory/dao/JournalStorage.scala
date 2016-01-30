@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.dao
 
 import akka.actor.Status.Success
-import akka.actor.{ ActorLogging, Actor, ActorRef }
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.inmemory.serialization.{ SerializationFacade, Serialized }
 
@@ -52,6 +52,8 @@ object JournalStorage {
   // List[Array[Byte]]
   case class Messages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
 
+  // Success
+  case object Clear
 }
 
 class JournalStorage extends Actor with ActorLogging {
@@ -62,24 +64,29 @@ class JournalStorage extends Actor with ActorLogging {
 
   val deleted_to = new mutable.HashMap[String, mutable.Set[Long]] with mutable.MultiMap[String, Long]
 
+  def logger(msg: AnyRef)(implicit line: sourcecode.Line, file: sourcecode.File) = log.debug(s"${file.value.split("/").reverse.head}:${line.value} $msg")
+
   def allPersistenceIds(ref: ActorRef): Unit = {
-    def determine: Set[String] = journal.keySet.toSet
+    val determine: Set[String] = journal.keySet.toSet
+    logger(s"[allPersistenceIds]: $determine")
     ref ! determine
   }
 
   def countJournal(ref: ActorRef): Unit = {
-    def determine: Int = journal.values.foldLeft(0) { case (c, s) ⇒ c + s.size }
+    val determine: Int = journal.values.foldLeft(0) { case (c, s) ⇒ c + s.size }
+    logger(s"[countJournal]: ${determine}")
     ref ! determine
   }
 
   def eventsByPersistenceIdAndTag(ref: ActorRef, persistenceId: String, tag: String, offset: Long): Unit = {
-    def determine: Option[List[Serialized]] = for {
+    val determine: Option[List[Serialized]] = for {
       xs ← journal.get(persistenceId)
     } yield (for {
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
     } yield x).toList.sortBy(_.sequenceNr)
-
+    logger(determine)
+    log.debug(s"[eventsByPersistenceIdAndTag]: $determine")
     ref ! determine.getOrElse(Nil)
   }
 
@@ -94,29 +101,19 @@ class JournalStorage extends Actor with ActorLogging {
     val determineDeletedTo: Option[Long] =
       deleted_to.get(persistenceId).map(_.max(Ordering.Long))
 
-    log.debug("--> [highestSequenceNr] Journal: " + determineJournal + ", deletedTo: " + determineDeletedTo + " deleted_to: " + deleted_to)
-
-    val highest = (determineJournal, determineDeletedTo) match {
-      case (Some(x), Some(y)) if x > y ⇒ x
-      case (Some(x), Some(y)) if y > x ⇒ y
-      case (Some(x), Some(y))          ⇒ y
-      case (Some(x), None)             ⇒ x
-      case (None, Some(y))             ⇒ y
-      case (None, None)                ⇒ 0
-      case _                           ⇒ 0
-    }
-
-    log.debug("--> [highestSequenceNr] Sending: " + highest)
+    val highest = determineJournal.getOrElse(determineDeletedTo.getOrElse(0L))
+    logger(s"[highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
     ref ! highest
   }
 
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
-    def determine: List[Serialized] = (for {
+    val determine: List[Serialized] = (for {
       xs ← journal.values
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
     } yield x).toList
 
+    logger(s"[eventsByTag]: $determine")
     ref ! determine
   }
 
@@ -124,18 +121,19 @@ class JournalStorage extends Actor with ActorLogging {
    * Returns the persistenceIds that are available on request of a query list of persistence ids
    */
   def persistenceIds(ref: ActorRef, queryListOfPersistenceIds: Iterable[String]): Unit = {
-    def determine: List[String] = (for {
+    val determine: List[String] = (for {
       pid ← journal.keySet
       if queryListOfPersistenceIds.toList contains pid
     } yield pid).toList
 
+    logger(s"[persistenceIds]: $determine")
     ref ! determine
   }
 
   def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
     xs.foreach { x ⇒
       journal.addBinding(x.persistenceId, x)
-      log.debug("--> [writelist] Adding: " + x)
+      logger(s"[writelist]: Adding $x")
     }
     ref ! Success("")
   }
@@ -146,25 +144,30 @@ class JournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNr <= toSequenceNr
     } {
-      log.debug("--> [delete] Removing: " + x)
+      logger(s"[delete]: $x")
       journal.removeBinding(persistenceId, x)
       deleted_to.addBinding(persistenceId, x.sequenceNr)
     }
 
-    Thread.sleep(500)
     ref ! Success("")
   }
 
   def messages(ref: ActorRef, persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): Unit = {
     def toTake = if (max >= Int.MaxValue) Int.MaxValue else max.toInt
-    def determine: Option[List[Serialized]] = for {
+    val determine: Option[List[Serialized]] = for {
       xs ← journal.get(persistenceId)
     } yield (for {
       x ← xs
       if x.sequenceNr >= fromSequenceNr && x.sequenceNr <= toSequenceNr
     } yield x).toList.sortBy(_.sequenceNr).take(toTake)
 
+    logger(s"[messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => $determine")
     ref ! determine.getOrElse(Nil)
+  }
+
+  def clear(ref: ActorRef): Unit = {
+    journal.clear()
+    ref ! Success("")
   }
 
   override def receive: Receive = LoggingReceive {
@@ -177,6 +180,7 @@ class JournalStorage extends Actor with ActorLogging {
     case WriteList(xs)                                              ⇒ writelist(sender(), xs)
     case Delete(persistenceId, toSequenceNr)                        ⇒ delete(sender(), persistenceId, toSequenceNr)
     case Messages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒ messages(sender(), persistenceId, fromSequenceNr, toSequenceNr, max)
+    case Clear                                                      ⇒ clear(sender())
     case msg                                                        ⇒ println("--> Dropping msg: " + msg.getClass.getName)
   }
 }

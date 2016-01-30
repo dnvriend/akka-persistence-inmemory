@@ -21,15 +21,17 @@ import akka.event.LoggingReceive
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.DaoRegistry
-import akka.persistence.inmemory.query.journal.javadsl.{ JdbcReadJournal ⇒ JavaJdbcReadJournal }
-import akka.persistence.inmemory.query.journal.scaladsl.JdbcReadJournal
+import akka.persistence.inmemory.dao.JournalStorage.Clear
+import akka.persistence.inmemory.extension.{ StorageExtension, DaoRegistry }
+import akka.persistence.inmemory.query.journal.javadsl.{ InMemoryReadJournal ⇒ JavaJdbcReadJournal }
+import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.stream.Materializer
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.javadsl.{ TestSink ⇒ JavaSink }
 import akka.stream.testkit.scaladsl.TestSink
+import akka.pattern.ask
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
@@ -44,12 +46,12 @@ trait ReadJournalOperations {
   def withEventsByPersistenceIdAndTag(within: FiniteDuration = 1.second)(persistenceId: String, tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit
 }
 
-trait ScalaJdbcReadJournalOperations extends ReadJournalOperations {
+trait ScalaInMemoryReadJournalOperations extends ReadJournalOperations {
   implicit def system: ActorSystem
 
   implicit def mat: Materializer
 
-  lazy val readJournal: JdbcReadJournal = PersistenceQuery(system).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier)
+  lazy val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
 
   def withCurrentPersistenceIds(within: FiniteDuration = 1.second)(f: TestSubscriber.Probe[String] ⇒ Unit): Unit = {
     val tp = readJournal.currentPersistenceIds().runWith(TestSink.probe[String])
@@ -92,7 +94,7 @@ trait ScalaJdbcReadJournalOperations extends ReadJournalOperations {
   }
 }
 
-trait JavaDslJdbcReadJournalOperations extends ReadJournalOperations {
+trait JavaInMemoryReadJournalOperations extends ReadJournalOperations {
   implicit def system: ActorSystem
 
   implicit def mat: Materializer
@@ -189,9 +191,8 @@ abstract class QueryTestSpec(config: String) extends TestSpec(config) with ReadJ
 
   def withTags(payload: Any, tags: String*) = Tagged(payload, Set(tags: _*))
 
-  def clearPostgres(): Unit = ()
-
-  def clearOracle(): Unit = ()
+  def clearPostgres(): Unit =
+    (StorageExtension(system).journalStorage ? Clear).toTry should be a 'success
 
   protected override def beforeEach(): Unit =
     clearPostgres()

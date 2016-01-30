@@ -132,4 +132,4 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
     }
 }
 
-class PostgresScalaCurrentEventsByTagTest extends CurrentEventsByTagTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryScalaCurrentEventsByTagTest extends CurrentEventsByTagTest("application.conf") with ScalaInMemoryReadJournalOperations

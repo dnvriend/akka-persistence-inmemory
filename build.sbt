@@ -31,6 +31,7 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+    "com.lihaoyi" %% "sourcecode" % "0.1.0",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.2" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,

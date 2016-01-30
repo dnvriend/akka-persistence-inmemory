@@ -31,11 +31,11 @@ import com.typesafe.config.Config
 
 import scala.concurrent.Future
 
-object JdbcReadJournal {
+object InMemoryReadJournal {
   final val Identifier = "inmemory-read-journal"
 }
 
-trait SlickReadJournal extends ReadJournal
+trait AbstractInmemoryReadJournal extends ReadJournal
     with CurrentPersistenceIdsQuery
     with AllPersistenceIdsQuery
     with CurrentEventsByPersistenceIdQuery
@@ -89,8 +89,7 @@ trait SlickReadJournal extends ReadJournal
       .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByPersistenceIdAndTagPublisher], persistenceId, tag)))
 }
 
-class JdbcReadJournal(config: Config)(implicit val system: ExtendedActorSystem) extends SlickReadJournal {
-
+class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSystem) extends AbstractInmemoryReadJournal {
   override implicit val mat: Materializer =
     ActorMaterializer()
 

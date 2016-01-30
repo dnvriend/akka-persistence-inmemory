@@ -42,6 +42,11 @@ abstract class CurrentEventsByPersistenceIdAndTagTest(config: String) extends Qu
       withClue("Persisting a tagged event") {
         actor1 ! withTags(1, "one")
         actor1 ! withTags(2, "two")
+
+        eventually {
+          journalDao.countJournal.futureValue shouldBe 2
+        }
+
         eventually {
           withCurrentEventsByPersistenceid()("my-1") { tp ⇒
             tp.request(Long.MaxValue)
@@ -70,4 +75,4 @@ abstract class CurrentEventsByPersistenceIdAndTagTest(config: String) extends Qu
     }
 }
 
-class PostgresScalaCurrentEventsByPersistenceIdAndTagTest extends CurrentEventsByPersistenceIdAndTagTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryScalaCurrentEventsByPersistenceIdAndTagTest extends CurrentEventsByPersistenceIdAndTagTest("application.conf") with ScalaInMemoryReadJournalOperations

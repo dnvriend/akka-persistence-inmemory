@@ -60,4 +60,4 @@ abstract class AllPersistenceIdsTest(config: String) extends QueryTestSpec(confi
     }
 }
 
-class PostgresScalaAllPersistenceIdsTest extends AllPersistenceIdsTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryAllPersistenceIdsTest extends AllPersistenceIdsTest("application.conf") with ScalaInMemoryReadJournalOperations

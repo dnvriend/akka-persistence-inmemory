@@ -66,4 +66,4 @@ abstract class CurrentEventsByPersistenceIdTest(config: String) extends QueryTes
     }
 }
 
-class PostgresScalaCurrentEventsByPersistenceIdTest extends CurrentEventsByPersistenceIdTest("postgres-application.conf") with ScalaJdbcReadJournalOperations
+class InMemoryCurrentEventsByPersistenceIdTest extends CurrentEventsByPersistenceIdTest("application.conf") with ScalaInMemoryReadJournalOperations
