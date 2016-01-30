@@ -31,7 +31,7 @@ object EventsByTagSubscriberRegistry {
   case class EventsByTagSubscriberTerminated(ref: ActorRef)
 }
 
-trait EventsByTagSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
+trait EventsByTagSubscriberRegistry { _: InMemoryAsyncWriteJournalLike ⇒
   import EventsByTagSubscriberRegistry._
   private val eventsByTagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]] with mutable.MultiMap[String, ActorRef]
 
@@ -49,7 +49,7 @@ trait EventsByTagSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
     self ! EventsByTagSubscriberTerminated(ref)
 
   protected def receiveEventsByTagRegistry: Actor.Receive = {
-    case JdbcJournal.EventsByTagRequest(tag) ⇒
+    case InMemoryJournal.EventsByTagRequest(tag) ⇒
       addEventsByTagSubscriber(sender(), tag)
       context.watch(sender())
 
@@ -77,7 +77,7 @@ trait EventsByTagSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
           if persistentRepr.sequenceNr == serialized.sequenceNr
           subscriber ← eventsByTagSubscribers(tag)
           envelope = EventEnvelope(persistentRepr.sequenceNr, persistentRepr.persistenceId, persistentRepr.sequenceNr, unwrapTagged(persistentRepr.payload))
-          eventAppended = JdbcJournal.EventAppended(envelope)
+          eventAppended = InMemoryJournal.EventAppended(envelope)
         } subscriber ! eventAppended
       }
       atomicWriteResult

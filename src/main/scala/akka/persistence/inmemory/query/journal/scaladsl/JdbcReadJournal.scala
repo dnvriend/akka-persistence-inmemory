@@ -19,7 +19,7 @@ package akka.persistence.inmemory.query.journal.scaladsl
 import akka.NotUsed
 import akka.actor.{ ExtendedActorSystem, Props }
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.{ AkkaPersistenceConfig, DaoRepository }
+import akka.persistence.inmemory.extension.DaoRegistry
 import akka.persistence.inmemory.query.journal.publisher.{ AllPersistenceIdsPublisher, EventsByPersistenceIdAndTagPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
 import akka.persistence.inmemory.serialization.{ AkkaSerializationProxy, SerializationFacade }
 import akka.persistence.query.EventEnvelope
@@ -32,7 +32,7 @@ import com.typesafe.config.Config
 import scala.concurrent.Future
 
 object JdbcReadJournal {
-  final val Identifier = "jdbc-read-journal"
+  final val Identifier = "inmemory-read-journal"
 }
 
 trait SlickReadJournal extends ReadJournal
@@ -50,8 +50,6 @@ trait SlickReadJournal extends ReadJournal
   def journalDao: JournalDao
 
   def serializationFacade: SerializationFacade
-
-  def akkaPersistenceConfiguration: AkkaPersistenceConfig
 
   override def currentPersistenceIds(): Source[String, NotUsed] =
     journalDao.allPersistenceIdsSource
@@ -97,12 +95,8 @@ class JdbcReadJournal(config: Config)(implicit val system: ExtendedActorSystem) 
     ActorMaterializer()
 
   override val journalDao: JournalDao =
-    DaoRepository(system).journalDao
-
-  override val akkaPersistenceConfiguration: AkkaPersistenceConfig =
-    AkkaPersistenceConfig(system)
+    DaoRegistry(system).journalDao
 
   override val serializationFacade: SerializationFacade =
-    new SerializationFacade(new AkkaSerializationProxy(SerializationExtension(system)),
-      AkkaPersistenceConfig(system).persistenceQueryConfiguration.separator)
+    new SerializationFacade(new AkkaSerializationProxy(SerializationExtension(system)), ",")
 }

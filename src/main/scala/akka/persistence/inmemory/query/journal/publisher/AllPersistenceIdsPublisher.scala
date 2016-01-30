@@ -18,7 +18,7 @@ package akka.persistence.inmemory.query.journal.publisher
 
 import akka.actor.{ ActorLogging, ActorRef }
 import akka.persistence.Persistence
-import akka.persistence.inmemory.journal.JdbcJournal
+import akka.persistence.inmemory.journal.InMemoryJournal
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
@@ -26,19 +26,19 @@ import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 class AllPersistenceIdsPublisher extends ActorPublisher[String]
     with DeliveryBuffer[String] with ActorLogging {
 
-  val journal: ActorRef = Persistence(context.system).journalFor(JdbcJournal.Identifier)
+  val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
 
   def receive = init
 
   def init: Receive = {
     case _: Request ⇒
-      journal ! JdbcJournal.AllPersistenceIdsRequest
+      journal ! InMemoryJournal.AllPersistenceIdsRequest
       context.become(active)
     case Cancel ⇒ context.stop(self)
   }
 
   def active: Receive = {
-    case JdbcJournal.PersistenceIdAdded(persistenceId) ⇒
+    case InMemoryJournal.PersistenceIdAdded(persistenceId) ⇒
       buf :+= persistenceId
       deliverBuf()
 

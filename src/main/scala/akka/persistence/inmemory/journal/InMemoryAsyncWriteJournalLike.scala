@@ -29,8 +29,8 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
-object JdbcJournal {
-  final val Identifier = "jdbc-journal"
+object InMemoryJournal {
+  final val Identifier = "inmemory-journal"
 
   final case class EventsByPersistenceIdAndTagRequest(persistenceId: String, tag: String)
   final case class EventsByTagRequest(tag: String)
@@ -41,7 +41,7 @@ object JdbcJournal {
   final case class PersistenceIdAdded(persistenceId: String)
 }
 
-trait SlickAsyncWriteJournal extends AsyncWriteJournal
+trait InMemoryAsyncWriteJournalLike extends AsyncWriteJournal
     with AllPersistenceIdsSubscriberRegistry
     with EventsByPersistenceIdRegistry
     with EventsByTagSubscriberRegistry

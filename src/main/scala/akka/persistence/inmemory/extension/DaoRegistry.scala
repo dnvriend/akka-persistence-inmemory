@@ -18,26 +18,26 @@ package akka.persistence.inmemory.extension
 
 import akka.actor._
 import akka.event.{Logging, LoggingAdapter}
-import akka.persistence.inmemory.dao.{JournalStorage, JournalDao, SnapshotDao}
+import akka.persistence.inmemory.dao.{JournalDao, SnapshotDao}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
-object DaoRepository extends ExtensionId[DaoRepositoryImpl] with ExtensionIdProvider {
-  override def createExtension(system: ExtendedActorSystem): DaoRepositoryImpl = new DaoRepositoryImpl()(system)
+object DaoRegistry extends ExtensionId[DaoRegistryImpl] with ExtensionIdProvider {
+  override def createExtension(system: ExtendedActorSystem): DaoRegistryImpl = new DaoRegistryImpl()(system)
 
-  override def lookup(): ExtensionId[_ <: Extension] = DaoRepository
+  override def lookup(): ExtensionId[_ <: Extension] = DaoRegistry
 }
 
-trait DaoRepository {
+trait DaoRegistry {
   def journalDao: JournalDao
 
   def snapshotDao: SnapshotDao
 }
 
-class DaoRepositoryImpl()(implicit val system: ExtendedActorSystem) extends DaoRepository with Extension {
+class DaoRegistryImpl()(implicit val system: ExtendedActorSystem) extends DaoRegistry with Extension {
   implicit val ec: ExecutionContext = system.dispatcher
 
   implicit val mat: Materializer = ActorMaterializer()
@@ -46,7 +46,8 @@ class DaoRepositoryImpl()(implicit val system: ExtendedActorSystem) extends DaoR
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
-  override val journalDao: JournalDao = JournalDao(system.actorOf(Props(new JournalStorage)))
+  override val journalDao: JournalDao = JournalDao(StorageExtension(system).journalStorage)
 
-  override val snapshotDao: SnapshotDao = ???
+//  override val snapshotDao: SnapshotDao = ???
+  override def snapshotDao: SnapshotDao = ???
 }

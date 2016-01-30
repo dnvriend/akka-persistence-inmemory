@@ -18,21 +18,21 @@ package akka.persistence.inmemory.journal
 
 import akka.actor.ActorSystem
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.{ AkkaPersistenceConfig, DaoRepository }
+import akka.persistence.inmemory.extension.DaoRegistry
 import akka.persistence.inmemory.serialization.SerializationFacade
 import akka.stream.{ ActorMaterializer, Materializer }
 
 import scala.concurrent.ExecutionContext
 
-class InMemoryAsyncWriteJournal extends SlickAsyncWriteJournal {
+class InMemoryAsyncWriteJournal extends InMemoryAsyncWriteJournalLike {
   implicit val ec: ExecutionContext = context.dispatcher
 
   implicit val system: ActorSystem = context.system
 
   override implicit val mat: Materializer = ActorMaterializer()
 
-  override val journalDao: JournalDao = DaoRepository(system).journalDao
+  override val journalDao: JournalDao = DaoRegistry(system).journalDao
 
   override val serializationFacade: SerializationFacade =
-    SerializationFacade(system, AkkaPersistenceConfig(context.system).persistenceQueryConfiguration.separator)
+    SerializationFacade(system, ",")
 }

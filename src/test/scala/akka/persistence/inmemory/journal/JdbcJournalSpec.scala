@@ -19,7 +19,7 @@ package akka.persistence.inmemory.journal
 import akka.persistence.CapabilityFlag
 import akka.persistence.inmemory.util.ClasspathResources
 import akka.persistence.journal.JournalSpec
-import com.typesafe.config.Config
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
@@ -37,3 +37,5 @@ abstract class JdbcJournalSpec(config: Config) extends JournalSpec(config)
 
   implicit val ec = system.dispatcher
 }
+
+class InMemoryJournalSpec extends JdbcJournalSpec(ConfigFactory.load("application.conf"))

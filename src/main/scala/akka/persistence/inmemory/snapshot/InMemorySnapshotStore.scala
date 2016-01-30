@@ -18,7 +18,7 @@ package akka.persistence.inmemory.snapshot
 
 import akka.actor.ActorSystem
 import akka.persistence.inmemory.dao.SnapshotDao
-import akka.persistence.inmemory.extension.DaoRepository
+import akka.persistence.inmemory.extension.DaoRegistry
 import akka.persistence.inmemory.serialization.AkkaSerializationProxy
 import akka.serialization.SerializationExtension
 import akka.stream.{ ActorMaterializer, Materializer }
@@ -32,7 +32,7 @@ class InMemorySnapshotStore extends SlickSnapshotStore {
 
   override implicit val mat: Materializer = ActorMaterializer()
 
-  override val snapshotDao: SnapshotDao = DaoRepository(system).snapshotDao
+  override val snapshotDao: SnapshotDao = DaoRegistry(system).snapshotDao
 
   override val serializationProxy = new AkkaSerializationProxy(SerializationExtension(system))
 }

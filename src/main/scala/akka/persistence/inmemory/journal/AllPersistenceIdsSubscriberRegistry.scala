@@ -28,7 +28,7 @@ object AllPersistenceIdsSubscriberRegistry {
   case class AllPersistenceIdsSubscriberTerminated(ref: ActorRef)
 }
 
-trait AllPersistenceIdsSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
+trait AllPersistenceIdsSubscriberRegistry { _: InMemoryAsyncWriteJournalLike ⇒
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
 
   protected def hasAllPersistenceIdsSubscribers: Boolean = allPersistenceIdsSubscribers.nonEmpty
@@ -43,7 +43,7 @@ trait AllPersistenceIdsSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
 
   private def newPersistenceIdAdded(id: String): Unit = {
     if (hasAllPersistenceIdsSubscribers) {
-      val added = JdbcJournal.PersistenceIdAdded(id)
+      val added = InMemoryJournal.PersistenceIdAdded(id)
       allPersistenceIdsSubscribers.foreach(_ ! added)
     }
   }
@@ -52,7 +52,7 @@ trait AllPersistenceIdsSubscriberRegistry { _: SlickAsyncWriteJournal ⇒
     self ! AllPersistenceIdsSubscriberTerminated(ref)
 
   protected def receiveAllPersistenceIdsSubscriber: Actor.Receive = {
-    case JdbcJournal.AllPersistenceIdsRequest ⇒
+    case InMemoryJournal.AllPersistenceIdsRequest ⇒
       addAllPersistenceIdsSubscriber(sender())
       context.watch(sender())
 

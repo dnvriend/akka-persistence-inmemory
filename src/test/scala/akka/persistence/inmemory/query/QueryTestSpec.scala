@@ -21,7 +21,7 @@ import akka.event.LoggingReceive
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.DaoRepository
+import akka.persistence.inmemory.extension.DaoRegistry
 import akka.persistence.inmemory.query.journal.javadsl.{ JdbcReadJournal ⇒ JavaJdbcReadJournal }
 import akka.persistence.inmemory.query.journal.scaladsl.JdbcReadJournal
 import akka.persistence.journal.Tagged
@@ -142,7 +142,7 @@ trait JavaDslJdbcReadJournalOperations extends ReadJournalOperations {
 
 abstract class QueryTestSpec(config: String) extends TestSpec(config) with ReadJournalOperations {
 
-  lazy val journalDao: JournalDao = DaoRepository(system).journalDao
+  lazy val journalDao: JournalDao = DaoRegistry(system).journalDao
 
   case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
