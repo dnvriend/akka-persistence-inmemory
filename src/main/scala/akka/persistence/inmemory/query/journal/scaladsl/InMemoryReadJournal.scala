@@ -22,6 +22,7 @@ import akka.persistence.inmemory.dao.JournalDao
 import akka.persistence.inmemory.extension.DaoRegistry
 import akka.persistence.inmemory.query.journal.publisher.{ AllPersistenceIdsPublisher, EventsByPersistenceIdAndTagPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
 import akka.persistence.inmemory.serialization.{ AkkaSerializationProxy, SerializationFacade }
+import akka.persistence.jdbc.query.journal.scaladsl.{ EventsByPersistenceIdAndTagQuery, CurrentEventsByPersistenceIdAndTagQuery }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
