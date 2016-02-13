@@ -18,14 +18,14 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.2.3"
+version := "1.2.4"
 
 scalaVersion := "2.11.7"
 
 resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-releases/"
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.2-RC2"
+  val akkaVersion = "2.4.2-RC3"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
