@@ -7,7 +7,7 @@ License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http:/
 Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
 ## New release
-The latest version is `v1.2.5`
+The latest version is `v1.2.6`
 
 - It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but has a [Scala MultiMap](http://www.scala-lang.org/api/2.11.7/index.html#scala.collection.mutable.MultiMap) as the storage engine.
 - It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
@@ -20,7 +20,7 @@ Add the following to your `build.sbt`:
 ```scala
 resolvers += "dnvriend at bintray" at "http://dl.bintray.com/dnvriend/maven"
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.5"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.6"
 ```
 
 ## Configuration
@@ -213,6 +213,9 @@ val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentE
 ```
 
 # What's new?
+
+## 1.2.6 (2016-02-17)
+  - Akka 2.4.2-RC3 -> 2.4.2
 
 ## 1.2.5 (2016-02-13)
   - akka-persistence-jdbc-query 1.0.0 -> 1.0.1
