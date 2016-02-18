@@ -113,8 +113,7 @@ class FlowGraphWriteMessagesFacade(journalDao: JournalDao)(implicit ec: Executio
 }
 
 class InMemoryJournalDao(db: ActorRef)(implicit timeout: Timeout, ec: ExecutionContext, mat: Materializer) extends JournalDao {
-
-  import JournalStorage._
+  import InMemoryJournalStorage._
 
   val writeMessagesFacade: WriteMessagesFacade = new FlowGraphWriteMessagesFacade(this)
 

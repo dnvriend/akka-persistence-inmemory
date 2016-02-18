@@ -57,7 +57,7 @@ trait SnapshotDao {
 }
 
 class InMemorySnapshotDao(db: ActorRef)(implicit timeout: Timeout, ec: ExecutionContext, mat: Materializer) extends SnapshotDao {
-  import SnapshotStorage._
+  import InMemorySnapshotStorage._
   override def delete(persistenceId: String, sequenceNr: Long): Future[Unit] =
     (db ? Delete(persistenceId, sequenceNr)).map(_ ⇒ ())
 

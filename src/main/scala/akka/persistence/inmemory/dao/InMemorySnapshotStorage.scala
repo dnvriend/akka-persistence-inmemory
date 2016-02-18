@@ -17,11 +17,10 @@
 package akka.persistence.inmemory.dao
 
 import akka.actor.Status.Success
-import akka.actor.{ ActorLogging, ActorRef, Actor }
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.persistence.inmemory.dao.SnapshotDao.SnapshotData
-import scala.collection.mutable
 
-object SnapshotStorage {
+object InMemorySnapshotStorage {
   // Success
   case class Delete(persistenceId: String, sequenceNr: Long)
 
@@ -53,28 +52,28 @@ object SnapshotStorage {
   case class SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long)
 }
 
-class SnapshotStorage extends Actor with ActorLogging {
-  import SnapshotStorage._
+class InMemorySnapshotStorage extends Actor with ActorLogging {
+  import InMemorySnapshotStorage._
 
-  val snapshot = new mutable.HashMap[String, mutable.Set[SnapshotData]] with mutable.MultiMap[String, SnapshotData]
-
-  def logger(msg: AnyRef)(implicit line: sourcecode.Line, file: sourcecode.File) = log.debug(s"${file.value.split("/").reverse.head}:${line.value} $msg")
+  var snapshot = Map.empty[String, Vector[SnapshotData]]
 
   def clear(ref: ActorRef): Unit = {
-    logger("[Clear]")
+    log.debug("[Clear]")
     ref ! Success("")
   }
 
   def delete(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
+    log.debug(s"s[delete]: pid: $persistenceId, seqno: $sequenceNr, snapshotStore: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
     for {
       xs ← snapshot.get(persistenceId)
       x ← xs
       if x.sequenceNumber == sequenceNr
     } {
-      snapshot.removeBinding(persistenceId, x)
-      logger(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
+      val key = persistenceId
+      snapshot += (key -> snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == sequenceNr))
+      log.debug(s"[deleting]: ${x.persistenceId} - ${x.sequenceNumber}, rest: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
     }
-    logger(s"s[delete]: pid: $persistenceId, seqno: $sequenceNr, rest: ${snapshot.get(persistenceId)}")
+    log.debug(s"s[delete-finished]: pid: $persistenceId, seqno: $sequenceNr, snapshotStore: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
     ref ! Success("")
   }
 
@@ -84,17 +83,18 @@ class SnapshotStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNumber <= maxSequenceNr
     } {
-      logger(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
-      snapshot.removeBinding(persistenceId, x)
+      log.debug(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
+      val key = persistenceId
+      snapshot += (key -> snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
     }
 
-    logger(s"[deleteUpToMaxSequenceNr]: pid: $persistenceId, maxSeqNo: $maxSequenceNr")
+    log.debug(s"[deleteUpToMaxSequenceNr]: pid: $persistenceId, maxSeqNo: $maxSequenceNr")
     ref ! Success("")
   }
 
   def deleteAllSnapshots(ref: ActorRef, persistenceId: String): Unit = {
-    snapshot.remove(persistenceId)
-    logger(s"[deleteAllSnapshots]: $persistenceId")
+    snapshot -= persistenceId
+    log.debug(s"[deleteAllSnapshots]: $persistenceId")
     ref ! Success("")
   }
 
@@ -104,11 +104,12 @@ class SnapshotStorage extends Actor with ActorLogging {
       x ← xs
       if x.created <= maxTimestamp
     } {
-      logger(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
-      snapshot.removeBinding(persistenceId, x)
+      log.debug(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
+      val key = persistenceId
+      snapshot += (key -> snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
     }
 
-    logger(s"[deleteUpToMaxTimestamp]: pid: $persistenceId, maxTimestamp: $maxTimestamp")
+    log.debug(s"[deleteUpToMaxTimestamp]: pid: $persistenceId, maxTimestamp: $maxTimestamp")
     ref ! Success("")
   }
 
@@ -118,33 +119,35 @@ class SnapshotStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp
     } {
-      snapshot.removeBinding(persistenceId, x)
-      logger(s"[deleting]: $x rest: ${snapshot.get(persistenceId)}")
+      val key = persistenceId
+      snapshot += (key -> snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
+      log.debug(s"[deleting]: $x rest: ${snapshot.get(persistenceId)}")
     }
-    logger(s"[deleteUpToMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, maxSeqNo: $maxSequenceNr, maxTimestamp: $maxTimestamp")
+    log.debug(s"[deleteUpToMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, maxSeqNo: $maxSequenceNr, maxTimestamp: $maxTimestamp")
     ref ! Success("")
   }
 
   def save(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long, data: Array[Byte]): Unit = {
-    snapshot.addBinding(persistenceId, SnapshotData(persistenceId, sequenceNr, timestamp, data))
-    logger(s"[Save]: Saving snapshot: pid: $persistenceId, seqnr: $sequenceNr, timestamp: $timestamp")
+    val key = persistenceId
+    snapshot += (key -> (snapshot.getOrElse(key, Vector.empty) :+ SnapshotData(persistenceId, sequenceNr, timestamp, data)))
+    log.debug(s"[Save]: Saving snapshot: pid: $persistenceId, seqnr: $sequenceNr, timestamp: $timestamp")
     ref ! Success("")
-  }
-
-  def snapshotFor(ref: ActorRef, persistenceId: String)(p: SnapshotData ⇒ Boolean): Unit = {
-    val determine: Option[SnapshotData] = snapshot.get(persistenceId).flatMap(_.find(p))
-    logger(s"[snapshotFor]: pid: $persistenceId: returning: $determine")
-    ref ! determine
   }
 
   def snapshotForMaxSequenceNr(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
     val determine = snapshot.get(persistenceId).flatMap(xs ⇒ xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
-    logger(s"[snapshotForMaxSequenceNr]: pid: $persistenceId, seqno: $sequenceNr, returning: $determine")
+    log.debug(s"[snapshotForMaxSequenceNr]: pid: $persistenceId, seqno: $sequenceNr, returning: $determine")
+    ref ! determine
+  }
+
+  def snapshotFor(ref: ActorRef, persistenceId: String)(p: SnapshotData ⇒ Boolean): Unit = {
+    val determine: Option[SnapshotData] = snapshot.get(persistenceId).flatMap(_.find(p))
+    log.debug(s"[snapshotFor]: pid: $persistenceId: returning: $determine")
     ref ! determine
   }
 
   def snapshotForMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long): Unit = {
-    logger(s"[snapshotForMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, seqno: $sequenceNr, timestamp: $timestamp")
+    log.debug(s"[snapshotForMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, seqno: $sequenceNr, timestamp: $timestamp")
     snapshotFor(ref, persistenceId)(snap ⇒ snap.sequenceNumber == sequenceNr)
   }
 

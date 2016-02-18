@@ -21,9 +21,9 @@ import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.inmemory.serialization.{ SerializationFacade, Serialized }
 
-import scala.collection.mutable
+import scala.util.Try
 
-object JournalStorage {
+object InMemoryJournalStorage {
 
   // List[String]
   case object AllPersistenceIds
@@ -56,25 +56,22 @@ object JournalStorage {
   case object Clear
 }
 
-class JournalStorage extends Actor with ActorLogging {
+class InMemoryJournalStorage extends Actor with ActorLogging {
+  import InMemoryJournalStorage._
 
-  import JournalStorage._
+  var journal = Map.empty[String, Vector[Serialized]]
 
-  val journal = new mutable.HashMap[String, mutable.Set[Serialized]] with mutable.MultiMap[String, Serialized]
-
-  val deleted_to = new mutable.HashMap[String, mutable.Set[Long]] with mutable.MultiMap[String, Long]
-
-  def logger(msg: AnyRef)(implicit line: sourcecode.Line, file: sourcecode.File) = log.debug(s"${file.value.split("/").reverse.head}:${line.value} $msg")
+  var deleted_to = Map.empty[String, Vector[Long]]
 
   def allPersistenceIds(ref: ActorRef): Unit = {
-    val determine: Set[String] = journal.keySet.toSet
-    logger(s"[allPersistenceIds]: $determine")
+    val determine = journal.keySet
+    log.debug(s"[allPersistenceIds]: $determine")
     ref ! determine
   }
 
   def countJournal(ref: ActorRef): Unit = {
     val determine: Int = journal.values.foldLeft(0) { case (c, s) ⇒ c + s.size }
-    logger(s"[countJournal]: ${determine}")
+    log.debug(s"[countJournal]: $determine")
     ref ! determine
   }
 
@@ -85,24 +82,23 @@ class JournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
     } yield x).toList.sortBy(_.sequenceNr)
-    logger(determine)
     log.debug(s"[eventsByPersistenceIdAndTag]: $determine")
     ref ! determine.getOrElse(Nil)
   }
 
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
-    val determineJournal: Option[Long] = for {
+    val determineJournal = Try(for {
       xs ← journal.get(persistenceId)
     } yield (for {
       x ← xs
       if x.sequenceNr >= fromSequenceNr
-    } yield x.sequenceNr).max(Ordering.Long)
+    } yield x.sequenceNr).max(Ordering.Long)).toOption.flatten
 
     val determineDeletedTo: Option[Long] =
-      deleted_to.get(persistenceId).map(_.max(Ordering.Long))
+      Try(deleted_to.get(persistenceId).map(_.max(Ordering.Long))).toOption.flatten
 
     val highest = determineJournal.getOrElse(determineDeletedTo.getOrElse(0L))
-    logger(s"[highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
+    log.debug(s"[highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
     ref ! highest
   }
 
@@ -112,8 +108,7 @@ class JournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
     } yield x).toList
-
-    logger(s"[eventsByTag]: $determine")
+    log.debug(s"[eventsByTag]: $determine")
     ref ! determine
   }
 
@@ -126,14 +121,15 @@ class JournalStorage extends Actor with ActorLogging {
       if queryListOfPersistenceIds.toList contains pid
     } yield pid).toList
 
-    logger(s"[persistenceIds]: $determine")
+    log.debug(s"[persistenceIds]: $determine")
     ref ! determine
   }
 
   def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
-    xs.foreach { x ⇒
-      journal.addBinding(x.persistenceId, x)
-      logger(s"[writelist]: Adding $x")
+    xs.foreach { (serialized: Serialized) ⇒
+      val key = serialized.persistenceId
+      journal += (key -> (journal.getOrElse(key, Vector.empty[Serialized]) :+ serialized))
+      log.debug(s"[writelist]: Adding $serialized, ${journal.mapValues(_.sortBy(_.sequenceNr).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
     }
     ref ! Success("")
   }
@@ -144,11 +140,11 @@ class JournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNr <= toSequenceNr
     } {
-      logger(s"[delete]: $x")
-      journal.removeBinding(persistenceId, x)
-      deleted_to.addBinding(persistenceId, x.sequenceNr)
+      val key = persistenceId
+      journal += (key -> journal.getOrElse(key, Vector.empty).filterNot(_.sequenceNr == x.sequenceNr))
+      deleted_to += (key -> (deleted_to.getOrElse(key, Vector.empty) :+ x.sequenceNr))
+      log.debug(s"[delete]: $x,\njournal: ${journal.mapValues(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
     }
-
     ref ! Success("")
   }
 
@@ -160,13 +156,13 @@ class JournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNr >= fromSequenceNr && x.sequenceNr <= toSequenceNr
     } yield x).toList.sortBy(_.sequenceNr).take(toTake)
-
-    logger(s"[messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => $determine")
+    log.debug(s"[messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => ${determine.map(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))}")
     ref ! determine.getOrElse(Nil)
   }
 
   def clear(ref: ActorRef): Unit = {
-    journal.clear()
+    journal = Map.empty[String, Vector[Serialized]]
+    deleted_to = Map.empty[String, Vector[Long]]
     ref ! Success("")
   }
 

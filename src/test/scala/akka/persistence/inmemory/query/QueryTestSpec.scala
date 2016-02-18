@@ -20,8 +20,8 @@ import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentActor
 import akka.persistence.inmemory.TestSpec
+import akka.persistence.inmemory.dao.InMemoryJournalStorage.Clear
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.dao.JournalStorage.Clear
 import akka.persistence.inmemory.extension.{ StorageExtension, DaoRegistry }
 import akka.persistence.inmemory.query.journal.javadsl.{ InMemoryReadJournal ⇒ JavaJdbcReadJournal }
 import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
