@@ -9,7 +9,7 @@ Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-pers
 ## New release
 The latest version is `v1.2.8`
 
-- It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but has a [Scala MultiMap](http://www.scala-lang.org/api/2.11.7/index.html#scala.collection.mutable.MultiMap) as the storage engine.
+- It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but uses an immutable Map as the storage engine.
 - It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
   - For serializing, please split the domain model from the storage model, and use a binary format for the storage model that support schema versioning like [Google's protocol buffers](https://developers.google.com/protocol-buffers/docs/overview), as it is used by Akka Persistence, and is available as a dependent library. For an example on how to use Akka Serialization with protocol buffers, you can examine the [akka-serialization-test](https://github.com/dnvriend/akka-serialization-test) study project,
 - It supports the `Persistence Query` interface for both Java and Scala thus providing a universal asynchronous stream based query interface,
