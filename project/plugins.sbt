@@ -21,10 +21,10 @@ resolvers += "bintray-sbt-plugin-releases" at "http://dl.bintray.com/content/sbt
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
 
 // to show a dependency graph
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.0")
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 
 // to format scala source code
 addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
 
 // enable updating file headers eg. for copyright
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.0")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.1")
