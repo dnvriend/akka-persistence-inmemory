@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.util.Try
 
-abstract class TestSpec(config: String = "postgres-application.conf") extends SimpleSpec {
+abstract class TestSpec(config: String = "application.conf") extends SimpleSpec {
   implicit val system: ActorSystem = ActorSystem("test", ConfigFactory.load(config))
   implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
