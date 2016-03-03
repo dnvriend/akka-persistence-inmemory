@@ -55,8 +55,8 @@ abstract class TestSpec(config: String = "postgres-application.conf") extends Si
   def cleanup(actors: ActorRef*): Unit = {
     val tp = probe
     actors.foreach { (actor: ActorRef) ⇒
-      actor ! PoisonPill
       tp watch actor
+      actor ! PoisonPill
       tp.expectTerminated(actor)
     }
   }
