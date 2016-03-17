@@ -213,6 +213,8 @@ val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentE
 ```
 
 # What's new?
+## 1.2.10 (2016-03-17)
+  - Refactored the akka-persistence-query interfaces, integrated it back again in one jar, for jcenter deployment simplicity
 
 ## 1.2.9 (2016-03-16)
   - Added the appropriate Maven POM resources to be publishing to Bintray's JCenter

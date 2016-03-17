@@ -18,7 +18,7 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.2.9"
+version := "1.2.10"
 
 scalaVersion := "2.11.7"
 
@@ -30,7 +30,6 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-    "com.github.dnvriend" %% "akka-persistence-jdbc-query" % "1.0.1",
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.lihaoyi" %% "sourcecode" % "0.1.0",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
