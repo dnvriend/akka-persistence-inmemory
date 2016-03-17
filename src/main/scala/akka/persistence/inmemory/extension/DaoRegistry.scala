@@ -17,9 +17,9 @@
 package akka.persistence.inmemory.extension
 
 import akka.actor._
-import akka.event.{Logging, LoggingAdapter}
-import akka.persistence.inmemory.dao.{JournalDao, SnapshotDao}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.inmemory.dao.{ JournalDao, SnapshotDao }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext

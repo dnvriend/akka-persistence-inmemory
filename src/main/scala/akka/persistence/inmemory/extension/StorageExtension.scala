@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.extension
 
 import akka.actor._
-import akka.persistence.inmemory.dao.{InMemoryJournalStorage, InMemorySnapshotStorage}
+import akka.persistence.inmemory.dao.{ InMemoryJournalStorage, InMemorySnapshotStorage }
 
 object StorageExtension extends ExtensionId[StorageExtensionImpl] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): StorageExtensionImpl = new StorageExtensionImpl()(system)

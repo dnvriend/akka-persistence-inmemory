@@ -1,8 +1,30 @@
-import bintray.Plugin._
+// enable publishing to jcenter
+homepage := Some(url("https://github.com/dnvriend/akka-persistence-inmemory"))
 
-seq(bintraySettings:_*)
+pomIncludeRepository := (_ => false)
 
-bintray.Keys.packageLabels in bintray.Keys.bintray := Seq("akka", "persistence", "in-memory")
+pomExtra := <scm>
+  <url>https://github.com/dnvriend/akka-persistence-inmemory</url>
+  <connection>scm:git@github.com:dnvriend/akka-persistence-inmemory.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>dnvriend</id>
+      <name>Dennis Vriend</name>
+      <url>https://github.com/dnvriend</url>
+    </developer>
+  </developers>
 
-bintray.Keys.packageAttributes in bintray.Keys.bintray ~=
-  ((_: bintray.AttrMap) ++ Map("website_url" -> Seq(bintry.StringAttr("https://github.com/dnvriend/akka-persistence-inmemory.git")), "github_repo" -> Seq(bintry.StringAttr("https://github.com/dnvriend/akka-persistence-inmemory.git")), "issue_tracker_url" -> Seq(bintry.StringAttr("https://github.com/dnvriend/akka-persistence-inmemory.git/issues/"))))
+publishMavenStyle := true
+
+bintrayPackageLabels := Seq("akka", "persistence", "inmemory")
+
+bintrayPackageAttributes ~=
+  (_ ++ Map(
+    "website_url" -> Seq(bintry.Attr.String("https://github.com/dnvriend/akka-persistence-inmemory")),
+    "github_repo" -> Seq(bintry.Attr.String("https://github.com/dnvriend/akka-persistence-inmemory.git")),
+    "issue_tracker_url" -> Seq(bintry.Attr.String("https://github.com/dnvriend/akka-persistence-inmemory.git/issues/"))
+  )
+)
+
+//bintrayRepository := "maven"
