@@ -18,7 +18,8 @@ The latest version is `v1.2.9`
 Add the following to your `build.sbt`:
 
 ```scala
-resolvers += Resolver.bintray("dnvriend", "maven")
+// the library is available in Bintray's JCenter
+resolvers += Resolver.jcenterRepo
 
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.9"
 ```
