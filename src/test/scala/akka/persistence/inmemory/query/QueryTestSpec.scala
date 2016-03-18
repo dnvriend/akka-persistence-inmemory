@@ -185,7 +185,7 @@ abstract class QueryTestSpec(config: String) extends TestSpec(config) with ReadJ
     system.actorOf(Props(new TestActor(persistenceId)))
   }
 
-  def withTestActors(f: (ActorRef, ActorRef, ActorRef) ⇒ Unit): Unit = {
+  def withTestActors()(f: (ActorRef, ActorRef, ActorRef) ⇒ Unit): Unit = {
     f(setupEmpty(1), setupEmpty(2), setupEmpty(3))
   }
 

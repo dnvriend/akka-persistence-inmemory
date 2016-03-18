@@ -25,7 +25,7 @@ abstract class CurrentPersistenceIdsTest(config: String) extends QueryTestSpec(c
     }
 
   it should "find persistenceIds for actors" in
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       actor1 ! 1
       actor2 ! 1
       actor3 ! 1

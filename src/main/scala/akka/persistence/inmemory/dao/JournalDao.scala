@@ -20,8 +20,8 @@ import akka.NotUsed
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.persistence.inmemory.serialization.Serialized
+import akka.stream.Materializer
 import akka.stream.scaladsl._
-import akka.stream.{ FlowShape, Materializer }
 import akka.util.Timeout
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -115,7 +115,7 @@ class InMemoryJournalDao(db: ActorRef)(implicit timeout: Timeout, ec: ExecutionC
     Flow[Try[Iterable[Serialized]]].via(writeMessagesFacade.writeMessages)
 
   override def eventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[Array[Byte], NotUsed] =
-    Source.fromFuture((db ? EventsByPersistenceIdAndTag(persistenceId, tag, offset)).mapTo[List[Serialized]])
+    Source.fromFuture((db ? EventsByTag(tag, offset)).mapTo[List[Serialized]])
       .map(_.map(_.serialized))
       .mapConcat(identity)
 

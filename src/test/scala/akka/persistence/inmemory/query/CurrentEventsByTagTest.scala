@@ -21,10 +21,10 @@ import akka.persistence.query.EventEnvelope
 abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(config) {
 
   it should "not find an event by tag for unknown tag" in {
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       actor1 ! withTags(1, "one")
-      actor1 ! withTags(2, "two")
-      actor1 ! withTags(3, "three")
+      actor2 ! withTags(2, "two")
+      actor3 ! withTags(3, "three")
 
       eventually {
         journalDao.countJournal.futureValue shouldBe 3
@@ -37,14 +37,52 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
     }
   }
 
+  it should "find all events by tag" in {
+    withTestActors() { (actor1, actor2, actor3) ⇒
+      actor1 ! withTags(1, "number")
+      actor2 ! withTags(2, "number")
+      actor3 ! withTags(3, "number")
+
+      eventually {
+        journalDao.countJournal.futureValue shouldBe 3
+      }
+
+      withCurrentEventsByTag()("number", 0) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.expectComplete()
+      }
+    }
+  }
+
+  it should "find events from an offset" in {
+    withTestActors() { (actor1, actor2, actor3) ⇒
+      actor1 ! withTags(1, "number")
+      actor2 ! withTags(2, "number")
+      actor3 ! withTags(3, "number")
+
+      eventually {
+        journalDao.countJournal.futureValue shouldBe 3
+      }
+
+      withCurrentEventsByTag()("number", 2) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.expectComplete()
+      }
+    }
+  }
+
   it should "persist and find a tagged event with one tag" in
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       withClue("Persisting a tagged event") {
         actor1 ! withTags(1, "one")
         eventually {
           withCurrentEventsByPersistenceid()("my-1") { tp ⇒
             tp.request(Long.MaxValue)
-            tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+            tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
             tp.expectComplete()
           }
         }
@@ -53,7 +91,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find the event by tag") {
         withCurrentEventsByTag()("one", 0) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }
@@ -61,14 +99,14 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find the event by persistenceId") {
         withCurrentEventsByPersistenceid()("my-1", 1, 1) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }
     }
 
   it should "persist and find a tagged event with multiple tags" in
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       withClue("Persisting multiple tagged events") {
         actor1 ! withTags(1, "one", "1", "prime")
         actor1 ! withTags(2, "two", "2", "prime")
@@ -90,7 +128,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find events for tag 'one'") {
         withCurrentEventsByTag()("one", 0) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }
@@ -98,14 +136,12 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find events for tag 'prime'") {
         withCurrentEventsByTag()("prime", 0) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNextUnordered(
-            EventEnvelope(1, "my-1", 1, 1),
-            EventEnvelope(2, "my-1", 2, 2),
-            EventEnvelope(3, "my-1", 3, 3),
-            EventEnvelope(5, "my-1", 5, 5),
-            EventEnvelope(1, "my-2", 1, 3),
-            EventEnvelope(1, "my-3", 1, 3)
-          )
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(4, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(5, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(6, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }
@@ -113,11 +149,9 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find events for tag '3'") {
         withCurrentEventsByTag()("3", 0) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNextUnordered(
-            EventEnvelope(3, "my-1", 3, 3),
-            EventEnvelope(1, "my-2", 1, 3),
-            EventEnvelope(1, "my-3", 1, 3)
-          )
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+          tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }
@@ -125,7 +159,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("query should find events for tag '3'") {
         withCurrentEventsByTag()("4", 0) { tp ⇒
           tp.request(Int.MaxValue)
-          tp.expectNext(EventEnvelope(4, "my-1", 4, 4))
+          tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
           tp.expectComplete()
         }
       }

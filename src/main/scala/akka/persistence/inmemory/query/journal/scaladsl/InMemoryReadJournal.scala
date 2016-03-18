@@ -73,21 +73,32 @@ trait AbstractInmemoryReadJournal extends ReadJournal
     journalDao.eventsByTag(tag, offset)
       .via(serializationFacade.deserializeRepr)
       .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
-      .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
+      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
+        case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
+      }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     currentEventsByTag(tag, offset)
       .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByTagPublisher], tag)))
+      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
+        case (orig, i) ⇒ orig.copy(offset = i)
+      }
 
   override def currentEventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    journalDao.eventsByPersistenceIdAndTag(persistenceId, tag, offset)
+    journalDao.eventsByTag(tag, offset)
       .via(serializationFacade.deserializeRepr)
       .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
-      .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
+      .filter(_.persistenceId == persistenceId)
+      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
+        case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
+      }
 
   override def eventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     currentEventsByPersistenceIdAndTag(persistenceId, tag, offset)
       .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByPersistenceIdAndTagPublisher], persistenceId, tag)))
+      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
+        case (orig, i) ⇒ orig.copy(offset = i)
+      }
 }
 
 class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSystem) extends AbstractInmemoryReadJournal {

@@ -28,7 +28,7 @@ abstract class AllPersistenceIdsTest(config: String) extends QueryTestSpec(confi
     }
 
   it should "find persistenceIds for actors" in
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       withAllPersistenceIds(within = 1.second) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)

@@ -31,8 +31,30 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
     }
   }
 
+  it should "find events from an offset" in {
+    withTestActors() { (actor1, actor2, actor3) ⇒
+      actor1 ! withTags(1, "number")
+      actor1 ! withTags(2, "number")
+      actor1 ! withTags(3, "number")
+      actor1 ! withTags(4, "number")
+
+      eventually {
+        journalDao.countJournal.futureValue shouldBe 4
+      }
+
+      withEventsByPersistenceId()("my-1", 2, 3) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+        tp.expectNoMsg(100.millis)
+      }
+    }
+  }
+
   it should "find events for actor with pid 'my-1'" in {
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
@@ -52,7 +74,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
   }
 
   it should "find events for actor with pid 'my-1' and persisting messages to other actor" in {
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
@@ -77,7 +99,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
   }
 
   it should "find events for actor with pid 'my-2'" in {
-    withTestActors { (actor1, actor2, actor3) ⇒
+    withTestActors() { (actor1, actor2, actor3) ⇒
       actor2 ! 1
       actor2 ! 2
       actor2 ! 3

@@ -31,9 +31,6 @@ object InMemoryJournalStorage {
   // Int
   case object CountJournal
 
-  // List[Array[Byte]]
-  case class EventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long)
-
   // Long
   case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
 
@@ -75,17 +72,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     ref ! determine
   }
 
-  def eventsByPersistenceIdAndTag(ref: ActorRef, persistenceId: String, tag: String, offset: Long): Unit = {
-    val determine: Option[List[Serialized]] = for {
-      xs ← journal.get(persistenceId)
-    } yield (for {
-      x ← xs
-      if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
-    } yield x).toList.sortBy(_.sequenceNr)
-    log.debug(s"[eventsByPersistenceIdAndTag]: $determine")
-    ref ! determine.getOrElse(Nil)
-  }
-
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
     val determineJournal = Try(for {
       xs ← journal.get(persistenceId)
@@ -107,7 +93,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       xs ← journal.values
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
-    } yield x).toList
+    } yield x).toList.sortBy(_.created).drop(offset.toInt)
     log.debug(s"[eventsByTag]: $determine")
     ref ! determine
   }
@@ -169,7 +155,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   override def receive: Receive = LoggingReceive {
     case AllPersistenceIds                                          ⇒ allPersistenceIds(sender())
     case CountJournal                                               ⇒ countJournal(sender())
-    case EventsByPersistenceIdAndTag(persistenceId, tag, offset)    ⇒ eventsByPersistenceIdAndTag(sender(), persistenceId, tag, offset)
     case HighestSequenceNr(persistenceId, fromSequenceNr)           ⇒ highestSequenceNr(sender(), persistenceId, fromSequenceNr)
     case EventsByTag(tag, offset)                                   ⇒ eventsByTag(sender(), tag, offset)
     case PersistenceIds(queryListOfPersistenceIds)                  ⇒ persistenceIds(sender(), queryListOfPersistenceIds)

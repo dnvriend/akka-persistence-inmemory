@@ -7,7 +7,7 @@ License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http:/
 Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
 ## New release
-The latest version is `v1.2.9`
+The latest version is `v1.2.11`
 
 - It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but uses an immutable Map as the storage engine.
 - It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
@@ -20,7 +20,7 @@ Add the following to your `build.sbt`:
 ```scala
 resolvers += Resolver.bintray("dnvriend", "maven")
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.9"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.11"
 ```
 
 ## Configuration
@@ -213,6 +213,9 @@ val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentE
 ```
 
 # What's new?
+## 1.2.11 (2016-03-18)
+  - Fixed issue on the query api where the offset on eventsByTag and eventsByPersistenceIdAndTag queries were not sequential  
+  
 ## 1.2.10 (2016-03-17)
   - Refactored the akka-persistence-query interfaces, integrated it back again in one jar, for jcenter deployment simplicity
 
