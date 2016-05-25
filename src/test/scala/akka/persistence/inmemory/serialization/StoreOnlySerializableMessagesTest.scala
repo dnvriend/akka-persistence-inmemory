@@ -77,9 +77,9 @@ class StoreOnlySerializableMessagesTest extends TestSpec() {
       recover.expectMsg(RecoveryCompleted)
       recover.expectNoMsg(100.millis)
       actor ! new NotSerializable // the NotSerializable class cannot be serialized
-      // the actor should be called the onPersistFailure
-      failure.expectMsgPF() {
-        case PersistFailure(_, _, _) ⇒
+      // the actor should be called the onPersistRejected
+      rejected.expectMsgPF() {
+        case PersistRejected(_, _, _) ⇒
       }
     }
 
@@ -97,11 +97,11 @@ class StoreOnlySerializableMessagesTest extends TestSpec() {
       recover.expectNoMsg(100.millis)
       actor ! "foo"
       actor ! new NotSerializable // the Test class cannot be serialized
-      // the actor should be called the onPersistFailure
-      failure.expectMsgPF() {
-        case PersistFailure(_, _, _) ⇒
+      // the actor should be called the onPersistRejected
+      rejected.expectMsgPF() {
+        case PersistRejected(_, _, _) ⇒
       }
-      failure.expectNoMsg(100.millis)
+      rejected.expectNoMsg(100.millis)
     }
 
     // recover cycle

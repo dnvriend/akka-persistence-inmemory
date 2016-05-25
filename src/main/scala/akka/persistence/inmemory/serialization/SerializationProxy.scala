@@ -97,7 +97,7 @@ class SerializationFacade(proxy: SerializationProxy, separator: String) {
     }
 
     val xs = atomicWrite.payload.map(serializeTaggedOrRepr)
-    if (xs.exists(_.isFailure)) xs.filter(_.isFailure).head.asInstanceOf[Try[Iterable[Serialized]]] // SI-8566
+    if (xs.exists(_.isFailure)) xs.filter(_.isFailure).head.map(Seq(_)) // SI-8566
     else Success(xs.foldLeft(List.empty[Serialized]) {
       case (xy, Success(serialized)) ⇒ xy :+ serialized
       case (xy, _)                   ⇒ xy

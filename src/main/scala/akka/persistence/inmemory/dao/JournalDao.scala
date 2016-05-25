@@ -97,7 +97,7 @@ trait WriteMessagesFacade {
 class FlowGraphWriteMessagesFacade(journalDao: JournalDao)(implicit ec: ExecutionContext, mat: Materializer) extends WriteMessagesFacade {
   def writeMessages: Flow[Try[Iterable[Serialized]], Try[Iterable[Serialized]], NotUsed] = Flow[Try[Iterable[Serialized]]].mapAsync(1) {
     case element @ Success(xs) ⇒ journalDao.writeList(xs).map(_ ⇒ element)
-    case element @ Failure(t)  ⇒ Future.failed(t)
+    case element @ Failure(t)  ⇒ Future.successful(element)
   }
 }
 

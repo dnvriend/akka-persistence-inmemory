@@ -18,14 +18,14 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.2.13"
+version := "1.2.14"
 
 scalaVersion := "2.11.8"
 
-resolvers += "Typesafe Releases" at "http://repo.typesafe.com/typesafe/maven-releases/"
+resolvers += Resolver.typesafeRepo("releases")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.4"
+  val akkaVersion = "2.4.6"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
@@ -36,10 +36,12 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "org.scalatest" %% "scalatest" % "2.2.4" % Test,
+    "org.scalatest" %% "scalatest" % "2.2.6" % Test,
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test
   )
 }
+
+//scalacOptions ++= Seq("-feature", "-language:higherKinds", "-language:implicitConversions", "-deprecation", "-Ybackend:GenBCode", "-Ydelambdafy:method", "-target:jvm-1.8", "-Xexperimental")
 
 fork in Test := true
 
