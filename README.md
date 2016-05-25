@@ -164,10 +164,10 @@ class TaggingEventAdapter extends WriteEventAdapter {
 ```
 
 The `EventAdapter` must be registered by adding the following to the root of `application.conf` Please see the 
-[demo-akka-persistence-jdbc](https://github.com/dnvriend/demo-akka-persistence-jdbc) project for more information.
+[demo-akka-persistence-jdbc](https://github.com/dnvriend/demo-akka-persistence-jdbc) project for more information. The identifier of the persistence plugin must be used which for the inmemory plugin is `inmemory-journal`. 
 
 ```bash
-jdbc-journal {
+inmemory-journal {
   event-adapters {
     tagging = "com.github.dnvriend.TaggingEventAdapter"
   }
