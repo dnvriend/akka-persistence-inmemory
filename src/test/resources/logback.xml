@@ -10,10 +10,8 @@
         </encoder>
     </appender>
 
-    <logger name="org.github.dnvriend" level="debug"/>
-    <logger name="slick.backend.DatabaseComponent.action" level="debug" />
-
-    <root level="info">
+    <!--<logger name="org.github.dnvriend" level="debug"/>-->
+    <root level="warn">
         <appender-ref ref="console"/>
     </root>
 

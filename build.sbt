@@ -22,6 +22,8 @@ version := "1.2.14"
 
 scalaVersion := "2.11.8"
 
+crossScalaVersions := Seq("2.11.8", "2.12.0-M4")
+
 resolvers += Resolver.typesafeRepo("releases")
 
 libraryDependencies ++= {
