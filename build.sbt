@@ -18,7 +18,7 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.2.14"
+version := "1.2.15"
 
 scalaVersion := "2.11.8"
 
@@ -27,7 +27,7 @@ crossScalaVersions := Seq("2.11.8", "2.12.0-M4")
 resolvers += Resolver.typesafeRepo("releases")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.6"
+  val akkaVersion = "2.4.7"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,

@@ -1,4 +1,4 @@
-# akka-persistence-inmemory
+# akka-persistence-inmemory v1.12.5
 Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 Service | Status | Description
@@ -7,7 +7,7 @@ License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http:/
 Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
 
 ## New release
-The latest version is `v1.2.14`
+The latest version is `v1.2.15`
 
 - It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but uses an immutable Map as the storage engine.
 - It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
@@ -21,7 +21,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.14"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.15"
 ```
 
 ## Configuration
@@ -214,6 +214,9 @@ val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentE
 ```
 
 # What's new?
+## 1.2.15 (2016-06-05)
+  - Akka 2.4.6 -> 2.4.7
+
 ## 1.2.14 (2016-05-25)
   - Fixed issue Unable to differentiate between persistence failures and serialization issues
   - Akka 2.4.4 -> 2.4.6
