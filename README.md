@@ -1,4 +1,4 @@
-# akka-persistence-inmemory v1.12.5
+# akka-persistence-inmemory v1.2.15
 Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 Service | Status | Description
