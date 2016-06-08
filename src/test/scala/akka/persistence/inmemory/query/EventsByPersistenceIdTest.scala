@@ -44,8 +44,8 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
 
       withEventsByPersistenceId()("my-1", 2, 3) { tp ⇒
         tp.request(Int.MaxValue)
-        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
-        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.expectNext(EventEnvelope(1, "my-1", 2, 2))
+        tp.expectNext(EventEnvelope(2, "my-1", 3, 3))
         tp.expectNoMsg(100.millis)
         tp.cancel()
         tp.expectNoMsg(100.millis)
@@ -55,7 +55,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
 
   it should "find events for actor with pid 'my-1'" in {
     withTestActors() { (actor1, actor2, actor3) ⇒
-      withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId(10.seconds)("my-1", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
 
@@ -75,7 +75,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
 
   it should "find events for actor with pid 'my-1' and persisting messages to other actor" in {
     withTestActors() { (actor1, actor2, actor3) ⇒
-      withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId(10.seconds)("my-1", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
 
@@ -90,6 +90,10 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
         actor2 ! 1
         actor2 ! 2
         actor2 ! 3
+        tp.expectNoMsg(100.millis)
+
+        actor1 ! 3
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
         tp.expectNoMsg(100.millis)
 
         tp.cancel()
@@ -108,7 +112,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
         journalDao.countJournal.futureValue shouldBe 3
       }
 
-      withEventsByPersistenceId(500.millis)("my-2", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId(10.seconds)("my-2", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1, "my-2", 1, 1))
         tp.expectNext(EventEnvelope(2, "my-2", 2, 2))

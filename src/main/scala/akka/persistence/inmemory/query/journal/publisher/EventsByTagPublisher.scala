@@ -16,36 +16,58 @@
 
 package akka.persistence.inmemory.query.journal.publisher
 
-import akka.actor.{ ActorLogging, ActorRef }
-import akka.persistence.Persistence
-import akka.persistence.inmemory.journal.InMemoryJournal
+import akka.actor.ActorLogging
+import akka.event.LoggingAdapter
+import akka.persistence.inmemory.dao.JournalDao
+import akka.persistence.inmemory.serialization.SerializationFacade
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
+import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
+import akka.stream.scaladsl.Source
 
-class EventsByTagPublisher(tag: String) extends ActorPublisher[EventEnvelope]
-    with DeliveryBuffer[EventEnvelope] with ActorLogging {
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
-  val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
+class EventsByTagPublisher(tag: String, offset: Int, journalDao: JournalDao, serializationFacade: SerializationFacade, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, log: LoggingAdapter) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
 
-  def receive = init
-
-  def init: Receive = {
-    case _: Request ⇒
-      journal ! InMemoryJournal.EventsByTagRequest(tag)
-      context.become(active)
-    case Cancel ⇒ context.stop(self)
+  def determineSchedulePoll(): Unit = {
+    if (buf.size < maxBufferSize && totalDemand > 0)
+      context.system.scheduler.scheduleOnce(0.seconds, self, "POLL")
   }
 
-  def active: Receive = {
-    case InMemoryJournal.EventAppended(envelope) ⇒
-      buf :+= envelope
-      deliverBuf()
+  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, "CHECK")
 
-    case _: Request ⇒
-      deliverBuf()
+  def receive = active(Math.max(0, offset))
 
-    case Cancel ⇒ context.stop(self)
+  def active(offset: Int): Receive = {
+    case "POLL" ⇒
+      journalDao.eventsByTag(tag, offset)
+        .via(serializationFacade.deserializeRepr)
+        .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
+        .zipWith(Source(Stream.from(offset))) {
+          case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
+        }
+        .runFold(List.empty[EventEnvelope])(_ :+ _)
+        .map { xs ⇒
+          buf = buf ++ xs
+          log.debug(s"[before] offset: $offset, buff: $buf")
+          deliverBuf()
+          log.debug(s"[after] offset: ${offset + xs.size}, buff: $buf")
+          context.become(active(offset + xs.size))
+        }
+
+    case "CHECK"    ⇒ determineSchedulePoll()
+
+    case _: Request ⇒ deliverBuf()
+
+    case Cancel     ⇒ context.stop(self)
+  }
+
+  override def postStop(): Unit = {
+    checkPoller.cancel()
+    super.postStop()
   }
 }

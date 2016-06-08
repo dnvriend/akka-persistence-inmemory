@@ -16,36 +16,46 @@
 
 package akka.persistence.inmemory.query.journal.publisher
 
-import akka.actor.{ ActorLogging, ActorRef }
-import akka.persistence.Persistence
-import akka.persistence.inmemory.journal.InMemoryJournal
+import akka.actor.ActorLogging
+import akka.event.LoggingAdapter
+import akka.persistence.inmemory.dao.JournalDao
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
+import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 
-class EventsByPersistenceIdAndTagPublisher(persistenceId: String, tag: String)
-    extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
-  val journal: ActorRef = Persistence(context.system).journalFor(InMemoryJournal.Identifier)
+class EventsByPersistenceIdAndTagPublisher(persistenceId: String, tag: String, journalDao: JournalDao, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, log: LoggingAdapter) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
 
-  def receive = init
-
-  def init: Receive = {
-    case _: Request ⇒
-      journal ! InMemoryJournal.EventsByPersistenceIdAndTagRequest(persistenceId, tag)
-      context.become(active)
-    case Cancel ⇒ context.stop(self)
+  def determineSchedulePoll(): Unit = {
+    if (buf.size < maxBufferSize && totalDemand > 0)
+      context.system.scheduler.scheduleOnce(0.seconds, self, "POLL")
   }
 
-  def active: Receive = {
-    case InMemoryJournal.EventAppended(envelope) ⇒
-      buf :+= envelope
-      deliverBuf()
+  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, "CHECK")
 
-    case _: Request ⇒
-      deliverBuf()
+  def receive = active(0)
 
-    case Cancel ⇒ context.stop(self)
+  def active(offset: Long): Receive = {
+    case "POLL" ⇒
+      journalDao.eventsByPersistenceIdAndTag(persistenceId, tag, offset)
+    //    case InMemoryJournal.EventAppended(envelope) ⇒
+    //      buf :+= envelope
+    //      deliverBuf()
+
+    case "CHECK"    ⇒ determineSchedulePoll()
+
+    case _: Request ⇒ deliverBuf()
+
+    case Cancel     ⇒ context.stop(self)
+  }
+
+  override def postStop(): Unit = {
+    checkPoller.cancel()
+    super.postStop()
   }
 }
