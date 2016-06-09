@@ -28,9 +28,6 @@ object InMemoryJournalStorage {
   // List[String]
   case object AllPersistenceIds
 
-  // Int
-  case object CountJournal
-
   // Long
   case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
 
@@ -154,7 +151,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
 
   override def receive: Receive = LoggingReceive {
     case AllPersistenceIds                                          ⇒ allPersistenceIds(sender())
-    case CountJournal                                               ⇒ countJournal(sender())
     case HighestSequenceNr(persistenceId, fromSequenceNr)           ⇒ highestSequenceNr(sender(), persistenceId, fromSequenceNr)
     case EventsByTag(tag, offset)                                   ⇒ eventsByTag(sender(), tag, offset)
     case PersistenceIds(queryListOfPersistenceIds)                  ⇒ persistenceIds(sender(), queryListOfPersistenceIds)

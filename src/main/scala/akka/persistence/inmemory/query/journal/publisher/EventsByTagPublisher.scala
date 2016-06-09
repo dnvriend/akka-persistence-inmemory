@@ -31,25 +31,32 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
+object EventsByTagPublisher {
+  sealed trait Command
+  case object GetEventsByTag extends Command
+  case object BecomePolling extends Command
+  case object DetermineSchedulePoll extends Command
+}
 class EventsByTagPublisher(tag: String, offset: Int, journalDao: JournalDao, serializationFacade: SerializationFacade, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, log: LoggingAdapter) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
-
+  import EventsByTagPublisher._
   def determineSchedulePoll(): Unit = {
     if (buf.size < maxBufferSize && totalDemand > 0)
-      context.system.scheduler.scheduleOnce(0.seconds, self, "POLL")
+      context.system.scheduler.scheduleOnce(0.seconds, self, BecomePolling)
   }
 
-  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, "CHECK")
+  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, DetermineSchedulePoll)
 
-  def receive = active(Math.max(0, offset))
+  def receive = active(Math.max(1, offset))
 
-  def active(offset: Int): Receive = {
-    case "POLL" ⇒
-      journalDao.eventsByTag(tag, offset)
+  def polling(offset: Int): Receive = {
+    case GetEventsByTag ⇒
+      journalDao.eventsByTag(tag, offset - 1)
         .via(serializationFacade.deserializeRepr)
         .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
         .zipWith(Source(Stream.from(offset))) {
           case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
         }
+        .map { e ⇒ println(e); e }
         .runFold(List.empty[EventEnvelope])(_ :+ _)
         .map { xs ⇒
           buf = buf ++ xs
@@ -57,13 +64,26 @@ class EventsByTagPublisher(tag: String, offset: Int, journalDao: JournalDao, ser
           deliverBuf()
           log.debug(s"[after] offset: ${offset + xs.size}, buff: $buf")
           context.become(active(offset + xs.size))
+        }.recover {
+          case t: Throwable ⇒
+            log.error(t, "Error while polling eventsByTag")
+            onError(t)
+            context.stop(self)
         }
 
-    case "CHECK"    ⇒ determineSchedulePoll()
+    case Cancel ⇒ context.stop(self)
+  }
 
-    case _: Request ⇒ deliverBuf()
+  def active(offset: Int): Receive = {
+    case BecomePolling ⇒
+      context.become(polling(offset))
+      self ! GetEventsByTag
 
-    case Cancel     ⇒ context.stop(self)
+    case DetermineSchedulePoll ⇒ determineSchedulePoll()
+
+    case _: Request            ⇒ deliverBuf()
+
+    case Cancel                ⇒ context.stop(self)
   }
 
   override def postStop(): Unit = {

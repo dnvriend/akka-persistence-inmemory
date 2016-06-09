@@ -40,32 +40,7 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
   //    }
   //  }
 
-  it should "find all events by tag" in {
-    withTestActors() { (actor1, actor2, actor3) ⇒
-      actor1 ! withTags(1, "number")
-      actor2 ! withTags(2, "number")
-      actor3 ! withTags(3, "number")
-
-      eventually {
-        journalDao.countJournal.futureValue shouldBe 3
-      }
-
-      withEventsByTag()("number", 0) { tp ⇒
-        tp.request(Int.MaxValue)
-        tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
-        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
-        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
-        tp.expectNoMsg(100.millis)
-
-        //        actor1 ! withTags(4, "number")
-        //        tp.expectNextPF { case EventEnvelope(4, _, _, _) ⇒ }
-        //        tp.cancel()
-        tp.expectNoMsg(100.millis)
-      }
-    }
-  }
-  //
-  //  it should "find events by tag from an offset" in {
+  //  it should "find all events by tag" in {
   //    withTestActors() { (actor1, actor2, actor3) ⇒
   //      actor1 ! withTags(1, "number")
   //      actor2 ! withTags(2, "number")
@@ -75,8 +50,10 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
   //        journalDao.countJournal.futureValue shouldBe 3
   //      }
   //
-  //      withEventsByTag()("number", 2) { tp ⇒
+  //      withEventsByTag(within = 2.seconds)("number", 0) { tp ⇒
   //        tp.request(Int.MaxValue)
+  //        tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+  //        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
   //        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
   //        tp.expectNoMsg(100.millis)
   //
@@ -87,6 +64,29 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
   //      }
   //    }
   //  }
+
+  it should "find events by tag from an offset" in {
+    withTestActors() { (actor1, actor2, actor3) ⇒
+      actor1 ! withTags(1, "number")
+      actor2 ! withTags(2, "number")
+      actor3 ! withTags(3, "number")
+
+      eventually {
+        countJournal.futureValue shouldBe 3
+      }
+
+      withEventsByTag()("number", 2) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.expectNoMsg(100.millis)
+
+        //        actor1 ! withTags(4, "number")
+        //        tp.expectNextPF { case EventEnvelope(4, _, _, _) ⇒ }
+        //        tp.cancel()
+        //        tp.expectNoMsg(100.millis)
+      }
+    }
+  }
   //
   //  it should "persist and find tagged event for one tag" in {
   //    withTestActors() { (actor1, actor2, actor3) ⇒

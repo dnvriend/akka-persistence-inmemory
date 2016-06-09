@@ -18,7 +18,6 @@ package akka.persistence.inmemory.query.journal.javadsl
 
 import akka.NotUsed
 import akka.persistence.inmemory.query.journal.scaladsl.{ InMemoryReadJournal ⇒ ScalaInMemoryReadJournal }
-import akka.persistence.jdbc.query.journal.javadsl.{ EventsByPersistenceIdAndTagQuery, CurrentEventsByPersistenceIdAndTagQuery }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.javadsl._
 import akka.stream.javadsl.Source
@@ -33,9 +32,7 @@ class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
     with CurrentEventsByPersistenceIdQuery
     with EventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
-    with EventsByTagQuery
-    with CurrentEventsByPersistenceIdAndTagQuery
-    with EventsByPersistenceIdAndTagQuery {
+    with EventsByTagQuery {
 
   override def currentPersistenceIds(): Source[String, NotUsed] =
     journal.currentPersistenceIds().asJava
@@ -54,10 +51,4 @@ class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     journal.eventsByTag(tag, offset).asJava
-
-  override def currentEventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    journal.currentEventsByPersistenceIdAndTag(persistenceId, tag, offset).asJava
-
-  override def eventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    journal.eventsByPersistenceIdAndTag(persistenceId, tag, offset).asJava
 }

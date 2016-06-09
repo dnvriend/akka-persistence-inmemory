@@ -35,32 +35,55 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
  * It is impossible to emit only new persistenceIds without having state ie. knowledge of the knownIds that have been emitted previously.
  * This can be a very expensive operation memory wise when having a lot of PersistenceIds
  */
+object AllPersistenceIdsPublisher {
+  sealed trait Command
+  case object GetAllPersistenceIds extends Command
+  case object BecomePolling extends Command
+  case object DetermineSchedulePoll extends Command
+}
 class AllPersistenceIdsPublisher(journalDao: JournalDao, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, log: LoggingAdapter) extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+  import AllPersistenceIdsPublisher._
   def determineSchedulePoll(): Unit = {
     if (buf.size < maxBufferSize && totalDemand > 0)
-      context.system.scheduler.scheduleOnce(0.seconds, self, "POLL")
+      context.system.scheduler.scheduleOnce(0.seconds, self, BecomePolling)
   }
 
-  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, "CHECK")
+  val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, DetermineSchedulePoll)
 
   def receive = active(Set.empty[String])
 
+  /**
+   * Will only handle GetAllPersistenceIds and Cancel messages,
+   * as they will not change the state.
+   */
+  def polling(knownIds: Set[String]): Receive = LoggingReceive {
+    case GetAllPersistenceIds ⇒
+      journalDao.allPersistenceIds.map { ids ⇒
+        val xs = ids.diff(knownIds).toVector
+        buf = buf ++ xs
+        log.debug(s"ids in journal: $ids, known ids: $knownIds, new known ids: ${knownIds ++ xs}, buff: $buf")
+        deliverBuf()
+        context.become(active(knownIds ++ xs))
+      }.recover {
+        case t: Throwable ⇒
+          log.error(t, "Error while polling allPersistenceIds")
+          onError(t)
+          context.stop(self)
+      }
+
+    case Cancel ⇒ context.stop(self)
+  }
+
   def active(knownIds: Set[String]): Receive = LoggingReceive {
-    case "POLL" ⇒
-      journalDao.allPersistenceIdsSource.runFold(List.empty[String])(_ :+ _).map(_.toSet)
-        .map { (ids: Set[String]) ⇒
-          val xs: Vector[String] = ids.diff(knownIds).toVector
-          buf = buf ++ xs
-          //          log.debug(s"ids in journal: $ids, known ids: $knownIds, new known ids: ${knownIds ++ xs}, buff: $buf")
-          deliverBuf()
-          context.become(active(knownIds ++ xs))
-        }
+    case BecomePolling ⇒
+      context.become(polling(knownIds))
+      self ! GetAllPersistenceIds
 
-    case "CHECK"    ⇒ determineSchedulePoll()
+    case DetermineSchedulePoll ⇒ determineSchedulePoll()
 
-    case _: Request ⇒ deliverBuf()
+    case Request(_)            ⇒ deliverBuf()
 
-    case Cancel     ⇒ context.stop(self)
+    case Cancel                ⇒ context.stop(self)
   }
 
   override def postStop(): Unit = {

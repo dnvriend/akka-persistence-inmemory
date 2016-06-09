@@ -27,7 +27,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       actor3 ! withTags(3, "three")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
       withCurrentEventsByTag()("unknown", 0) { tp ⇒
@@ -44,7 +44,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       actor3 ! withTags(3, "number")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
       withCurrentEventsByTag()("number", 0) { tp ⇒
@@ -64,7 +64,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       actor3 ! withTags(3, "number")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
       withCurrentEventsByTag()("number", 2) { tp ⇒
@@ -80,7 +80,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       withClue("Persisting a tagged event") {
         actor1 ! withTags(1, "one")
         eventually {
-          withCurrentEventsByPersistenceid()("my-1") { tp ⇒
+          withCurrentEventsByPersistenceId()("my-1") { tp ⇒
             tp.request(Long.MaxValue)
             tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
             tp.expectComplete()
@@ -97,7 +97,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
       }
 
       withClue("query should find the event by persistenceId") {
-        withCurrentEventsByPersistenceid()("my-1", 1, 1) { tp ⇒
+        withCurrentEventsByPersistenceId()("my-1", 1, 1) { tp ⇒
           tp.request(Int.MaxValue)
           tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
           tp.expectComplete()
@@ -121,7 +121,7 @@ abstract class CurrentEventsByTagTest(config: String) extends QueryTestSpec(conf
         actor1 ! 1
 
         eventually {
-          journalDao.countJournal.futureValue shouldBe 9
+          countJournal.futureValue shouldBe 9
         }
       }
 
