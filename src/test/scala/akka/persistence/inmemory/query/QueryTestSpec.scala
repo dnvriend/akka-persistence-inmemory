@@ -84,12 +84,16 @@ trait ScalaInMemoryReadJournalOperations extends ReadJournalOperations {
   }
 
   def withCurrentEventsByTag(within: FiniteDuration = 1.second)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
-    val tp = readJournal.currentEventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
+    val tp = readJournal.currentEventsByTag(tag, offset)
+//      .map { e ⇒ println("==> withCurrentEventsByTag: " + e); e }
+      .runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
   def withEventsByTag(within: FiniteDuration = 1.second)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
-    val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
+    val tp = readJournal.eventsByTag(tag, offset)
+      .map { e ⇒ println("==> withEventsByTag: " + e); e }
+      .runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 }
