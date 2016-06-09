@@ -1,18 +1,10 @@
-# akka-persistence-inmemory v1.2.15
+# akka-persistence-inmemory v1.3.0
 Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 Service | Status | Description
 ------- | ------ | -----------
 License | [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt) | Apache 2.0
 Bintray | [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion) | Latest Version on Bintray
-
-## New release
-The latest version is `v1.2.15`
-
-- It uses the same codebase as [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc) but uses an immutable Map as the storage engine.
-- It relies on [Akka Serialization](http://doc.akka.io/docs/akka/2.4.1/scala/serialization.html),
-  - For serializing, please split the domain model from the storage model, and use a binary format for the storage model that support schema versioning like [Google's protocol buffers](https://developers.google.com/protocol-buffers/docs/overview), as it is used by Akka Persistence, and is available as a dependent library. For an example on how to use Akka Serialization with protocol buffers, you can examine the [akka-serialization-test](https://github.com/dnvriend/akka-serialization-test) study project,
-- It supports the `Persistence Query` interface for both Java and Scala thus providing a universal asynchronous stream based query interface,
 
 ## Installation
 Add the following to your `build.sbt`:
@@ -21,10 +13,9 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.2.15"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.0"
 ```
 
-## Configuration
 # Configuration
 Add the following to the application.conf:
 
@@ -36,6 +27,30 @@ akka {
   }
 }
 ```   
+
+# Configuring the query API
+The query API can be configured by overriding the defaults by placing the following in application.conf:
+ 
+```
+# Optional
+inmemory-read-journal {
+  # New events are retrieved (polled) with this interval.
+  refresh-interval = "1s"
+
+  # How many events to fetch in one query (replay) and keep buffered until they
+  # are delivered downstreams.
+  max-buffer-size = "500"
+}
+```
+
+## Refresh Interval
+The async query API uses polling to query the journal for new events. The refresh interval can be configured
+eg. "1s" so that the journal will be polled every 1 second. This setting is global for each async query, so 
+the _allPersistenceId_, _eventsByTag_ and _eventsByPersistenceId_ queries.
+
+## Max Buffer Size
+When an async query is started, a number of events will be buffered and will use memory when not consumed by 
+a Sink. The default size is 500. 
 
 ## How to get the ReadJournal using Scala
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
@@ -191,29 +206,11 @@ The returned event stream contains only events that correspond to the given tag,
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
 from the tagged event stream. 
 
-## EventsByPersistenceIdAndTag and CurrentEventsByPersistenceIdAndTag
-`eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag` is used for retrieving specific events identified 
-by a specific tag for a specific PersistentActor identified by persistenceId. These two queries basically are 
-convenience operations that optimize the lookup of events because the database can efficiently filter out the initial 
-persistenceId/tag combination. 
-
-```scala
-import akka.actor.ActorSystem
-import akka.stream.{Materializer, ActorMaterializer}
-import akka.stream.scaladsl.Source
-import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
-import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
-
-implicit val system: ActorSystem = ActorSystem()
-implicit val mat: Materializer = ActorMaterializer()(system)
-val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
-
-val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByPersistenceIdAndTag("fruitbasket", "apple", 0L)
-
-val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByPersistenceIdAndTag("fruitbasket", "apple", 0L)
-```
-
 # What's new?
+## 1.3.0 (2016-06-09)
+  - Removed the queries `eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag` as they are not supported by Akka natively and can be configured by filtering the event stream.
+  - Implemented true async queries using the polling strategy
+
 ## 1.2.15 (2016-06-05)
   - Akka 2.4.6 -> 2.4.7
 
