@@ -23,7 +23,7 @@ import scala.concurrent.duration._
 abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(config) {
 
   it should "not find any events for unknown pid" in {
-    withEventsByPersistenceId(500.millis)("unkown-pid", 0L, Long.MaxValue) { tp ⇒
+    withEventsByPersistenceId()("unkown-pid", 0L, Long.MaxValue) { tp ⇒
       tp.request(1)
       tp.expectNoMsg(100.millis)
       tp.cancel()
@@ -39,23 +39,74 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
       actor1 ! withTags(4, "number")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 4
+        countJournal.futureValue shouldBe 4
+      }
+
+      withEventsByPersistenceId()("my-1", 0, 0) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 0, 1) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 1, 1) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 1, 2) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 2, 2) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
+        tp.cancel()
       }
 
       withEventsByPersistenceId()("my-1", 2, 3) { tp ⇒
         tp.request(Int.MaxValue)
         tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
         tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
-        tp.expectNoMsg(100.millis)
         tp.cancel()
-        tp.expectNoMsg(100.millis)
+      }
+
+      withEventsByPersistenceId()("my-1", 3, 3) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 0, 3) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.cancel()
+      }
+
+      withEventsByPersistenceId()("my-1", 1, 3) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNext(EventEnvelope(1, "my-1", 1, 1))
+        tp.expectNext(EventEnvelope(2, "my-1", 2, 2))
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.cancel()
       }
     }
   }
 
   it should "find events for actor with pid 'my-1'" in {
     withTestActors() { (actor1, actor2, actor3) ⇒
-      withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId()("my-1", 0) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
 
@@ -75,7 +126,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
 
   it should "find events for actor with pid 'my-1' and persisting messages to other actor" in {
     withTestActors() { (actor1, actor2, actor3) ⇒
-      withEventsByPersistenceId(500.millis)("my-1", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId()("my-1", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNoMsg(100.millis)
 
@@ -92,6 +143,10 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
         actor2 ! 3
         tp.expectNoMsg(100.millis)
 
+        actor1 ! 3
+        tp.expectNext(EventEnvelope(3, "my-1", 3, 3))
+        tp.expectNoMsg(100.millis)
+
         tp.cancel()
         tp.expectNoMsg(100.millis)
       }
@@ -105,10 +160,10 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
       actor2 ! 3
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
-      withEventsByPersistenceId(500.millis)("my-2", 0, Long.MaxValue) { tp ⇒
+      withEventsByPersistenceId()("my-2", 0, Long.MaxValue) { tp ⇒
         tp.request(10)
         tp.expectNext(EventEnvelope(1, "my-2", 1, 1))
         tp.expectNext(EventEnvelope(2, "my-2", 2, 2))
@@ -120,7 +175,7 @@ abstract class EventsByPersistenceIdTest(config: String) extends QueryTestSpec(c
         actor2 ! 7
 
         eventually {
-          journalDao.countJournal.futureValue shouldBe 6
+          countJournal.futureValue shouldBe 6
         }
 
         tp.expectNext(EventEnvelope(4, "my-2", 4, 5))

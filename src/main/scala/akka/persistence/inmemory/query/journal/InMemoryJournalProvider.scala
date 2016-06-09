@@ -16,12 +16,28 @@
 
 package akka.persistence.inmemory.query.journal
 
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.inmemory.extension.DaoRegistry
+import akka.persistence.inmemory.query.journal.config.InMemoryReadJournalConfig
+import akka.persistence.inmemory.serialization.{ AkkaSerializationProxy, SerializationFacade }
 import akka.persistence.query.ReadJournalProvider
+import akka.serialization.SerializationExtension
+import akka.stream.{ ActorMaterializer, Materializer }
 import com.typesafe.config.Config
 
-class InMemoryJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
-  override val scaladslReadJournal = new scaladsl.InMemoryReadJournal(config)(system)
+import scala.concurrent.ExecutionContext
 
+class InMemoryJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
+
+  implicit val log: LoggingAdapter = Logging.getLogger(system, getClass)
+  implicit val sys: ActorSystem = system
+  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val mat: Materializer = ActorMaterializer()
+
+  val queryPluginConfig = InMemoryReadJournalConfig(config)
+  val journalDao = DaoRegistry(system).journalDao
+  val serializationFacade = new SerializationFacade(new AkkaSerializationProxy(SerializationExtension(system)), ",")
+  override val scaladslReadJournal = new scaladsl.InMemoryReadJournal(queryPluginConfig, journalDao, serializationFacade)
   override val javadslReadJournal = new javadsl.InMemoryReadJournal(scaladslReadJournal)
 }

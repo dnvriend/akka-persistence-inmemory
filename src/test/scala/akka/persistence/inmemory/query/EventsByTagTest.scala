@@ -28,14 +28,13 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
       actor3 ! withTags(3, "three")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
       withEventsByTag()("unknown", 0) { tp ⇒
         tp.request(Int.MaxValue)
         tp.expectNoMsg(100.millis)
         tp.cancel()
-        tp.expectNoMsg(100.millis)
       }
     }
   }
@@ -46,21 +45,57 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
       actor2 ! withTags(2, "number")
       actor3 ! withTags(3, "number")
 
-      eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+      withEventsByTag()("number", 0) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.cancel()
       }
 
-      withEventsByTag()("number", 0) { tp ⇒
+      withEventsByTag()("number", 1) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.cancel()
+      }
+
+      withEventsByTag()("number", 2) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.cancel()
+      }
+
+      withEventsByTag()("number", 3) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
+        tp.cancel()
+      }
+
+      withEventsByTag()("number", 4) { tp ⇒
+        tp.request(Int.MaxValue)
+        tp.expectNoMsg(100.millis)
+        tp.cancel()
+      }
+
+      withEventsByTag(within = 5.seconds)("number", 0) { tp ⇒
         tp.request(Int.MaxValue)
         tp.expectNextPF { case EventEnvelope(1, _, _, _) ⇒ }
         tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
         tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
         tp.expectNoMsg(100.millis)
 
-        actor1 ! withTags(4, "number")
+        actor1 ! withTags(1, "number")
         tp.expectNextPF { case EventEnvelope(4, _, _, _) ⇒ }
+
+        actor1 ! withTags(1, "number")
+        tp.expectNextPF { case EventEnvelope(5, _, _, _) ⇒ }
+
+        actor1 ! withTags(1, "number")
+        tp.expectNextPF { case EventEnvelope(6, _, _, _) ⇒ }
         tp.cancel()
-        tp.expectNoMsg(100.millis)
       }
     }
   }
@@ -72,18 +107,18 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
       actor3 ! withTags(3, "number")
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 3
+        countJournal.futureValue shouldBe 3
       }
 
       withEventsByTag()("number", 2) { tp ⇒
         tp.request(Int.MaxValue)
+        tp.expectNextPF { case EventEnvelope(2, _, _, _) ⇒ }
         tp.expectNextPF { case EventEnvelope(3, _, _, _) ⇒ }
         tp.expectNoMsg(100.millis)
 
-        actor1 ! withTags(4, "number")
+        actor1 ! withTags(1, "number")
         tp.expectNextPF { case EventEnvelope(4, _, _, _) ⇒ }
         tp.cancel()
-        tp.expectNoMsg(100.millis)
       }
     }
   }
@@ -148,7 +183,7 @@ abstract class EventsByTagTest(config: String) extends QueryTestSpec(config) {
       actor1 ! 10
 
       eventually {
-        journalDao.countJournal.futureValue shouldBe 12
+        countJournal.futureValue shouldBe 12
       }
 
       withEventsByTag(10.seconds)("prime", 0) { tp ⇒

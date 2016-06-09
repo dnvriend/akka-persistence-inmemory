@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package akka.persistence.jdbc.query.journal.scaladsl
+package akka.persistence.inmemory.query.journal.config
 
-import akka.NotUsed
-import akka.persistence.query.EventEnvelope
-import akka.persistence.query.scaladsl.ReadJournal
-import akka.stream.scaladsl.Source
+import java.util.concurrent.TimeUnit
 
-trait EventsByPersistenceIdAndTagQuery extends ReadJournal {
-  /**
-   * Query events that have a specific persistenceId/tag combination
-   * This is an optimization query as the database can filter out the
-   * events for a specific persistenceId
-   */
-  def eventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed]
+import com.typesafe.config.Config
+
+import scala.concurrent.duration.FiniteDuration
+
+object InMemoryReadJournalConfig {
+  def apply(config: Config): InMemoryReadJournalConfig = InMemoryReadJournalConfig(
+    refreshInterval = FiniteDuration(config.getDuration("refresh-interval").toMillis, TimeUnit.MILLISECONDS),
+    maxBufferSize = config.getString("max-buffer-size").toInt
+  )
 }
+
+case class InMemoryReadJournalConfig(refreshInterval: FiniteDuration, maxBufferSize: Int)

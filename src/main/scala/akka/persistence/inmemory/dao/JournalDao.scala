@@ -37,14 +37,9 @@ object JournalDao {
 trait JournalDao {
 
   /**
-   * Returns distinct stream of persistenceIds
+   * Returns a set of persistenceIds
    */
-  def allPersistenceIdsSource: Source[String, NotUsed]
-
-  /**
-   * Returns the number of rows in the journal
-   */
-  def countJournal: Future[Int]
+  def allPersistenceIds: Future[Set[String]]
 
   /**
    * Deletes all persistent messages up to toSequenceNr (inclusive) for the persistenceId
@@ -107,9 +102,8 @@ class InMemoryJournalDao(db: ActorRef)(implicit timeout: Timeout, ec: ExecutionC
 
   val writeMessagesFacade: WriteMessagesFacade = new FlowGraphWriteMessagesFacade(this)
 
-  override def allPersistenceIdsSource: Source[String, NotUsed] =
-    Source.fromFuture((db ? AllPersistenceIds).mapTo[Set[String]])
-      .mapConcat(identity)
+  override def allPersistenceIds: Future[Set[String]] =
+    (db ? AllPersistenceIds).mapTo[Set[String]]
 
   override def writeFlow: Flow[Try[Iterable[Serialized]], Try[Iterable[Serialized]], NotUsed] =
     Flow[Try[Iterable[Serialized]]].via(writeMessagesFacade.writeMessages)
@@ -118,8 +112,6 @@ class InMemoryJournalDao(db: ActorRef)(implicit timeout: Timeout, ec: ExecutionC
     Source.fromFuture((db ? EventsByTag(tag, offset)).mapTo[List[Serialized]])
       .map(_.map(_.serialized))
       .mapConcat(identity)
-
-  override def countJournal: Future[Int] = (db ? CountJournal).mapTo[Int]
 
   override def highestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     (db ? HighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]

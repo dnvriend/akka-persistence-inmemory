@@ -17,47 +17,36 @@
 package akka.persistence.inmemory.query.journal.scaladsl
 
 import akka.NotUsed
-import akka.actor.{ ExtendedActorSystem, Props }
+import akka.actor.{ ActorSystem, Props }
+import akka.event.LoggingAdapter
 import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.DaoRegistry
-import akka.persistence.inmemory.query.journal.publisher.{ AllPersistenceIdsPublisher, EventsByPersistenceIdAndTagPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
-import akka.persistence.inmemory.serialization.{ AkkaSerializationProxy, SerializationFacade }
-import akka.persistence.jdbc.query.journal.scaladsl.{ EventsByPersistenceIdAndTagQuery, CurrentEventsByPersistenceIdAndTagQuery }
+import akka.persistence.inmemory.query.journal.config.InMemoryReadJournalConfig
+import akka.persistence.inmemory.query.journal.publisher.{ AllPersistenceIdsPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
+import akka.persistence.inmemory.serialization.SerializationFacade
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
-import akka.serialization.SerializationExtension
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
-import akka.stream.{ ActorMaterializer, Materializer }
-import com.typesafe.config.Config
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 object InMemoryReadJournal {
   final val Identifier = "inmemory-read-journal"
 }
 
-trait AbstractInmemoryReadJournal extends ReadJournal
+class InMemoryReadJournal(config: InMemoryReadJournalConfig, journalDao: JournalDao, serializationFacade: SerializationFacade)(implicit system: ActorSystem, mat: Materializer, ec: ExecutionContext, log: LoggingAdapter) extends ReadJournal
     with CurrentPersistenceIdsQuery
     with AllPersistenceIdsQuery
     with CurrentEventsByPersistenceIdQuery
     with EventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
-    with EventsByTagQuery
-    with CurrentEventsByPersistenceIdAndTagQuery
-    with EventsByPersistenceIdAndTagQuery {
-
-  implicit def mat: Materializer
-
-  def journalDao: JournalDao
-
-  def serializationFacade: SerializationFacade
+    with EventsByTagQuery {
 
   override def currentPersistenceIds(): Source[String, NotUsed] =
-    journalDao.allPersistenceIdsSource
+    Source.fromFuture(journalDao.allPersistenceIds).mapConcat(identity)
 
   override def allPersistenceIds(): Source[String, NotUsed] =
-    currentPersistenceIds()
-      .concat(Source.actorPublisher[String](Props(classOf[AllPersistenceIdsPublisher])))
+    Source.actorPublisher[String](Props(new AllPersistenceIdsPublisher(journalDao, config.refreshInterval, config.maxBufferSize))).mapMaterializedValue(_ ⇒ NotUsed)
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     journalDao.messages(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)
@@ -66,48 +55,16 @@ trait AbstractInmemoryReadJournal extends ReadJournal
       .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
 
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
-    currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)
-      .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByPersistenceIdPublisher], persistenceId)))
+    Source.actorPublisher[EventEnvelope](Props(new EventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, journalDao, serializationFacade, config.refreshInterval, config.maxBufferSize))).mapMaterializedValue(_ ⇒ NotUsed)
 
   override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     journalDao.eventsByTag(tag, offset)
       .via(serializationFacade.deserializeRepr)
       .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
-      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
+      .zipWith(Source(Stream.from(Math.max(1, offset.toInt)))) { // Needs a better way
         case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
       }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    currentEventsByTag(tag, offset)
-      .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByTagPublisher], tag)))
-      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
-        case (orig, i) ⇒ orig.copy(offset = i)
-      }
-
-  override def currentEventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    journalDao.eventsByTag(tag, offset)
-      .via(serializationFacade.deserializeRepr)
-      .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
-      .filter(_.persistenceId == persistenceId)
-      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
-        case (repr, i) ⇒ EventEnvelope(i, repr.persistenceId, repr.sequenceNr, repr.payload)
-      }
-
-  override def eventsByPersistenceIdAndTag(persistenceId: String, tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    currentEventsByPersistenceIdAndTag(persistenceId, tag, offset)
-      .concat(Source.actorPublisher[EventEnvelope](Props(classOf[EventsByPersistenceIdAndTagPublisher], persistenceId, tag)))
-      .zipWith(Source(Stream.from(offset.toInt + 1))) { // Needs a better way
-        case (orig, i) ⇒ orig.copy(offset = i)
-      }
-}
-
-class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSystem) extends AbstractInmemoryReadJournal {
-  override implicit val mat: Materializer =
-    ActorMaterializer()
-
-  override val journalDao: JournalDao =
-    DaoRegistry(system).journalDao
-
-  override val serializationFacade: SerializationFacade =
-    new SerializationFacade(new AkkaSerializationProxy(SerializationExtension(system)), ",")
+    Source.actorPublisher[EventEnvelope](Props(new EventsByTagPublisher(tag, offset.toInt, journalDao, serializationFacade, config.refreshInterval, config.maxBufferSize))).mapMaterializedValue(_ ⇒ NotUsed)
 }
