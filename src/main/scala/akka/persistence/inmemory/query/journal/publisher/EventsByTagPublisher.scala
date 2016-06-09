@@ -50,7 +50,7 @@ class EventsByTagPublisher(tag: String, offset: Int, journalDao: JournalDao, ser
 
   def polling(offset: Int): Receive = {
     case GetEventsByTag ⇒
-      journalDao.eventsByTag(tag, offset - 1)
+      journalDao.eventsByTag(tag, offset)
         .via(serializationFacade.deserializeRepr)
         .mapAsync(1)(deserializedRepr ⇒ Future.fromTry(deserializedRepr))
         .zipWith(Source(Stream.from(offset))) {

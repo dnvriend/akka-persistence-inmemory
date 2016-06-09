@@ -19,7 +19,9 @@ package akka.persistence.inmemory.dao
 import akka.actor.Status.Success
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
+import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.serialization.{ SerializationFacade, Serialized }
+import akka.serialization.SerializationExtension
 
 import scala.util.Try
 
@@ -57,15 +59,11 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
 
   var deleted_to = Map.empty[String, Vector[Long]]
 
+  val serializer = SerializationExtension(context.system).serializerFor(classOf[PersistentRepr])
+
   def allPersistenceIds(ref: ActorRef): Unit = {
     val determine = journal.keySet
-    log.debug(s"[allPersistenceIds]: $determine")
-    ref ! determine
-  }
-
-  def countJournal(ref: ActorRef): Unit = {
-    val determine: Int = journal.values.foldLeft(0) { case (c, s) ⇒ c + s.size }
-    log.debug(s"[countJournal]: $determine")
+    log.debug(s"==> [allPersistenceIds]: $determine")
     ref ! determine
   }
 
@@ -81,7 +79,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       Try(deleted_to.get(persistenceId).map(_.max(Ordering.Long))).toOption.flatten
 
     val highest = determineJournal.getOrElse(determineDeletedTo.getOrElse(0L))
-    log.debug(s"[highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
+    log.debug(s"==> [highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
     ref ! highest
   }
 
@@ -91,7 +89,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
     } yield x).toList.sortBy(_.created).drop((Math.max(1, offset) - 1).toInt)
-    log.debug(s"[eventsByTag]: tag: $tag, offset: $offset, returning: $determine")
+    log.debug(s"==> [eventsByTag]: tag: $tag, offset: $offset, returning: ${toText(determine)}")
     ref ! determine
   }
 
@@ -104,15 +102,23 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       if queryListOfPersistenceIds.toList contains pid
     } yield pid).toList
 
-    log.debug(s"[persistenceIds]: $determine")
+    log.debug(s"==> [persistenceIds]: $determine")
     ref ! determine
   }
+
+  def decode(bytes: Array[Byte]): PersistentRepr =
+    serializer.fromBinary(bytes).asInstanceOf[PersistentRepr]
+
+  def toText(xs: List[Serialized]): String =
+    xs.map(ser ⇒ decode(ser.serialized))
+      .map(repr ⇒ s"\n(pid:${repr.persistenceId},seqNo:${repr.sequenceNr},payload:${repr.payload})")
+      .mkString(",")
 
   def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
     xs.foreach { (serialized: Serialized) ⇒
       val key = serialized.persistenceId
       journal += (key → (journal.getOrElse(key, Vector.empty[Serialized]) :+ serialized))
-      log.debug(s"[writelist]: Adding $serialized, ${journal.mapValues(_.sortBy(_.sequenceNr).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
+      log.debug(s"==> [writelist]: Adding $serialized, ${journal.mapValues(_.sortBy(_.sequenceNr).map(s ⇒ s"pid:${s.persistenceId}, seqNr:${s.sequenceNr},payload:${decode(s.serialized).payload}"))},\ndeleted_to: $deleted_to")
     }
     ref ! Success("")
   }
@@ -126,7 +132,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       val key = persistenceId
       journal += (key → journal.getOrElse(key, Vector.empty).filterNot(_.sequenceNr == x.sequenceNr))
       deleted_to += (key → (deleted_to.getOrElse(key, Vector.empty) :+ x.sequenceNr))
-      log.debug(s"[delete]: $x,\njournal: ${journal.mapValues(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
+      log.debug(s"==> [delete]: $x,\njournal: ${journal.mapValues(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
     }
     ref ! Success("")
   }
@@ -139,7 +145,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       x ← xs
       if x.sequenceNr >= fromSequenceNr && x.sequenceNr <= toSequenceNr
     } yield x).toList.sortBy(_.sequenceNr).take(toTake)
-    log.debug(s"[messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => ${determine.map(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))}")
+    log.debug(s"==> [messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => ${determine.map(toText(_))}")
     ref ! determine.getOrElse(Nil)
   }
 
