@@ -16,14 +16,13 @@
 
 package akka.persistence.inmemory.dao
 
-import akka.actor.Status.Success
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.serialization.{ SerializationFacade, Serialized }
 import akka.serialization.SerializationExtension
-
-import scala.util.Try
 
 object InMemoryJournalStorage {
 
@@ -50,120 +49,95 @@ object InMemoryJournalStorage {
 
   // Success
   case object Clear
+
+  // wrapper
+  case class JournalEntry(ordering: Long, serialized: Serialized, deleted: Boolean = false)
 }
 
 class InMemoryJournalStorage extends Actor with ActorLogging {
   import InMemoryJournalStorage._
 
-  var journal = Map.empty[String, Vector[Serialized]]
+  var ordering = new AtomicLong()
+
+  var journal = Map.empty[String, Vector[JournalEntry]]
 
   var deleted_to = Map.empty[String, Vector[Long]]
 
   val serializer = SerializationExtension(context.system).serializerFor(classOf[PersistentRepr])
 
-  def allPersistenceIds(ref: ActorRef): Unit = {
-    val determine = journal.keySet
-    log.debug(s"==> [allPersistenceIds]: $determine")
-    ref ! determine
-  }
+  def allPersistenceIds(ref: ActorRef): Unit =
+    ref ! journal.keySet
 
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
-    val determineJournal = Try(for {
-      xs ← journal.get(persistenceId)
-    } yield (for {
-      x ← xs
-      if x.sequenceNr >= fromSequenceNr
-    } yield x.sequenceNr).max(Ordering.Long)).toOption.flatten
+    val xs = journal.filter(_._1 == persistenceId).values.flatMap(identity).map(_.serialized.sequenceNr)
+    val highestSequenceNrJournal = if (xs.nonEmpty) xs.max else 0
 
-    val determineDeletedTo: Option[Long] =
-      Try(deleted_to.get(persistenceId).map(_.max(Ordering.Long))).toOption.flatten
+    val ys = deleted_to.filter(_._1 == persistenceId).values.flatMap(identity)
+    val highestSequenceNrDeletedTo = if (ys.nonEmpty) ys.max else 0
 
-    val highest = determineJournal.getOrElse(determineDeletedTo.getOrElse(0L))
-    log.debug(s"==> [highestSequenceNr]: Sending $highest Journal: $determineJournal, deletedTo: $determineDeletedTo deleted_to: $deleted_to")
+    val highest = Math.max(highestSequenceNrJournal, highestSequenceNrDeletedTo)
+
     ref ! highest
   }
 
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
-    val determine: List[Serialized] = (for {
-      xs ← journal.values
-      x ← xs
-      if x.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)
-    } yield x).toList.sortBy(_.created).drop((Math.max(1, offset) - 1).toInt)
-    log.debug(s"==> [eventsByTag]: tag: $tag, offset: $offset, returning: ${toText(determine)}")
-    ref ! determine
+    val xs = journal.values.flatMap(identity)
+      .filter(_.ordering >= offset)
+      .filter(_.serialized.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)).toList
+      .sortBy(_.ordering)
+
+    ref ! xs
   }
-
-  /**
-   * Returns the persistenceIds that are available on request of a query list of persistence ids
-   */
-  def persistenceIds(ref: ActorRef, queryListOfPersistenceIds: Iterable[String]): Unit = {
-    val determine: List[String] = (for {
-      pid ← journal.keySet
-      if queryListOfPersistenceIds.toList contains pid
-    } yield pid).toList
-
-    log.debug(s"==> [persistenceIds]: $determine")
-    ref ! determine
-  }
-
-  def decode(bytes: Array[Byte]): PersistentRepr =
-    serializer.fromBinary(bytes).asInstanceOf[PersistentRepr]
-
-  def toText(xs: List[Serialized]): String =
-    xs.map(ser ⇒ decode(ser.serialized))
-      .map(repr ⇒ s"\n(pid:${repr.persistenceId},seqNo:${repr.sequenceNr},payload:${repr.payload})")
-      .mkString(",")
 
   def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
-    xs.foreach { (serialized: Serialized) ⇒
-      val key = serialized.persistenceId
-      journal += (key → (journal.getOrElse(key, Vector.empty[Serialized]) :+ serialized))
-      log.debug(s"==> [writelist]: Adding $serialized, ${journal.mapValues(_.sortBy(_.sequenceNr).map(s ⇒ s"pid:${s.persistenceId}, seqNr:${s.sequenceNr},payload:${decode(s.serialized).payload}"))},\ndeleted_to: $deleted_to")
-    }
-    ref ! Success("")
+    import scalaz._
+    import Scalaz._
+    val vect = xs.map(ser ⇒ JournalEntry(ordering.incrementAndGet(), ser)).toVector
+    val ys: Map[String, Vector[JournalEntry]] = xs.headOption.map(ser ⇒ Map(ser.persistenceId → vect)).getOrElse(Map.empty)
+    journal = journal |+| ys
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def delete(ref: ActorRef, persistenceId: String, toSequenceNr: Long): Unit = {
-    for {
-      xs ← journal.get(persistenceId)
-      x ← xs
-      if x.sequenceNr <= toSequenceNr
-    } {
-      val key = persistenceId
-      journal += (key → journal.getOrElse(key, Vector.empty).filterNot(_.sequenceNr == x.sequenceNr))
-      deleted_to += (key → (deleted_to.getOrElse(key, Vector.empty) :+ x.sequenceNr))
-      log.debug(s"==> [delete]: $x,\njournal: ${journal.mapValues(_.map(s ⇒ s"${s.persistenceId} - ${s.sequenceNr}"))},\ndeleted_to: $deleted_to")
-    }
-    ref ! Success("")
+    import scalaz._
+    import Scalaz._
+    val pidEntries = journal.filter(_._1 == persistenceId)
+    val deleted = pidEntries.mapValues(_.filter(_.serialized.sequenceNr <= toSequenceNr).map(_.copy(deleted = true)))
+    val notDeleted = pidEntries.mapValues(_.filterNot(_.serialized.sequenceNr <= toSequenceNr))
+    journal = journal.filterNot(_._1 == persistenceId) |+| deleted |+| notDeleted
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def messages(ref: ActorRef, persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): Unit = {
     def toTake = if (max >= Int.MaxValue) Int.MaxValue else max.toInt
-    val determine: Option[List[Serialized]] = for {
-      xs ← journal.get(persistenceId)
-    } yield (for {
-      x ← xs
-      if x.sequenceNr >= fromSequenceNr && x.sequenceNr <= toSequenceNr
-    } yield x).toList.sortBy(_.sequenceNr).take(toTake)
-    log.debug(s"==> [messages]: for pid: $persistenceId, from: $fromSequenceNr, to: $toSequenceNr, max: $max => ${determine.map(toText(_))}")
-    ref ! determine.getOrElse(Nil)
+    val pidEntries = journal.filter(_._1 == persistenceId)
+    val xs = pidEntries.values.flatMap(identity)
+      .filterNot(_.deleted)
+      .filter(_.serialized.sequenceNr >= fromSequenceNr)
+      .filter(_.serialized.sequenceNr <= toSequenceNr)
+      .toList.sortBy(_.serialized.sequenceNr)
+      .take(toTake)
+
+    ref ! xs
   }
 
   def clear(ref: ActorRef): Unit = {
-    journal = Map.empty[String, Vector[Serialized]]
+    journal = Map.empty[String, Vector[JournalEntry]]
     deleted_to = Map.empty[String, Vector[Long]]
-    ref ! Success("")
+    ordering = new AtomicLong()
+
+    ref ! akka.actor.Status.Success("")
   }
 
   override def receive: Receive = LoggingReceive {
     case AllPersistenceIds                                          ⇒ allPersistenceIds(sender())
     case HighestSequenceNr(persistenceId, fromSequenceNr)           ⇒ highestSequenceNr(sender(), persistenceId, fromSequenceNr)
     case EventsByTag(tag, offset)                                   ⇒ eventsByTag(sender(), tag, offset)
-    case PersistenceIds(queryListOfPersistenceIds)                  ⇒ persistenceIds(sender(), queryListOfPersistenceIds)
     case WriteList(xs)                                              ⇒ writelist(sender(), xs)
     case Delete(persistenceId, toSequenceNr)                        ⇒ delete(sender(), persistenceId, toSequenceNr)
     case Messages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒ messages(sender(), persistenceId, fromSequenceNr, toSequenceNr, max)
     case Clear                                                      ⇒ clear(sender())
-    case msg                                                        ⇒ println("--> Dropping msg: " + msg.getClass.getName)
   }
 }

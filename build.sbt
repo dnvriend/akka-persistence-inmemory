@@ -33,6 +33,7 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+    "org.scalaz" %% "scalaz-core" % "7.2.4",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
