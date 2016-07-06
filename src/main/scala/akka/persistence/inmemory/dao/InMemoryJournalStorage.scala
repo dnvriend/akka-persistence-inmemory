@@ -21,10 +21,13 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
-import akka.persistence.inmemory.serialization.{ SerializationFacade, Serialized }
 import akka.serialization.SerializationExtension
 
+import scala.compat.Platform
+
 object InMemoryJournalStorage {
+
+  case class Serialized(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], created: Long = Platform.currentTime)
 
   // List[String]
   case object AllPersistenceIds
@@ -75,7 +78,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     val ys = deleted_to.filter(_._1 == persistenceId).values.flatMap(identity)
     val highestSequenceNrDeletedTo = if (ys.nonEmpty) ys.max else 0
 
-    val highest = Math.max(highestSequenceNrJournal, highestSequenceNrDeletedTo)
+    val highest: Long = Math.max(highestSequenceNrJournal, highestSequenceNrDeletedTo)
 
     ref ! highest
   }
@@ -83,8 +86,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
     val xs = journal.values.flatMap(identity)
       .filter(_.ordering >= offset)
-      .filter(_.serialized.tags.exists(tags ⇒ SerializationFacade.decodeTags(tags, ",") contains tag)).toList
-      .sortBy(_.ordering)
+    //      .filter(_.serialized.tags.exists(tacontains tag)).toList
+    //      .sortBy(_.ordering)
 
     ref ! xs
   }

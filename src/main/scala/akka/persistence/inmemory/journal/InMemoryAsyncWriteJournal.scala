@@ -16,23 +16,66 @@
 
 package akka.persistence.inmemory.journal
 
-import akka.actor.ActorSystem
-import akka.persistence.inmemory.dao.JournalDao
-import akka.persistence.inmemory.extension.DaoRegistry
-import akka.persistence.inmemory.serialization.SerializationFacade
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.persistence.inmemory.extension.StorageExtension
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
+import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.stream.{ ActorMaterializer, Materializer }
+import akka.util.Timeout
+import com.typesafe.config.Config
+import akka.pattern.ask
+import akka.persistence.inmemory.dao.InMemoryJournalStorage
+import akka.persistence.inmemory.dao.InMemoryJournalStorage.{ JournalEntry, Serialized }
+import akka.persistence.inmemory.util.TrySeq
+import akka.serialization.SerializationExtension
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 
-import scala.concurrent.ExecutionContext
+import scala.collection.immutable.Seq
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
 
-class InMemoryAsyncWriteJournal extends InMemoryAsyncWriteJournalLike {
+class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val ec: ExecutionContext = context.dispatcher
-
   implicit val system: ActorSystem = context.system
+  implicit val mat: Materializer = ActorMaterializer()
+  implicit val timeout: Timeout = Timeout(10.seconds)
+  val serialization = SerializationExtension(system)
 
-  override implicit val mat: Materializer = ActorMaterializer()
+  val journal: ActorRef = StorageExtension(system).journalStorage
 
-  override val journalDao: JournalDao = DaoRegistry(system).journalDao
+  def serialize(persistentRepr: PersistentRepr): Try[(Array[Byte], Set[String])] = persistentRepr.payload match {
+    case Tagged(payload, tags) ⇒
+      serialization.serialize(persistentRepr.withPayload(payload)).map((_, tags))
+    case _ ⇒ serialization.serialize(persistentRepr).map((_, Set.empty[String]))
+  }
 
-  override val serializationFacade: SerializationFacade =
-    SerializationFacade(system, ",")
+  def toSerialized(repr: PersistentRepr, arr: Array[Byte], tags: Set[String]): Serialized =
+    Serialized(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
+
+  override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] =
+    Source(messages)
+      .map(write ⇒ write.payload.map(repr ⇒ serialize(repr).map { case (arr, tags) ⇒ toSerialized(repr, arr, tags) }))
+      .map(TrySeq.sequence)
+      .map(_.map(xs ⇒ (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ ())))
+      .mapAsync(1) {
+        case Success(future) ⇒ future.map(Success(_))
+        case Failure(t)      ⇒ Future.successful(Failure(t))
+      }.runWith(Sink.seq)
+
+  override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
+    (journal ? InMemoryJournalStorage.Delete(persistenceId, toSequenceNr)).map(_ ⇒ ())
+
+  override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+    (journal ? InMemoryJournalStorage.HighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]
+
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
+    Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, max)).mapTo[List[JournalEntry]])
+      .mapConcat(identity)
+      .map(_.serialized.serialized)
+      .map(serialization.deserialize(_, classOf[PersistentRepr]))
+      .mapAsync(1)(Future.fromTry)
+      .runForeach(recoveryCallback)
+      .map(_ ⇒ ())
+
 }

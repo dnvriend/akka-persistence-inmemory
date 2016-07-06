@@ -20,9 +20,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Status.Success
 import akka.actor.{ ActorRef, Props }
+import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.inmemory.dao.InMemoryJournalStorage.{ AllPersistenceIds, Delete, Messages, WriteList }
-import akka.persistence.inmemory.serialization.Serialized
+import akka.persistence.inmemory.dao.InMemoryJournalStorage._
 import akka.testkit.TestProbe
 
 class InMemoryJournalStorageTest extends TestSpec {
@@ -36,7 +36,7 @@ class InMemoryJournalStorageTest extends TestSpec {
   }
 
   def event(pid: String): Serialized =
-    Serialized(pid, next, Array.empty, None)
+    Serialized(pid, next, Array.empty, PersistentRepr(""), Set.empty)
 
   def withJournalStorage(f: (ActorRef, TestProbe) ⇒ Unit): Unit = {
     val ref = system.actorOf(Props[InMemoryJournalStorage])

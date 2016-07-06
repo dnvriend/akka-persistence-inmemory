@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.query
+package akka.persistence.inmemory.util
 
-import akka.persistence.inmemory.query.TaggingEventAdapter.TagEvent
-import akka.persistence.journal.{ Tagged, WriteEventAdapter }
+import scala.util.{ Failure, Success, Try }
 
-object TaggingEventAdapter {
-  case class TagEvent(payload: Any, tags: Set[String])
-}
-
-/**
- * The TaggingEventAdapter will instruct persistence
- * to tag the received event.
- */
-class TaggingEventAdapter extends WriteEventAdapter {
-  override def manifest(event: Any): String = ""
-
-  override def toJournal(event: Any): Any = event match {
-    case TagEvent(payload, tags) ⇒
-      Tagged(payload, tags)
-    case _ ⇒ event
+object TrySeq {
+  def sequence[R](seq: Seq[Try[R]]): Try[Seq[R]] = {
+    seq match {
+      case Success(h) :: tail ⇒
+        tail.foldLeft(Try(h :: Nil)) {
+          case (Success(acc), Success(elem)) ⇒ Success(elem :: acc)
+          case (e: Failure[_], _)            ⇒ e
+          case (_, Failure(e))               ⇒ Failure(e)
+        }
+      case Failure(e) :: _ ⇒ Failure(e)
+      case Nil             ⇒ Try { Nil }
+    }
   }
 }
