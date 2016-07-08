@@ -17,8 +17,6 @@
 package akka.persistence.inmemory.snapshot
 
 import akka.persistence.snapshot.SnapshotStoreSpec
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.ConfigFactory
 
-abstract class AbstractInMemorySnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config)
-
-class InmemorySnapshotStoreSpec extends AbstractInMemorySnapshotStoreSpec(ConfigFactory.load("application.conf"))
+class InMemorySnapshotStoreSpec extends SnapshotStoreSpec(ConfigFactory.load("application.conf"))

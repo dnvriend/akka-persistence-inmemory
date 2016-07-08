@@ -16,30 +16,31 @@
 
 package akka.persistence.inmemory.journal
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ ActorRef, ActorSystem }
-import akka.persistence.inmemory.extension.StorageExtension
+import akka.pattern.ask
+import akka.persistence.inmemory.extension.InMemoryJournalStorage.{ JournalEntry, Serialized }
+import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
+import akka.persistence.inmemory.util.TrySeq
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.serialization.SerializationExtension
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
-import akka.pattern.ask
-import akka.persistence.inmemory.dao.InMemoryJournalStorage
-import akka.persistence.inmemory.dao.InMemoryJournalStorage.{ JournalEntry, Serialized }
-import akka.persistence.inmemory.util.TrySeq
-import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{ Flow, Sink, Source }
 
 import scala.collection.immutable.Seq
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
-  implicit val ec: ExecutionContext = context.dispatcher
   implicit val system: ActorSystem = context.system
+  implicit val ec: ExecutionContext = context.dispatcher
   implicit val mat: Materializer = ActorMaterializer()
-  implicit val timeout: Timeout = Timeout(10.seconds)
+  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) → SECONDS)
   val serialization = SerializationExtension(system)
 
   val journal: ActorRef = StorageExtension(system).journalStorage

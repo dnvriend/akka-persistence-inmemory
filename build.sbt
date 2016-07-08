@@ -27,7 +27,7 @@ crossScalaVersions := Seq("2.11.8", "2.12.0-M4")
 resolvers += Resolver.typesafeRepo("releases")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.7"
+  val akkaVersion = "2.4.8"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,

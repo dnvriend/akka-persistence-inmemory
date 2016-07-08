@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.dao
+package akka.persistence.inmemory.extension
 
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
-import akka.serialization.SerializationExtension
 
 import scala.compat.Platform
 
@@ -64,23 +63,16 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
 
   var journal = Map.empty[String, Vector[JournalEntry]]
 
-  var deleted_to = Map.empty[String, Vector[Long]]
-
-  val serializer = SerializationExtension(context.system).serializerFor(classOf[PersistentRepr])
-
   def allPersistenceIds(ref: ActorRef): Unit =
-    ref ! journal.keySet
+    ref ! akka.actor.Status.Success(journal.keySet)
 
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
-    val xs = journal.filter(_._1 == persistenceId).values.flatMap(identity).map(_.serialized.sequenceNr)
+    val xs = journal.filter(_._1 == persistenceId)
+      .values.flatMap(identity)
+      .map(_.serialized.sequenceNr)
     val highestSequenceNrJournal = if (xs.nonEmpty) xs.max else 0
 
-    val ys = deleted_to.filter(_._1 == persistenceId).values.flatMap(identity)
-    val highestSequenceNrDeletedTo = if (ys.nonEmpty) ys.max else 0
-
-    val highest: Long = Math.max(highestSequenceNrJournal, highestSequenceNrDeletedTo)
-
-    ref ! highest
+    ref ! akka.actor.Status.Success(highestSequenceNrJournal)
   }
 
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
@@ -89,7 +81,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     //      .filter(_.serialized.tags.exists(tacontains tag)).toList
     //      .sortBy(_.ordering)
 
-    ref ! xs
+    ref ! akka.actor.Status.Success(xs)
   }
 
   def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
@@ -123,12 +115,11 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       .toList.sortBy(_.serialized.sequenceNr)
       .take(toTake)
 
-    ref ! xs
+    ref ! akka.actor.Status.Success(xs)
   }
 
   def clear(ref: ActorRef): Unit = {
     journal = Map.empty[String, Vector[JournalEntry]]
-    deleted_to = Map.empty[String, Vector[Long]]
     ordering = new AtomicLong()
 
     ref ! akka.actor.Status.Success("")

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.dao
+package akka.persistence.inmemory.extension
 
 import akka.actor.Status.Success
 import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.persistence.inmemory.dao.SnapshotDao.SnapshotData
 
 object InMemorySnapshotStorage {
+  case class SnapshotData(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
+
   // Success
   case class Delete(persistenceId: String, sequenceNr: Long)
 

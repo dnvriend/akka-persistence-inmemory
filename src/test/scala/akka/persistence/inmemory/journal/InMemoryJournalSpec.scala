@@ -17,25 +17,9 @@
 package akka.persistence.inmemory.journal
 
 import akka.persistence.CapabilityFlag
-import akka.persistence.inmemory.util.ClasspathResources
 import akka.persistence.journal.JournalSpec
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
-import scala.concurrent.duration._
-
-abstract class AbstractInMemoryJournalSpec(config: Config) extends JournalSpec(config)
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach
-    with ScalaFutures
-    with ClasspathResources {
-
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = false
-
-  implicit val pc: PatienceConfig = PatienceConfig(timeout = 10.seconds)
-
-  implicit val ec = system.dispatcher
+class InMemoryJournalSpec extends JournalSpec(ConfigFactory.load("application.conf")) {
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true
 }
-
-class InMemoryJournalSpec extends AbstractInMemoryJournalSpec(ConfigFactory.load("application.conf"))

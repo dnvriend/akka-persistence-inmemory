@@ -20,18 +20,29 @@ import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.inmemory.util.ClasspathResources
 import akka.serialization.SerializationExtension
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.util.Try
 
-abstract class TestSpec(config: String = "application.conf") extends SimpleSpec {
-  implicit val system: ActorSystem = ActorSystem("test", ConfigFactory.load(config))
+trait TestSpec extends FlatSpec
+    with Matchers
+    with ScalaFutures
+    with Eventually
+    with ClasspathResources
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
+
+  implicit val system: ActorSystem = ActorSystem()
   implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val log: LoggingAdapter = Logging(system, this.getClass)
@@ -39,19 +50,8 @@ abstract class TestSpec(config: String = "application.conf") extends SimpleSpec 
   implicit val timeout = Timeout(30.seconds)
   val serialization = SerializationExtension(system)
 
-  /**
-   * TestKit-based probe which allows sending, reception and reply.
-   */
-  def probe: TestProbe = TestProbe()
-
-  /**
-   * Returns a random UUID
-   */
   def randomId = UUID.randomUUID.toString.take(5)
 
-  /**
-   * Sends the PoisonPill command to an actor and waits for it to die
-   */
   def killActors(actors: ActorRef*): Unit = {
     val tp = TestProbe()
     actors.foreach { (actor: ActorRef) ⇒
@@ -68,4 +68,5 @@ abstract class TestSpec(config: String = "application.conf") extends SimpleSpec 
   implicit class PimpedFuture[T](self: Future[T]) {
     def toTry: Try[T] = Try(self.futureValue)
   }
+
 }
