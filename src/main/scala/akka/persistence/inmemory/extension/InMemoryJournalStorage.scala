@@ -78,8 +78,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
     val xs = journal.values.flatMap(identity)
       .filter(_.ordering >= offset)
-    //      .filter(_.serialized.tags.exists(tacontains tag)).toList
-    //      .sortBy(_.ordering)
+      .filter(_.serialized.tags.exists(tags ⇒ tags.contains(tag))).toList
+      .sortBy(_.ordering)
 
     ref ! akka.actor.Status.Success(xs)
   }
@@ -108,7 +108,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   def messages(ref: ActorRef, persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long): Unit = {
     def toTake = if (max >= Int.MaxValue) Int.MaxValue else max.toInt
     val pidEntries = journal.filter(_._1 == persistenceId)
-    val xs = pidEntries.values.flatMap(identity)
+    val xs: List[JournalEntry] = pidEntries.values.flatMap(identity)
       .filterNot(_.deleted)
       .filter(_.serialized.sequenceNr >= fromSequenceNr)
       .filter(_.serialized.sequenceNr <= toSequenceNr)
@@ -119,8 +119,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   }
 
   def clear(ref: ActorRef): Unit = {
-    journal = Map.empty[String, Vector[JournalEntry]]
     ordering = new AtomicLong()
+    journal = Map.empty[String, Vector[JournalEntry]]
 
     ref ! akka.actor.Status.Success("")
   }
