@@ -16,7 +16,6 @@
 
 package akka.persistence.inmemory.extension
 
-import akka.actor.Status.Success
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 
 object InMemorySnapshotStorage {
@@ -59,96 +58,70 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   var snapshot = Map.empty[String, Vector[SnapshotData]]
 
   def clear(ref: ActorRef): Unit = {
-    log.debug("[Clear]")
-    ref ! Success("")
+    snapshot = Map.empty[String, Vector[SnapshotData]]
+    ref ! akka.actor.Status.Success("")
+  }
+
+  def delete(persistenceId: String, predicate: SnapshotData ⇒ Boolean): Unit = {
+    import scalaz._
+    import Scalaz._
+    val pidEntries = snapshot.filter(_._1 == persistenceId)
+    val notDeleted = pidEntries.mapValues(_.filterNot(predicate))
+    snapshot = snapshot.filterNot(_._1 == persistenceId) |+| notDeleted
   }
 
   def delete(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
-    log.debug(s"s[delete]: pid: $persistenceId, seqno: $sequenceNr, snapshotStore: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
-    for {
-      xs ← snapshot.get(persistenceId)
-      x ← xs
-      if x.sequenceNumber == sequenceNr
-    } {
-      val key = persistenceId
-      snapshot += (key → snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == sequenceNr))
-      log.debug(s"[deleting]: ${x.persistenceId} - ${x.sequenceNumber}, rest: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
-    }
-    log.debug(s"s[delete-finished]: pid: $persistenceId, seqno: $sequenceNr, snapshotStore: ${snapshot.get(persistenceId).map(_.sortBy(_.sequenceNumber).map(s ⇒ s"${s.persistenceId} - ${s.sequenceNumber}"))}")
-    ref ! Success("")
+    delete(persistenceId, _.sequenceNumber == sequenceNr)
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def deleteUpToMaxSequenceNr(ref: ActorRef, persistenceId: String, maxSequenceNr: Long): Unit = {
-    for {
-      xs ← snapshot.get(persistenceId)
-      x ← xs
-      if x.sequenceNumber <= maxSequenceNr
-    } {
-      log.debug(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
-      val key = persistenceId
-      snapshot += (key → snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
-    }
+    delete(persistenceId, _.sequenceNumber <= maxSequenceNr)
 
-    log.debug(s"[deleteUpToMaxSequenceNr]: pid: $persistenceId, maxSeqNo: $maxSequenceNr")
-    ref ! Success("")
+    ref ! akka.actor.Status.Success("")
   }
 
   def deleteAllSnapshots(ref: ActorRef, persistenceId: String): Unit = {
     snapshot -= persistenceId
-    log.debug(s"[deleteAllSnapshots]: $persistenceId")
-    ref ! Success("")
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def deleteUpToMaxTimestamp(ref: ActorRef, persistenceId: String, maxTimestamp: Long): Unit = {
-    for {
-      xs ← snapshot.get(persistenceId)
-      x ← xs
-      if x.created <= maxTimestamp
-    } {
-      log.debug(s"[deleting]: $x, rest: ${snapshot.get(persistenceId)}")
-      val key = persistenceId
-      snapshot += (key → snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
-    }
+    delete(persistenceId, _.created <= maxTimestamp)
 
-    log.debug(s"[deleteUpToMaxTimestamp]: pid: $persistenceId, maxTimestamp: $maxTimestamp")
-    ref ! Success("")
+    ref ! akka.actor.Status.Success("")
   }
 
   def deleteUpToMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long): Unit = {
-    for {
-      xs ← snapshot.get(persistenceId)
-      x ← xs
-      if x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp
-    } {
-      val key = persistenceId
-      snapshot += (key → snapshot.getOrElse(key, Vector.empty).filterNot(_.sequenceNumber == x.sequenceNumber))
-      log.debug(s"[deleting]: $x rest: ${snapshot.get(persistenceId)}")
-    }
-    log.debug(s"[deleteUpToMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, maxSeqNo: $maxSequenceNr, maxTimestamp: $maxTimestamp")
-    ref ! Success("")
+    delete(persistenceId, (x: SnapshotData) ⇒ x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def save(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long, data: Array[Byte]): Unit = {
+    import scalaz._
+    import Scalaz._
     val key = persistenceId
-    snapshot += (key → (snapshot.getOrElse(key, Vector.empty) :+ SnapshotData(persistenceId, sequenceNr, timestamp, data)))
-    log.debug(s"[Save]: Saving snapshot: pid: $persistenceId, seqnr: $sequenceNr, timestamp: $timestamp")
-    ref ! Success("")
+    snapshot = snapshot |+| Map(key → Vector(SnapshotData(persistenceId, sequenceNr, timestamp, data)))
+
+    ref ! akka.actor.Status.Success("")
   }
 
   def snapshotForMaxSequenceNr(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
     val determine = snapshot.get(persistenceId).flatMap(xs ⇒ xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
-    log.debug(s"[snapshotForMaxSequenceNr]: pid: $persistenceId, seqno: $sequenceNr, returning: $determine")
-    ref ! determine
+
+    ref ! akka.actor.Status.Success(determine)
   }
 
   def snapshotFor(ref: ActorRef, persistenceId: String)(p: SnapshotData ⇒ Boolean): Unit = {
     val determine: Option[SnapshotData] = snapshot.get(persistenceId).flatMap(_.find(p))
-    log.debug(s"[snapshotFor]: pid: $persistenceId: returning: $determine")
-    ref ! determine
+
+    ref ! akka.actor.Status.Success(determine)
   }
 
   def snapshotForMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long): Unit = {
-    log.debug(s"[snapshotForMaxSequenceNrAndMaxTimestamp]: pid: $persistenceId, seqno: $sequenceNr, timestamp: $timestamp")
     snapshotFor(ref, persistenceId)(snap ⇒ snap.sequenceNumber == sequenceNr)
   }
 
