@@ -20,7 +20,7 @@ package query
 import akka.actor.ActorLogging
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
-import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.scaladsl.CurrentEventsByTagQuery
 import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
@@ -36,7 +36,7 @@ object EventsByTagPublisher {
   case object DetermineSchedulePoll extends EventsByTagPublisherCommand
 }
 
-class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDuration, maxBufferSize: Int, query: EventsByTagQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDuration, maxBufferSize: Int, query: CurrentEventsByTagQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
   import EventsByTagPublisher._
 
   def determineSchedulePoll(): Unit = {
@@ -50,15 +50,15 @@ class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDura
 
   def polling(offset: Long): Receive = {
     case GetEventsByTag ⇒
-      log.debug("[EventsByTagPublisher]: GetEventByTag, from offset: {}", offset)
-      query.eventsByTag(tag, offset)
+      //      println(s"[EventsByTagPublisher]: GetEventByTag, from offset: $offset")
+      query.currentEventsByTag(tag, offset)
         .runWith(Sink.seq)
         .map { xs ⇒
           buf = buf ++ xs
-          log.debug("[EventsByTagPublisher]: Total buffer: {} and deliver", buf)
+          //          println(s"[EventsByTagPublisher]: Total buffer: {} and deliver $buf")
           val latestOrdering = if (buf.nonEmpty) buf.map(_.offset).max + 1 else offset
           deliverBuf()
-          log.debug("[EventsByTagPublisher]: After deliver call: {}, storing offset (plus 1): {}", buf, latestOrdering)
+          //          println(s"[EventsByTagPublisher]: After deliver call: $buf, storing offset (plus 1): $latestOrdering")
           context.become(active(latestOrdering))
         }.recover {
           case t: Throwable ⇒

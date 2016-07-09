@@ -25,7 +25,7 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
   it should "not find any events for unknown pid" in {
     withEventsByPersistenceId()("unkown-pid", 0L, Long.MaxValue) { tp ⇒
       tp.request(1)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
   }
@@ -35,21 +35,21 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
 
     withEventsByPersistenceId()("my-1", 0, 0) { tp ⇒
       tp.request(Long.MaxValue)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
     withEventsByPersistenceId()("my-1", 0, 1) { tp ⇒
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
     withEventsByPersistenceId()("my-1", 1, 1) { tp ⇒
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
@@ -57,14 +57,14 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
     withEventsByPersistenceId()("my-1", 2, 2) { tp ⇒
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
@@ -72,14 +72,14 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
     withEventsByPersistenceId()("my-1", 3, 3) { tp ⇒
       tp.request(Long.MaxValue)
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
@@ -88,7 +88,7 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
 
@@ -97,7 +97,7 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
   }
@@ -105,15 +105,15 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
   it should "find events for actor with pid 'my-1'" in {
     withEventsByPersistenceId()("my-1", 0) { tp ⇒
       tp.request(Long.MaxValue)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(1, 1, "my-1")
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(2, 2, "my-1")
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
       tp.cancel()
     }
   }
@@ -121,22 +121,22 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
   it should "find events for pid 'my-1' and persisting messages to other actor" in {
     withEventsByPersistenceId()("my-1", 0, Long.MaxValue) { tp ⇒
       tp.request(Long.MaxValue)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(1, 1, "my-1")
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-1", 1, "a-1"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(2, 2, "my-1")
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-1", 2, "a-2"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(1, 3, "my-2")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(3, 3, "my-1")
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       tp.cancel()
     }
@@ -151,14 +151,14 @@ class EventsByPersistenceIdTest extends QueryTestSpec {
       tp.expectNext(ExpectNextTimeout, EventEnvelope(1, "my-2", 1, "a-1"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(2, "my-2", 2, "a-2"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(3, "my-2", 3, "a-3"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       persist(3, 6, "my-2")
 
       tp.expectNext(ExpectNextTimeout, EventEnvelope(4, "my-2", 4, "a-4"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(5, "my-2", 5, "a-5"))
       tp.expectNext(ExpectNextTimeout, EventEnvelope(6, "my-2", 6, "a-6"))
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMsg(300.millis)
 
       tp.cancel()
     }
