@@ -1,4 +1,4 @@
-# akka-persistence-inmemory v1.3.0
+# akka-persistence-inmemory v1.3.1
 Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
 
 Service | Status | Description
@@ -14,7 +14,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.1"
 ```
 
 # Configuration
@@ -40,7 +40,7 @@ inmemory-read-journal {
 
   # How many events to fetch in one query (replay) and keep buffered until they
   # are delivered downstreams.
-  max-buffer-size = "500"
+  max-buffer-size = "100"
 }
 ```
 
@@ -208,6 +208,11 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 # What's new?
+## 1.3.1 (2016-07-09)
+  - Akka 2.4.7 -> 2.4.8,
+  - Behavior of akka-persistence-query *byTag query should be up to spec,
+  - Refactored the inmemory plugin code base, should be more clean now.
+
 ## 1.3.0 (2016-06-09)
   - Removed the queries `eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag` as they are not supported by Akka natively and can be configured by filtering the event stream.
   - Implemented true async queries using the polling strategy
