@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.util
+package akka.persistence
 
 import scala.util.{ Failure, Success, Try }
 
-object TrySeq {
+package object inmemory {
+  type Seq[A] = scala.collection.immutable.Seq[A]
+
+  final case class JournalEntry(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], deleted: Boolean = false, ordering: Long = -1)
+  final case class snapshotEntry(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
+
+  implicit def convertSeqToVector[K, V](map: Map[K, Seq[V]]) = map.mapValues(_.toVector)
+
   def sequence[R](seq: Seq[Try[R]]): Try[Seq[R]] = {
     seq match {
       case Success(h) :: tail ⇒

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.query
+package akka.persistence.inmemory
+package query
 
 import akka.actor.ActorLogging
 import akka.event.LoggingReceive

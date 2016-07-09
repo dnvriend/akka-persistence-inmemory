@@ -14,49 +14,28 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.extension
+package akka.persistence.inmemory
+package extension
 
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
-import akka.persistence.PersistentRepr
-
-import scala.compat.Platform
 
 object InMemoryJournalStorage {
-
-  case class Serialized(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], created: Long = Platform.currentTime)
-
-  // List[String]
-  case object AllPersistenceIds
-
-  // Long
-  case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
-
-  // List[Array[Byte]]
-  case class EventsByTag(tag: String, offset: Long)
-
-  // List[String]
-  case class PersistenceIds(queryListOfPersistenceIds: Iterable[String])
-
-  // Success
-  case class WriteList(xs: Iterable[Serialized])
-
-  // Success
-  case class Delete(persistenceId: String, toSequenceNr: Long)
-
-  // List[Array[Byte]]
-  case class Messages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
-
-  // Success
-  case object Clear
-
-  // wrapper
-  case class JournalEntry(ordering: Long, serialized: Serialized, deleted: Boolean = false)
+  sealed trait JournalCommand
+  case object AllPersistenceIds extends JournalCommand
+  final case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long) extends JournalCommand
+  final case class EventsByTag(tag: String, offset: Long) extends JournalCommand
+  final case class PersistenceIds(queryListOfPersistenceIds: Seq[String]) extends JournalCommand
+  final case class WriteList(xs: Seq[JournalEntry]) extends JournalCommand
+  final case class Delete(persistenceId: String, toSequenceNr: Long) extends JournalCommand
+  final case class Messages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long) extends JournalCommand
+  case object ClearJournal extends JournalCommand
 }
 
 class InMemoryJournalStorage extends Actor with ActorLogging {
+
   import InMemoryJournalStorage._
 
   var ordering = new AtomicLong()
@@ -69,7 +48,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
     val xs = journal.filter(_._1 == persistenceId)
       .values.flatMap(identity)
-      .map(_.serialized.sequenceNr)
+      .map(_.sequenceNr)
     val highestSequenceNrJournal = if (xs.nonEmpty) xs.max else 0
 
     ref ! akka.actor.Status.Success(highestSequenceNrJournal)
@@ -78,17 +57,16 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
     val xs = journal.values.flatMap(identity)
       .filter(_.ordering >= offset)
-      .filter(_.serialized.tags.exists(tags ⇒ tags.contains(tag))).toList
+      .filter(_.tags.exists(tags ⇒ tags.contains(tag))).toList
       .sortBy(_.ordering)
 
     ref ! akka.actor.Status.Success(xs)
   }
 
-  def writelist(ref: ActorRef, xs: Iterable[Serialized]): Unit = {
+  def writelist(ref: ActorRef, xs: Seq[JournalEntry]): Unit = {
     import scalaz._
     import Scalaz._
-    val vect = xs.map(ser ⇒ JournalEntry(ordering.incrementAndGet(), ser)).toVector
-    val ys: Map[String, Vector[JournalEntry]] = xs.headOption.map(ser ⇒ Map(ser.persistenceId → vect)).getOrElse(Map.empty)
+    val ys = xs.map(_.copy(ordering = ordering.incrementAndGet())).groupBy(_.persistenceId)
     journal = journal |+| ys
 
     ref ! akka.actor.Status.Success("")
@@ -98,8 +76,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     import scalaz._
     import Scalaz._
     val pidEntries = journal.filter(_._1 == persistenceId)
-    val deleted = pidEntries.mapValues(_.filter(_.serialized.sequenceNr <= toSequenceNr).map(_.copy(deleted = true)))
-    val notDeleted = pidEntries.mapValues(_.filterNot(_.serialized.sequenceNr <= toSequenceNr))
+    val deleted = pidEntries.mapValues(_.filter(_.sequenceNr <= toSequenceNr).map(_.copy(deleted = true)))
+    val notDeleted = pidEntries.mapValues(_.filterNot(_.sequenceNr <= toSequenceNr))
     journal = journal.filterNot(_._1 == persistenceId) |+| deleted |+| notDeleted
 
     ref ! akka.actor.Status.Success("")
@@ -110,9 +88,9 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     val pidEntries = journal.filter(_._1 == persistenceId)
     val xs: List[JournalEntry] = pidEntries.values.flatMap(identity)
       .filterNot(_.deleted)
-      .filter(_.serialized.sequenceNr >= fromSequenceNr)
-      .filter(_.serialized.sequenceNr <= toSequenceNr)
-      .toList.sortBy(_.serialized.sequenceNr)
+      .filter(_.sequenceNr >= fromSequenceNr)
+      .filter(_.sequenceNr <= toSequenceNr)
+      .toList.sortBy(_.sequenceNr)
       .take(toTake)
 
     ref ! akka.actor.Status.Success(xs)
@@ -132,6 +110,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     case WriteList(xs)                                              ⇒ writelist(sender(), xs)
     case Delete(persistenceId, toSequenceNr)                        ⇒ delete(sender(), persistenceId, toSequenceNr)
     case Messages(persistenceId, fromSequenceNr, toSequenceNr, max) ⇒ messages(sender(), persistenceId, fromSequenceNr, toSequenceNr, max)
-    case Clear                                                      ⇒ clear(sender())
+    case ClearJournal                                               ⇒ clear(sender())
   }
 }

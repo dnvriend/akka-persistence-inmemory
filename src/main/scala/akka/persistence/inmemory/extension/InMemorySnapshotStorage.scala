@@ -14,55 +14,36 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.extension
+package akka.persistence.inmemory
+package extension
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 
 object InMemorySnapshotStorage {
-  case class SnapshotData(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
-
-  // Success
-  case class Delete(persistenceId: String, sequenceNr: Long)
-
-  // Success
-  case class DeleteAllSnapshots(persistenceId: String)
-
-  // Success
-  case class DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long)
-
-  // Success
-  case class DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long)
-
-  // Success
-  case class DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long)
-
-  // Success
-  case object Clear
-
-  // Success
-  case class Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte])
-
-  // [Option[SnapshotData]]
-  case class SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long)
-
-  // [Option[SnapshotData]]
-  case class SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long)
-
-  // [Option[SnapshotData]]
-  case class SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long)
+  sealed trait SnapshotCommand
+  final case class Delete(persistenceId: String, sequenceNr: Long) extends SnapshotCommand
+  final case class DeleteAllSnapshots(persistenceId: String) extends SnapshotCommand
+  final case class DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long) extends SnapshotCommand
+  final case class DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long) extends SnapshotCommand
+  final case class DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long) extends SnapshotCommand
+  case object ClearSnapshots extends SnapshotCommand
+  final case class Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte]) extends SnapshotCommand
+  final case class SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long) extends SnapshotCommand
+  final case class SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long) extends SnapshotCommand
+  final case class SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long) extends SnapshotCommand
 }
 
 class InMemorySnapshotStorage extends Actor with ActorLogging {
   import InMemorySnapshotStorage._
 
-  var snapshot = Map.empty[String, Vector[SnapshotData]]
+  var snapshot = Map.empty[String, Vector[snapshotEntry]]
 
   def clear(ref: ActorRef): Unit = {
-    snapshot = Map.empty[String, Vector[SnapshotData]]
+    snapshot = Map.empty[String, Vector[snapshotEntry]]
     ref ! akka.actor.Status.Success("")
   }
 
-  def delete(persistenceId: String, predicate: SnapshotData ⇒ Boolean): Unit = {
+  def delete(persistenceId: String, predicate: snapshotEntry ⇒ Boolean): Unit = {
     import scalaz._
     import Scalaz._
     val pidEntries = snapshot.filter(_._1 == persistenceId)
@@ -95,7 +76,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def deleteUpToMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long): Unit = {
-    delete(persistenceId, (x: SnapshotData) ⇒ x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
+    delete(persistenceId, (x: snapshotEntry) ⇒ x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
 
     ref ! akka.actor.Status.Success("")
   }
@@ -104,7 +85,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
     import scalaz._
     import Scalaz._
     val key = persistenceId
-    snapshot = snapshot |+| Map(key → Vector(SnapshotData(persistenceId, sequenceNr, timestamp, data)))
+    snapshot = snapshot |+| Map(key → Vector(snapshotEntry(persistenceId, sequenceNr, timestamp, data)))
 
     ref ! akka.actor.Status.Success("")
   }
@@ -115,8 +96,8 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
     ref ! akka.actor.Status.Success(determine)
   }
 
-  def snapshotFor(ref: ActorRef, persistenceId: String)(p: SnapshotData ⇒ Boolean): Unit = {
-    val determine: Option[SnapshotData] = snapshot.get(persistenceId).flatMap(_.find(p))
+  def snapshotFor(ref: ActorRef, persistenceId: String)(p: snapshotEntry ⇒ Boolean): Unit = {
+    val determine: Option[snapshotEntry] = snapshot.get(persistenceId).flatMap(_.find(p))
 
     ref ! akka.actor.Status.Success(determine)
   }
@@ -134,7 +115,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
     case DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long)                                      ⇒ deleteUpToMaxTimestamp(sender(), persistenceId, maxTimestamp)
     case DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long)                                    ⇒ deleteUpToMaxSequenceNr(sender(), persistenceId, maxSequenceNr)
     case DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long) ⇒ deleteUpToMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, maxSequenceNr, maxTimestamp)
-    case Clear                                                                                                  ⇒ clear(sender())
+    case ClearSnapshots                                                                                         ⇒ clear(sender())
     case Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte])                  ⇒ save(sender(), persistenceId, sequenceNr, timestamp, snapshot)
     case SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long)                                      ⇒ snapshotForMaxSequenceNr(sender(), persistenceId, sequenceNr)
     case SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long)      ⇒ snapshotForMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, sequenceNr, timestamp)

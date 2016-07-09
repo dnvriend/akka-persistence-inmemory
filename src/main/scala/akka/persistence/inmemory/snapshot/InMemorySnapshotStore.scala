@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.snapshot
+package akka.persistence.inmemory
+package snapshot
 
 import java.util.concurrent.TimeUnit
 
@@ -43,28 +44,28 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   val snapshots: ActorRef = StorageExtension(system).snapshotStorage
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
-    val snapshotDataOption: Future[Option[SnapshotData]] = criteria match {
+    val SnapshotEntryOption: Future[Option[snapshotEntry]] = criteria match {
       case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) ⇒
-        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, Long.MaxValue)).mapTo[Option[SnapshotData]]
+        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, Long.MaxValue)).mapTo[Option[snapshotEntry]]
       case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) ⇒
-        (snapshots ? SnapshotForMaxTimestamp(persistenceId, maxTimestamp)).mapTo[Option[SnapshotData]]
+        (snapshots ? SnapshotForMaxTimestamp(persistenceId, maxTimestamp)).mapTo[Option[snapshotEntry]]
       case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) ⇒
-        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, maxSequenceNr)).mapTo[Option[SnapshotData]]
+        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, maxSequenceNr)).mapTo[Option[snapshotEntry]]
       case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) ⇒
-        (snapshots ? SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).mapTo[Option[SnapshotData]]
+        (snapshots ? SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).mapTo[Option[snapshotEntry]]
       case _ ⇒ Future.successful(None)
     }
 
     import scalaz._
     import Scalaz._
     (for {
-      snapshotData ← OptionT(snapshotDataOption)
-      snapshot ← OptionT(Future.fromTry(serialization.deserialize(snapshotData.snapshot, classOf[Snapshot]).map { snap ⇒
+      snapshotEntry ← OptionT(SnapshotEntryOption)
+      snapshot ← OptionT(Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot]).map { snap ⇒
         SelectedSnapshot(
           SnapshotMetadata(
-            snapshotData.persistenceId,
-            snapshotData.sequenceNumber,
-            snapshotData.created
+            snapshotEntry.persistenceId,
+            snapshotEntry.sequenceNumber,
+            snapshotEntry.created
           ),
           snap.data
         )

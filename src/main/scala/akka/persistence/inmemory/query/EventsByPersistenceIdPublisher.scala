@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.query
+package akka.persistence.inmemory
+package query
 
 import akka.actor.ActorLogging
+import akka.pattern.ask
+import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
@@ -25,9 +28,6 @@ import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.pattern.ask
-import akka.persistence.PersistentRepr
-import akka.persistence.inmemory.extension.InMemoryJournalStorage.JournalEntry
 import akka.util.Timeout
 
 import scala.concurrent.duration.{ FiniteDuration, _ }
@@ -60,7 +60,7 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
         .mapTo[List[JournalEntry]])
         .mapConcat(identity)
         .take(maxBufferSize - buf.size)
-        .map(_.serialized.serialized)
+        .map(_.serialized)
         .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr, classOf[PersistentRepr])))
         .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
         .runWith(Sink.seq)

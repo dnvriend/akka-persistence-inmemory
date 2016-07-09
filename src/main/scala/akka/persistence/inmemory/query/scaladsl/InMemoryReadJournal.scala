@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.query.scaladsl
+package akka.persistence.inmemory
+package query.scaladsl
 
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +31,6 @@ import akka.util.Timeout
 import com.typesafe.config.Config
 import akka.pattern.ask
 import akka.persistence.PersistentRepr
-import akka.persistence.inmemory.extension.InMemoryJournalStorage.JournalEntry
 import akka.persistence.inmemory.query.{ AllPersistenceIdsPublisher, EventsByTagPublisher }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -67,7 +67,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
-      .map(_.serialized.serialized)
+      .map(_.serialized)
       .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr, classOf[PersistentRepr])))
       .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] = ???
@@ -76,7 +76,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
-      .map(entry ⇒ (entry.ordering, entry.serialized.serialized))
+      .map(entry ⇒ (entry.ordering, entry.serialized))
       .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr._2, classOf[PersistentRepr])).map((arr._1, _)))
       .map { case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload) }
 

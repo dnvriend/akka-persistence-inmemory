@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.journal
+package akka.persistence.inmemory
+package journal
 
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
-import akka.persistence.inmemory.extension.InMemoryJournalStorage.{ JournalEntry, Serialized }
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
-import akka.persistence.inmemory.util.TrySeq
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.serialization.SerializationExtension
@@ -31,7 +30,6 @@ import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
-import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
@@ -51,13 +49,13 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
     case _ ⇒ serialization.serialize(persistentRepr).map((_, Set.empty[String]))
   }
 
-  def toSerialized(repr: PersistentRepr, arr: Array[Byte], tags: Set[String]): Serialized =
-    Serialized(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
+  def toSerialized(repr: PersistentRepr, arr: Array[Byte], tags: Set[String]): JournalEntry =
+    JournalEntry(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] =
     Source(messages)
       .map(write ⇒ write.payload.map(repr ⇒ serialize(repr).map { case (arr, tags) ⇒ toSerialized(repr, arr, tags) }))
-      .map(TrySeq.sequence)
+      .map(sequence)
       .map(_.map(xs ⇒ (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ ())))
       .mapAsync(1) {
         case Success(future) ⇒ future.map(Success(_))
@@ -73,10 +71,9 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, max)).mapTo[List[JournalEntry]])
       .mapConcat(identity)
-      .map(_.serialized.serialized)
+      .map(_.serialized)
       .map(serialization.deserialize(_, classOf[PersistentRepr]))
       .mapAsync(1)(Future.fromTry)
       .runForeach(recoveryCallback)
       .map(_ ⇒ ())
-
 }
