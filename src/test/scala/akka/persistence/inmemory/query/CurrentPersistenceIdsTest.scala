@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-abstract class CurrentPersistenceIdsTest extends QueryTestSpec {
+class CurrentPersistenceIdsTest extends QueryTestSpec {
 
   it should "not find any persistenceIds for empty journal" in
     withCurrentPersistenceIds() { tp ⇒
@@ -24,10 +24,32 @@ abstract class CurrentPersistenceIdsTest extends QueryTestSpec {
       tp.expectComplete()
     }
 
-  it should "find persistenceIds for actors" in {
+  it should "find persistenceIds" in {
     persist("my-1")
     persist("my-2")
     persist("my-3")
+
+    withCurrentPersistenceIds() { tp ⇒
+      tp.request(3)
+      tp.expectNextUnordered("my-1", "my-2", "my-3")
+      tp.expectComplete()
+    }
+  }
+
+  it should "find persistenceIds for deleted messages" in {
+    persist("my-1")
+    persist("my-2")
+    persist("my-3")
+
+    withCurrentPersistenceIds() { tp ⇒
+      tp.request(3)
+      tp.expectNextUnordered("my-1", "my-2", "my-3")
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1")
+    deleteMessages("my-2")
+    deleteMessages("my-3")
 
     withCurrentPersistenceIds() { tp ⇒
       tp.request(3)

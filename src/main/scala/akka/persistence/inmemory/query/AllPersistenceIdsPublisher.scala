@@ -51,10 +51,6 @@ class AllPersistenceIdsPublisher(refreshInterval: FiniteDuration, maxBufferSize:
 
   def receive = active(Set.empty[String])
 
-  /**
-   * Will only handle GetAllPersistenceIds and Cancel messages,
-   * as they will not change the state.
-   */
   def polling(knownIds: Set[String]): Receive = LoggingReceive {
     case GetAllPersistenceIds ⇒
       Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds)

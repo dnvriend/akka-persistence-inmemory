@@ -69,7 +69,7 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
     (journal ? InMemoryJournalStorage.HighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
-    Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, max)).mapTo[List[JournalEntry]])
+    Source.fromFuture((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, max)).mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .map(_.serialized)
       .map(serialization.deserialize(_, classOf[PersistentRepr]))

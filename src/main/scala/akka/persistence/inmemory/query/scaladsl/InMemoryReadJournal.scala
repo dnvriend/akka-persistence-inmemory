@@ -64,7 +64,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.actorPublisher[String](Props(new AllPersistenceIdsPublisher(refreshInterval, maxBufferSize))).mapMaterializedValue(_ ⇒ NotUsed)
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
-    Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
+    Source.fromFuture((journal ? InMemoryJournalStorage.GetAllJournalEntries(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .map(_.serialized)

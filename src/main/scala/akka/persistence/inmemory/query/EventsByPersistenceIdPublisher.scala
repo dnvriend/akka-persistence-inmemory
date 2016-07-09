@@ -56,7 +56,7 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
 
   def polling(fromSeqNr: Long): Receive = {
     case GetMessages ⇒
-      Source.fromFuture((journal ? InMemoryJournalStorage.Messages(persistenceId, fromSequenceNr, toSequenceNr, Math.max(0, maxBufferSize - buf.size)))
+      Source.fromFuture((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, Math.max(0, maxBufferSize - buf.size)))
         .mapTo[List[JournalEntry]])
         .mapConcat(identity)
         .take(maxBufferSize - buf.size)

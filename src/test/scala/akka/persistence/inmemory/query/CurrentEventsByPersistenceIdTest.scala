@@ -84,32 +84,25 @@ class CurrentEventsByPersistenceIdTest extends QueryTestSpec {
     }
   }
 
-  it should "find events for actors" in {
-    persist(1, 3, "my-1")
+  it should "find events for deleted messages" in {
+    persist(1, 4, "my-1")
 
-    withCurrentEventsByPersistenceId()("my-1", 1, 1) { tp ⇒
+    withCurrentEventsByPersistenceId()("my-1", 1, 3) { tp ⇒
       tp.request(Int.MaxValue)
-        .expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
-        .expectComplete()
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectComplete()
     }
 
-    withCurrentEventsByPersistenceId()("my-1", 2, 2) { tp ⇒
-      tp.request(Int.MaxValue)
-        .expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
-        .expectComplete()
-    }
+    deleteMessages("my-1", 2)
 
-    withCurrentEventsByPersistenceId()("my-1", 3, 3) { tp ⇒
+    withCurrentEventsByPersistenceId()("my-1", 1, 3) { tp ⇒
       tp.request(Int.MaxValue)
-        .expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
-        .expectComplete()
-    }
-
-    withCurrentEventsByPersistenceId()("my-1", 2, 3) { tp ⇒
-      tp.request(Int.MaxValue)
-        .expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
-        .expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
-        .expectComplete()
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1")) // deleted
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2")) // deleted
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3")) // not-deleted
+      tp.expectComplete()
     }
   }
 }
