@@ -27,6 +27,7 @@ import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.serialization.SerializationExtension
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -56,21 +57,21 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
       case _ ⇒ Future.successful(None)
     }
 
-    import scalaz._
-    import Scalaz._
-    (for {
-      snapshotEntry ← OptionT(SnapshotEntryOption)
-      snapshot ← OptionT(Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot]).map { snap ⇒
-        SelectedSnapshot(
-          SnapshotMetadata(
-            snapshotEntry.persistenceId,
-            snapshotEntry.sequenceNumber,
-            snapshotEntry.created
-          ),
-          snap.data
-        )
-      }).map(Option(_)))
-    } yield snapshot).run
+    Source.fromFuture(SnapshotEntryOption).flatMapConcat { entryOption ⇒
+      Source(entryOption.toList).flatMapConcat { snapshotEntry ⇒
+        Source.fromFuture(Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot])))
+          .map { snapshot ⇒
+            SelectedSnapshot(
+              SnapshotMetadata(
+                snapshotEntry.persistenceId,
+                snapshotEntry.sequenceNumber,
+                snapshotEntry.created
+              ),
+              snapshot.data
+            )
+          }
+      }
+    }.runWith(Sink.headOption)
   }
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = for {

@@ -64,22 +64,17 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
     Source(write.payload).flatMapConcat { repr ⇒
       Source.fromFuture(Future.fromTry(serialize(repr)))
         .map(toJournalEntry(_, payload(repr)))
-        .fold(Try(List.empty[JournalEntry])) {
-          case (Success(xs), e) ⇒ Success(xs :+ e)
-          case (c, _)           ⇒ c
-        }.recover {
-          case cause: Throwable ⇒
-            log.error(cause, "Recovering from serialization")
-            Failure(cause)
-        }
+    }.fold(Try(List.empty[JournalEntry])) {
+      case (Success(xs), e) ⇒ Success(xs :+ e)
+      case (c, _)           ⇒ c
+    }.recover {
+      case cause: Throwable ⇒ Failure(cause)
     }
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] =
     Source(messages).via(serializer).mapAsync(1) {
-      case Success(xs) ⇒
-        println("Writing: " + xs)
-        (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ Success())
+      case Success(xs)    ⇒ (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ Success())
       case Failure(cause) ⇒ Future.successful(Failure(cause))
     }.runWith(Sink.seq)
 

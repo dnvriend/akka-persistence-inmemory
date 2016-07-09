@@ -16,8 +16,6 @@
 
 package akka.persistence
 
-import scala.util.{ Failure, Success, Try }
-
 package object inmemory {
   type Seq[A] = scala.collection.immutable.Seq[A]
 
@@ -27,17 +25,4 @@ package object inmemory {
   implicit def seqToVector[A](xs: Seq[A]): Vector[A] = xs.toVector
   implicit def setToVector[A](xs: Set[A]): Vector[A] = xs.toVector
   implicit def mapSeqToVector[K, V](map: Map[K, Seq[V]]): Map[K, Vector[V]] = map.mapValues(_.toVector)
-
-  def sequence[R](seq: Seq[Try[R]]): Try[Seq[R]] = {
-    seq match {
-      case Success(h) :: tail ⇒
-        tail.foldLeft(Try(h :: Nil)) {
-          case (Success(acc), Success(elem)) ⇒ Success(elem :: acc)
-          case (e: Failure[_], _)            ⇒ e
-          case (_, Failure(e))               ⇒ Failure(e)
-        }
-      case Failure(e) :: _ ⇒ Failure(e)
-      case Nil             ⇒ Try { Nil }
-    }
-  }
 }
