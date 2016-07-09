@@ -28,7 +28,7 @@ import akka.persistence.inmemory.query.{ AllPersistenceIdsPublisher, EventsByPer
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -68,8 +68,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.GetAllJournalEntries(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
-      .map(_.serialized)
-      .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr, classOf[PersistentRepr])))
+      .via(deserialization)
       .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
 
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
@@ -80,11 +79,21 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
-      .map(entry ⇒ (entry.ordering, entry.serialized))
-      .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr._2, classOf[PersistentRepr])).map((arr._1, _)))
+      .via(deserializationWithOrdering)
       .map { case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload) }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     Source.actorPublisher[EventEnvelope](Props(new EventsByTagPublisher(tag, offset.toInt, refreshInterval, maxBufferSize, this)))
       .mapMaterializedValue(_ ⇒ NotUsed)
+
+  private def deserialize(serialized: Array[Byte]) =
+    Source.fromFuture(Future.fromTry(serialization.deserialize(serialized, classOf[PersistentRepr])))
+
+  private val deserialization = Flow[JournalEntry].flatMapConcat { entry ⇒
+    deserialize(entry.serialized).map(_.update(deleted = entry.deleted))
+  }
+
+  private val deserializationWithOrdering = Flow[JournalEntry].flatMapConcat { entry ⇒
+    deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _))
+  }
 }

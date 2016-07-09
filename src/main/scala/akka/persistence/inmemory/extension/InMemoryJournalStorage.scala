@@ -73,7 +73,7 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     val ys = xs.map(_.copy(ordering = ordering.incrementAndGet())).groupBy(_.persistenceId)
     journal = journal |+| ys
 
-    ref ! akka.actor.Status.Success("")
+    ref ! akka.actor.Status.Success(())
   }
 
   def delete(ref: ActorRef, persistenceId: String, toSequenceNr: Long): Unit = {
