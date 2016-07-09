@@ -71,6 +71,24 @@ class CurrentEventsByTagTest extends QueryTestSpec {
     }
   }
 
+  it should "find all events by tag for deleted messages" in {
+    persist("my-1", "number")
+    persist("my-2", "number")
+    persist("my-3", "number")
+
+    deleteMessages("my-1")
+    deleteMessages("my-2")
+    deleteMessages("my-3")
+
+    withCurrentEventsByTag()("number", 0) { tp ⇒
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
+      tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
+      tp.expectComplete()
+    }
+  }
+
   it should "persist and find a tagged event with multiple tags" in {
     persist(1, 1, "my-1", "one", "1", "prime")
     persist(2, 2, "my-1", "two", "2", "prime")
