@@ -18,32 +18,26 @@ package akka.persistence.inmemory
 package query
 
 import akka.actor.ActorLogging
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.pattern.ask
-import akka.persistence.PersistentRepr
-import akka.serialization.SerializationExtension
-import akka.util.Timeout
+import akka.stream.scaladsl.Sink
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.concurrent.{ ExecutionContext, Future }
 
 object EventsByTagPublisher {
-  sealed trait Command
-  case object GetEventsByTag extends Command
-  case object BecomePolling extends Command
-  case object DetermineSchedulePoll extends Command
+  sealed trait EventsByTagPublisherCommand
+  case object GetEventsByTag extends EventsByTagPublisherCommand
+  case object BecomePolling extends EventsByTagPublisherCommand
+  case object DetermineSchedulePoll extends EventsByTagPublisherCommand
 }
 
-class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, timeout: Timeout) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDuration, maxBufferSize: Int, query: EventsByTagQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
   import EventsByTagPublisher._
-  val journal = StorageExtension(context.system).journalStorage
-  val serialization = SerializationExtension(context.system)
 
   def determineSchedulePoll(): Unit = {
     if (buf.size < maxBufferSize && totalDemand > 0)
@@ -57,12 +51,7 @@ class EventsByTagPublisher(tag: String, offset: Int, refreshInterval: FiniteDura
   def polling(offset: Long): Receive = {
     case GetEventsByTag ⇒
       log.debug("[EventsByTagPublisher]: GetEventByTag, from offset: {}", offset)
-      Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset)).mapTo[List[JournalEntry]])
-        .mapConcat(identity)
-        .take(Math.max(0, maxBufferSize - buf.size))
-        .map(entry ⇒ (entry.ordering, entry.serialized))
-        .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr._2, classOf[PersistentRepr])).map((arr._1, _)))
-        .map { case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload) }
+      query.eventsByTag(tag, offset)
         .runWith(Sink.seq)
         .map { xs ⇒
           buf = buf ++ xs

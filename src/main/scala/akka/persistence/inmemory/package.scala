@@ -24,7 +24,9 @@ package object inmemory {
   final case class JournalEntry(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], deleted: Boolean = false, ordering: Long = -1)
   final case class snapshotEntry(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
 
-  implicit def convertSeqToVector[K, V](map: Map[K, Seq[V]]) = map.mapValues(_.toVector)
+  implicit def seqToVector[A](xs: Seq[A]): Vector[A] = xs.toVector
+  implicit def setToVector[A](xs: Set[A]): Vector[A] = xs.toVector
+  implicit def mapSeqToVector[K, V](map: Map[K, Seq[V]]): Map[K, Vector[V]] = map.mapValues(_.toVector)
 
   def sequence[R](seq: Seq[Try[R]]): Try[Seq[R]] = {
     seq match {

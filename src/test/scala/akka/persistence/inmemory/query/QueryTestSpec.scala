@@ -133,6 +133,7 @@ trait QueryTestSpec extends TestSpec {
             case `id`            ⇒
             case Tagged(`id`, _) ⇒
           }
+        //          println(s"==> written '$payload', for pid: '$pid', seqNo: '$seqNo'")
       }
     }
   }

@@ -19,33 +19,28 @@ package query
 
 import akka.actor.ActorLogging
 import akka.event.LoggingReceive
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
+import akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery
 import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.pattern.ask
-import akka.util.Timeout
+import akka.stream.scaladsl.Sink
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
 object AllPersistenceIdsPublisher {
-  sealed trait Command
-  case object GetAllPersistenceIds extends Command
-  case object BecomePolling extends Command
-  case object DetermineSchedulePoll extends Command
+  sealed trait AllPersistenceIdsPublisherCommand
+  case object GetAllPersistenceIds extends AllPersistenceIdsPublisherCommand
+  case object BecomePolling extends AllPersistenceIdsPublisherCommand
+  case object DetermineSchedulePoll extends AllPersistenceIdsPublisherCommand
 }
 
-class AllPersistenceIdsPublisher(refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, timeout: Timeout) extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
+class AllPersistenceIdsPublisher(refreshInterval: FiniteDuration, maxBufferSize: Int, query: CurrentPersistenceIdsQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[String] with DeliveryBuffer[String] with ActorLogging {
   import AllPersistenceIdsPublisher._
-  val journal = StorageExtension(context.system).journalStorage
 
-  def determineSchedulePoll(): Unit = {
-    if (buf.size < maxBufferSize && totalDemand > 0)
-      context.system.scheduler.scheduleOnce(0.seconds, self, BecomePolling)
-  }
+  def determineSchedulePoll(): Unit =
+    if (buf.size < maxBufferSize && totalDemand > 0) context.system.scheduler.scheduleOnce(0.seconds, self, BecomePolling)
 
   val checkPoller = context.system.scheduler.schedule(0.seconds, refreshInterval, self, DetermineSchedulePoll)
 
@@ -53,12 +48,9 @@ class AllPersistenceIdsPublisher(refreshInterval: FiniteDuration, maxBufferSize:
 
   def polling(knownIds: Set[String]): Receive = LoggingReceive {
     case GetAllPersistenceIds ⇒
-      Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds)
-        .mapTo[Set[String]])
-        .mapConcat(identity)
-        .take(Math.max(0, maxBufferSize - buf.size))
+      query.currentPersistenceIds().take(Math.max(0, maxBufferSize - buf.size))
         .runWith(Sink.seq).map { ids ⇒
-          val xs = ids.toSet.diff(knownIds).toVector
+          val xs: Vector[String] = ids.toSet.diff(knownIds)
           buf = buf ++ xs
           deliverBuf()
           context.become(active(knownIds ++ xs))

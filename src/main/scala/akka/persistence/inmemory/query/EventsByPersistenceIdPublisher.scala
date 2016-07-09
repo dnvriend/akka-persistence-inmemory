@@ -18,32 +18,26 @@ package akka.persistence.inmemory
 package query
 
 import akka.actor.ActorLogging
-import akka.pattern.ask
-import akka.persistence.PersistentRepr
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
-import akka.serialization.SerializationExtension
+import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.util.Timeout
+import akka.stream.scaladsl.Sink
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.concurrent.{ ExecutionContext, Future }
 
 object EventsByPersistenceIdPublisher {
-  sealed trait Command
-  case object GetMessages extends Command
-  case object BecomePolling extends Command
-  case object DetermineSchedulePoll extends Command
+  sealed trait EventsByPersistenceIdPublisherCommand
+  case object GetMessages extends EventsByPersistenceIdPublisherCommand
+  case object BecomePolling extends EventsByPersistenceIdPublisherCommand
+  case object DetermineSchedulePoll extends EventsByPersistenceIdPublisherCommand
 }
 
-class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: FiniteDuration, maxBufferSize: Int)(implicit ec: ExecutionContext, mat: Materializer, timeout: Timeout) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: FiniteDuration, maxBufferSize: Int, query: EventsByPersistenceIdQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
   import EventsByPersistenceIdPublisher._
-  val journal = StorageExtension(context.system).journalStorage
-  val serialization = SerializationExtension(context.system)
 
   def determineSchedulePoll(): Unit = {
     if (buf.size < maxBufferSize && totalDemand > 0)
@@ -56,13 +50,8 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
 
   def polling(fromSeqNr: Long): Receive = {
     case GetMessages ⇒
-      Source.fromFuture((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, Math.max(0, maxBufferSize - buf.size)))
-        .mapTo[List[JournalEntry]])
-        .mapConcat(identity)
+      query.eventsByPersistenceId(persistenceId, fromSeqNr, toSequenceNr)
         .take(maxBufferSize - buf.size)
-        .map(_.serialized)
-        .mapAsync(1)(arr ⇒ Future.fromTry(serialization.deserialize(arr, classOf[PersistentRepr])))
-        .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
         .runWith(Sink.seq)
         .map { xs ⇒
           buf = buf ++ xs
