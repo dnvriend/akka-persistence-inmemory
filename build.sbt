@@ -18,11 +18,9 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.1-SNAPSHOT"
+version := "1.3.1"
 
 scalaVersion := "2.11.8"
-
-crossScalaVersions := Seq("2.11.8", "2.12.0-M4")
 
 resolvers += Resolver.typesafeRepo("releases")
 
