@@ -208,6 +208,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 # What's new?
+## 1.3.2 (2016-07-09)
+  - Journal entry 'deleted' fixed, must be set manually.
+
 ## 1.3.1 (2016-07-09)
   - Akka 2.4.7 -> 2.4.8,
   - Behavior of akka-persistence-query *byTag query should be up to spec,
