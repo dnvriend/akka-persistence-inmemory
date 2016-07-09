@@ -20,7 +20,7 @@ package query
 import akka.actor.ActorLogging
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.journal.leveldb.DeliveryBuffer
-import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
 import akka.stream.Materializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.actor.ActorPublisherMessage.{ Cancel, Request }
@@ -36,7 +36,7 @@ object EventsByPersistenceIdPublisher {
   case object DetermineSchedulePoll extends EventsByPersistenceIdPublisherCommand
 }
 
-class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: FiniteDuration, maxBufferSize: Int, query: EventsByPersistenceIdQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
+class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, refreshInterval: FiniteDuration, maxBufferSize: Int, query: CurrentEventsByPersistenceIdQuery)(implicit ec: ExecutionContext, mat: Materializer) extends ActorPublisher[EventEnvelope] with DeliveryBuffer[EventEnvelope] with ActorLogging {
   import EventsByPersistenceIdPublisher._
 
   def determineSchedulePoll(): Unit = {
@@ -50,7 +50,7 @@ class EventsByPersistenceIdPublisher(persistenceId: String, fromSequenceNr: Long
 
   def polling(fromSeqNr: Long): Receive = {
     case GetMessages ⇒
-      query.eventsByPersistenceId(persistenceId, fromSeqNr, toSequenceNr)
+      query.currentEventsByPersistenceId(persistenceId, fromSeqNr, toSequenceNr)
         .take(maxBufferSize - buf.size)
         .runWith(Sink.seq)
         .map { xs ⇒

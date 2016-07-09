@@ -72,7 +72,7 @@ trait QueryTestSpec extends TestSpec {
     tp.within(within)(f(tp))
   }
 
-  def withEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
+  def withEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long = Long.MaxValue)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
     val tp = readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
