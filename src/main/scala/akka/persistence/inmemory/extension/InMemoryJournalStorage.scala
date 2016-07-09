@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
+import akka.persistence.PersistentRepr
+import akka.serialization.SerializationExtension
+
 import scalaz.std.AllInstances._
 import scalaz.syntax.all._
 
@@ -38,8 +41,8 @@ object InMemoryJournalStorage {
 }
 
 class InMemoryJournalStorage extends Actor with ActorLogging {
-
   import InMemoryJournalStorage._
+  val serialization = SerializationExtension(context.system)
 
   var ordering = new AtomicLong()
 
@@ -75,8 +78,15 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
 
   def delete(ref: ActorRef, persistenceId: String, toSequenceNr: Long): Unit = {
     val pidEntries = journal.filter(_._1 == persistenceId)
-    val deleted = pidEntries.mapValues(_.filter(_.sequenceNr <= toSequenceNr).map(_.copy(deleted = true)))
     val notDeleted = pidEntries.mapValues(_.filterNot(_.sequenceNr <= toSequenceNr))
+
+    val deleted = pidEntries
+      .mapValues(_.filter(_.sequenceNr <= toSequenceNr).map { journalEntry ⇒
+        val updatedRepr: PersistentRepr = journalEntry.repr.update(deleted = true)
+        val byteArray: Array[Byte] = serialization.serialize(updatedRepr).get
+        journalEntry.copy(deleted = true).copy(serialized = byteArray).copy(repr = updatedRepr)
+      })
+
     journal = journal.filterNot(_._1 == persistenceId) |+| deleted |+| notDeleted
 
     ref ! akka.actor.Status.Success("")

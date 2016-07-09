@@ -49,12 +49,17 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
     case _ ⇒ serialization.serialize(persistentRepr).map((_, Set.empty[String]))
   }
 
-  def toSerialized(repr: PersistentRepr, arr: Array[Byte], tags: Set[String]): JournalEntry =
+  def payload(persistentRepr: PersistentRepr): PersistentRepr = persistentRepr.payload match {
+    case Tagged(payload, _) ⇒ persistentRepr.withPayload(payload)
+    case _                  ⇒ persistentRepr
+  }
+
+  def toJournalEntry(repr: PersistentRepr, arr: Array[Byte], tags: Set[String]): JournalEntry =
     JournalEntry(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] =
     Source(messages)
-      .map(write ⇒ write.payload.map(repr ⇒ serialize(repr).map { case (arr, tags) ⇒ toSerialized(repr, arr, tags) }))
+      .map(write ⇒ write.payload.map(repr ⇒ serialize(repr).map { case (arr, tags) ⇒ toJournalEntry(payload(repr), arr, tags) }))
       .map(sequence)
       .map(_.map(xs ⇒ (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ ())))
       .mapAsync(1) {
