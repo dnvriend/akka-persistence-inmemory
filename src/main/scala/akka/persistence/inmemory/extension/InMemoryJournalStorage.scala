@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
+import scalaz.std.AllInstances._
+import scalaz.syntax.all._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
@@ -65,8 +67,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   }
 
   def writelist(ref: ActorRef, xs: Seq[JournalEntry]): Unit = {
-    import scalaz._
-    import Scalaz._
     val ys = xs.map(_.copy(ordering = ordering.incrementAndGet())).groupBy(_.persistenceId)
     journal = journal |+| ys
 
@@ -74,8 +74,6 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
   }
 
   def delete(ref: ActorRef, persistenceId: String, toSequenceNr: Long): Unit = {
-    import scalaz._
-    import Scalaz._
     val pidEntries = journal.filter(_._1 == persistenceId)
     val deleted = pidEntries.mapValues(_.filter(_.sequenceNr <= toSequenceNr).map(_.copy(deleted = true)))
     val notDeleted = pidEntries.mapValues(_.filterNot(_.sequenceNr <= toSequenceNr))

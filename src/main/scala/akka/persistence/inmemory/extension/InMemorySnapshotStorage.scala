@@ -18,6 +18,8 @@ package akka.persistence.inmemory
 package extension
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
+import scalaz.std.AllInstances._
+import scalaz.syntax.all._
 
 object InMemorySnapshotStorage {
   sealed trait SnapshotCommand
@@ -44,8 +46,6 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def delete(persistenceId: String, predicate: snapshotEntry ⇒ Boolean): Unit = {
-    import scalaz._
-    import Scalaz._
     val pidEntries = snapshot.filter(_._1 == persistenceId)
     val notDeleted = pidEntries.mapValues(_.filterNot(predicate))
     snapshot = snapshot.filterNot(_._1 == persistenceId) |+| notDeleted
@@ -82,8 +82,6 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def save(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long, data: Array[Byte]): Unit = {
-    import scalaz._
-    import Scalaz._
     val key = persistenceId
     snapshot = snapshot |+| Map(key → Vector(snapshotEntry(persistenceId, sequenceNr, timestamp, data)))
 
