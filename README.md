@@ -1,7 +1,7 @@
 # akka-persistence-inmemory #
 
 [![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory](https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg)](https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)
+[![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
 [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
