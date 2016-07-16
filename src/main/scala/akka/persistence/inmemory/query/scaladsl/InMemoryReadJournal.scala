@@ -28,8 +28,8 @@ import akka.persistence.inmemory.query.{ EventsByPersistenceIdPublisher, EventsB
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{ Broadcast, Flow, GraphDSL, Merge, Source, Zip }
-import akka.stream.{ ActorMaterializer, ClosedShape, Materializer, SourceShape }
+import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
@@ -62,8 +62,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds).mapTo[Set[String]]).mapConcat(identity)
 
   override def allPersistenceIds(): Source[String, NotUsed] =
-    Source.tick(0.seconds, refreshInterval, "")
-      .flatMapConcat(_ ⇒ currentPersistenceIds())
+    Source.repeat(0).flatMapConcat(_ ⇒ currentPersistenceIds())
       .statefulMapConcat[String] { () ⇒
         var knownIds = Set.empty[String]
         def next(id: String): Iterable[String] = {
