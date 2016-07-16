@@ -24,15 +24,16 @@ import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
 import akka.pattern.ask
 import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
-import akka.persistence.inmemory.query.{ AllPersistenceIdsPublisher, EventsByPersistenceIdPublisher, EventsByTagPublisher }
+import akka.persistence.inmemory.query.{ EventsByPersistenceIdPublisher, EventsByTagPublisher }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{ Flow, Source }
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.scaladsl.{ Broadcast, Flow, GraphDSL, Merge, Source, Zip }
+import akka.stream.{ ActorMaterializer, ClosedShape, Materializer, SourceShape }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
+import scala.collection.immutable.Iterable
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -61,8 +62,17 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds).mapTo[Set[String]]).mapConcat(identity)
 
   override def allPersistenceIds(): Source[String, NotUsed] =
-    Source.actorPublisher[String](Props(new AllPersistenceIdsPublisher(refreshInterval, maxBufferSize, this)))
-      .mapMaterializedValue(_ ⇒ NotUsed)
+    Source.tick(0.seconds, refreshInterval, "")
+      .flatMapConcat(_ ⇒ currentPersistenceIds())
+      .statefulMapConcat[String] { () ⇒
+        var knownIds = Set.empty[String]
+        def next(id: String): Iterable[String] = {
+          val xs = Set(id).diff(knownIds)
+          knownIds += id
+          xs
+        }
+        (id) ⇒ next(id)
+      }.mapMaterializedValue(_ ⇒ NotUsed)
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     Source.fromFuture((journal ? InMemoryJournalStorage.GetAllJournalEntries(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
@@ -80,7 +90,9 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserializationWithOrdering)
-      .map { case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload) }
+      .map {
+        case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload)
+      }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     Source.actorPublisher[EventEnvelope](Props(new EventsByTagPublisher(tag, offset.toInt, refreshInterval, maxBufferSize, this)))
@@ -89,11 +101,13 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private def deserialize(serialized: Array[Byte]) =
     Source.fromFuture(Future.fromTry(serialization.deserialize(serialized, classOf[PersistentRepr])))
 
-  private val deserialization = Flow[JournalEntry].flatMapConcat { entry ⇒
-    deserialize(entry.serialized).map(_.update(deleted = entry.deleted))
+  private val deserialization = Flow[JournalEntry].flatMapConcat {
+    entry ⇒
+      deserialize(entry.serialized).map(_.update(deleted = entry.deleted))
   }
 
-  private val deserializationWithOrdering = Flow[JournalEntry].flatMapConcat { entry ⇒
-    deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _))
+  private val deserializationWithOrdering = Flow[JournalEntry].flatMapConcat {
+    entry ⇒
+      deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _))
   }
 }
