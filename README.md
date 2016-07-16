@@ -349,13 +349,13 @@ from the tagged event stream.
  - Scala 2.10.4 -> 2.10.5
  - Merged Issue #1 [Sebastián Ortega](https://github.com/sortega) Fix corner case when persisted events are deleted, thanks!
 
-## 1.0.0
+## 1.0.0 (2014-09-25)
  - Moved to bintray
 
-## 0.0.2
+## 0.0.2 (2014-09-05)
  - Akka 2.3.4 -> 2.3.6
 
-## 0.0.1
+## 0.0.1 (2014-08-19)
  - Initial Release
 
 Have fun!
