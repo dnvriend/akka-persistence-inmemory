@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
 import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
@@ -28,7 +29,7 @@ import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.{ ActorMaterializer, DelayOverflowStrategy, Materializer, OverflowStrategy }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
@@ -51,16 +52,27 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
 
   implicit val ec: ExecutionContext = system.dispatcher
   implicit val mat: Materializer = ActorMaterializer()
-  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) → SECONDS)
+  implicit val log: LoggingAdapter = Logging(system, this.getClass)
   val serialization = SerializationExtension(system)
   val journal: ActorRef = StorageExtension(system).journalStorage
+  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) → MILLISECONDS)
+  val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) → MILLISECONDS
   val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
 
+  log.debug(
+    """
+      |ask-timeout: {}
+      |refresh-interval: {}
+      |max-buffer-size: {}
+    """.stripMargin, timeout, refreshInterval, maxBufferSize
+  )
+
   override def currentPersistenceIds(): Source[String, NotUsed] =
-    Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds).mapTo[Set[String]]).mapConcat(identity)
+    Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds).mapTo[Set[String]])
+      .mapConcat(identity)
 
   override def allPersistenceIds(): Source[String, NotUsed] =
-    Source.repeat(0).flatMapConcat(_ ⇒ currentPersistenceIds())
+    Source.repeat(0).flatMapConcat(_ ⇒ Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒ currentPersistenceIds()))
       .statefulMapConcat[String] { () ⇒
         var knownIds = Set.empty[String]
         def next(id: String): Iterable[String] = {
@@ -83,11 +95,12 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       def nextFromSeqNr(xs: Seq[EventEnvelope]): Long = {
         if (xs.isEmpty) from else xs.map(_.sequenceNr).max + 1
       }
-      currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
-        .take(maxBufferSize).runWith(Sink.seq).map { xs ⇒
-          val newFromSeqNr = nextFromSeqNr(xs)
-          Some((newFromSeqNr, xs))
-        }
+      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒
+        currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
+          .take(maxBufferSize)).runWith(Sink.seq).map { xs ⇒
+        val newFromSeqNr = nextFromSeqNr(xs)
+        Some((newFromSeqNr, xs))
+      }
     }.mapConcat(identity)
 
   override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
@@ -104,11 +117,11 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       def nextFromOffset(xs: Seq[EventEnvelope]): Long = {
         if (xs.isEmpty) from else xs.map(_.offset).max + 1
       }
-      currentEventsByTag(tag, from)
-        .take(maxBufferSize).runWith(Sink.seq).map { xs ⇒
-          val newFromSeqNr = nextFromOffset(xs)
-          Some((newFromSeqNr, xs))
-        }
+      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒ currentEventsByTag(tag, from)
+        .take(maxBufferSize)).runWith(Sink.seq).map { xs ⇒
+        val newFromSeqNr = nextFromOffset(xs)
+        Some((newFromSeqNr, xs))
+      }
     }.mapConcat(identity)
 
   private def deserialize(serialized: Array[Byte]) =

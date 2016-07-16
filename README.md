@@ -16,7 +16,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.2"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.3"
 ```
 
 ## Contribution policy ##
@@ -46,7 +46,7 @@ The query API can be configured by overriding the defaults by placing the follow
 # Optional
 inmemory-read-journal {
   # New events are retrieved (polled) with this interval.
-  refresh-interval = "1s"
+  refresh-interval = "100ms"
 
   # How many events to fetch in one query (replay) and keep buffered until they
   # are delivered downstreams.
@@ -56,21 +56,27 @@ inmemory-read-journal {
 
 ## Refresh Interval
 The async query API uses polling to query the journal for new events. The refresh interval can be configured
-eg. "1s" so that the journal will be polled every 1 second. This setting is global for each async query, so 
+eg. "1s" so that the journal will be polled every 1 second. This setting is global for each async query, so
 the _allPersistenceId_, _eventsByTag_ and _eventsByPersistenceId_ queries.
 
 ## Max Buffer Size
 When an async query is started, a number of events will be buffered and will use memory when not consumed by 
-a Sink. The default size is 500. 
+a Sink. The default size is 100.
 
 ## How to get the ReadJournal using Scala
 The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
 
 ```scala
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
- 
-val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+import akka.persistence.query.scaladsl._
+
+lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
+ .asInstanceOf[ReadJournal
+    with CurrentPersistenceIdsQuery
+    with AllPersistenceIdsQuery
+    with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByTagQuery
+    with EventsByPersistenceIdQuery
+    with EventsByTagQuery]
 ```
 
 ## How to get the ReadJournal using Java
@@ -123,12 +129,19 @@ a specific PersistentActor identified by persistenceId.
 import akka.actor.ActorSystem
 import akka.stream.{Materializer, ActorMaterializer}
 import akka.stream.scaladsl.Source
-import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
-import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+import akka.persistence.query.scaladsl._
 
 implicit val system: ActorSystem = ActorSystem()
 implicit val mat: Materializer = ActorMaterializer()(system)
-val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
+lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
+ .asInstanceOf[ReadJournal
+    with CurrentPersistenceIdsQuery
+    with AllPersistenceIdsQuery
+    with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByTagQuery
+    with EventsByPersistenceIdQuery
+    with EventsByTagQuery]
 
 val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByPersistenceId("some-persistence-id", 0L, Long.MaxValue)
 
@@ -149,12 +162,19 @@ The stream is completed with failure if there is a failure in executing the quer
 import akka.actor.ActorSystem
 import akka.stream.{Materializer, ActorMaterializer}
 import akka.stream.scaladsl.Source
-import akka.persistence.query.{ PersistenceQuery, EventEnvelope }
-import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+import akka.persistence.query.scaladsl._
 
 implicit val system: ActorSystem = ActorSystem()
 implicit val mat: Materializer = ActorMaterializer()(system)
-val readJournal: InMemoryReadJournal = PersistenceQuery(system).readJournalFor[InMemoryReadJournal](InMemoryReadJournal.Identifier)
+
+lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
+ .asInstanceOf[ReadJournal
+    with CurrentPersistenceIdsQuery
+    with AllPersistenceIdsQuery
+    with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByTagQuery
+    with EventsByPersistenceIdQuery
+    with EventsByTagQuery]
 
 val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.eventsByTag("apple", 0L)
 
@@ -218,6 +238,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 # What's new?
+## 1.3.3 (2016-07-16)
+  - No need for Query Publishers with the new akka-streams API.
+
 ## 1.3.2 (2016-07-09)
   - Journal entry 'deleted' fixed, must be set manually.
 

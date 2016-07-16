@@ -18,23 +18,22 @@ package akka.persistence.inmemory.query
 
 import java.util.UUID
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.ActorRef
 import akka.persistence.JournalProtocol.{ DeleteMessagesTo, WriteMessageSuccess, WriteMessages, WriteMessagesSuccessful }
-import akka.persistence.{ DeleteMessagesSuccess, _ }
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.extension.InMemoryJournalStorage.ClearJournal
 import akka.persistence.inmemory.extension.StorageExtension
 import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
-import akka.stream.Materializer
+import akka.persistence.{ DeleteMessagesSuccess, _ }
+import akka.stream.{ DelayOverflowStrategy, OverflowStrategy }
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{ FiniteDuration, _ }
-import scala.concurrent.{ ExecutionContext, Future }
 
 trait QueryTestSpec extends TestSpec {
 

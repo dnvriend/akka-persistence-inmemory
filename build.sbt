@@ -18,11 +18,9 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.2"
+version := "1.3.3"
 
 scalaVersion := "2.11.8"
-
-resolvers += Resolver.typesafeRepo("releases")
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.8"
@@ -41,8 +39,6 @@ libraryDependencies ++= {
     "org.scalacheck" %% "scalacheck" % "1.12.5" % Test
   )
 }
-
-//scalacOptions ++= Seq("-feature", "-language:higherKinds", "-language:implicitConversions", "-deprecation", "-Ybackend:GenBCode", "-Ydelambdafy:method", "-target:jvm-1.8", "-Xexperimental")
 
 fork in Test := true
 

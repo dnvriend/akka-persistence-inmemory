@@ -10,10 +10,11 @@
         </encoder>
     </appender>
 
-    <!--<logger name="org.github.dnvriend" level="debug"/>-->
+
     <!--<logger name="akka" level="debug"/>-->
-    <root level="warn">
+    <!--<logger name="akka.persistence" level="debug"/>-->
+
+    <root level="error">
         <appender-ref ref="console"/>
     </root>
-
 </configuration>
