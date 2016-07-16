@@ -24,16 +24,16 @@ import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
 import akka.pattern.ask
 import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
-import akka.persistence.inmemory.query.{ EventsByPersistenceIdPublisher, EventsByTagPublisher }
+import akka.persistence.inmemory.query.EventsByTagPublisher
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
-import scala.collection.immutable.Iterable
+import scala.collection.immutable.{ Iterable, Seq }
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -81,8 +81,16 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
 
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
-    Source.actorPublisher[EventEnvelope](Props(new EventsByPersistenceIdPublisher(persistenceId, fromSequenceNr, toSequenceNr, refreshInterval, maxBufferSize, this)))
-      .mapMaterializedValue(_ ⇒ NotUsed)
+    Source.unfoldAsync[Long, Seq[EventEnvelope]](Math.max(1, fromSequenceNr)) { (from: Long) ⇒
+      def nextFromSeqNr(xs: Seq[EventEnvelope]): Long = {
+        if (xs.isEmpty) from else xs.map(_.sequenceNr).max + 1
+      }
+      currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
+        .take(maxBufferSize).runWith(Sink.seq).map { xs ⇒
+          val newFromSeqNr = nextFromSeqNr(xs)
+          Some((newFromSeqNr, xs))
+        }
+    }.mapConcat(identity)
 
   override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
     Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
