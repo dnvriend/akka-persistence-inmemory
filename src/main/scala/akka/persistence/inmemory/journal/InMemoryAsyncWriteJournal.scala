@@ -68,7 +68,7 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
       case (Success(xs), e) => Success(xs :+ e)
       case (c, _)           => c
     }.recover {
-      case cause: Throwable => Failure(cause)
+      case cause => Failure(cause)
     }
   }
 

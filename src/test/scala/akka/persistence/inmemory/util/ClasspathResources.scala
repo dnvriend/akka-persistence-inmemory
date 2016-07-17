@@ -33,11 +33,7 @@ object ClasspathResources extends ClasspathResources
 trait ClasspathResources {
   def withInputStream[T](fileName: String)(f: InputStream => T): T = {
     val is = fromClasspathAsStream(fileName)
-    try {
-      f(is)
-    } finally {
-      Try(is.close())
-    }
+    try f(is) finally Try(is.close())
   }
 
   def withXMLEventReader[T](fileName: String)(f: XMLEventReader => T): T =
