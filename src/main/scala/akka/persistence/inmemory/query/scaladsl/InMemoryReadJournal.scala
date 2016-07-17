@@ -72,15 +72,15 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       .mapConcat(identity)
 
   override def allPersistenceIds(): Source[String, NotUsed] =
-    Source.repeat(0).flatMapConcat(_ ⇒ Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒ currentPersistenceIds()))
-      .statefulMapConcat[String] { () ⇒
+    Source.repeat(0).flatMapConcat(_ => Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ => currentPersistenceIds()))
+      .statefulMapConcat[String] { () =>
         var knownIds = Set.empty[String]
         def next(id: String): Iterable[String] = {
           val xs = Set(id).diff(knownIds)
           knownIds += id
           xs
         }
-        (id) ⇒ next(id)
+        (id) => next(id)
       }
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
@@ -88,16 +88,16 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserialization)
-      .map(repr ⇒ EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
+      .map(repr => EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
 
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
-    Source.unfoldAsync[Long, Seq[EventEnvelope]](Math.max(1, fromSequenceNr)) { (from: Long) ⇒
+    Source.unfoldAsync[Long, Seq[EventEnvelope]](Math.max(1, fromSequenceNr)) { (from: Long) =>
       def nextFromSeqNr(xs: Seq[EventEnvelope]): Long = {
         if (xs.isEmpty) from else xs.map(_.sequenceNr).max + 1
       }
-      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒
+      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ =>
         currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
-          .take(maxBufferSize)).runWith(Sink.seq).map { xs ⇒
+          .take(maxBufferSize)).runWith(Sink.seq).map { xs =>
         val newFromSeqNr = nextFromSeqNr(xs)
         Some((newFromSeqNr, xs))
       }
@@ -109,16 +109,16 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       .mapConcat(identity)
       .via(deserializationWithOrdering)
       .map {
-        case (ordering, repr) ⇒ EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload)
+        case (ordering, repr) => EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload)
       }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    Source.unfoldAsync[Long, Seq[EventEnvelope]](offset) { (from: Long) ⇒
+    Source.unfoldAsync[Long, Seq[EventEnvelope]](offset) { (from: Long) =>
       def nextFromOffset(xs: Seq[EventEnvelope]): Long = {
         if (xs.isEmpty) from else xs.map(_.offset).max + 1
       }
-      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ ⇒ currentEventsByTag(tag, from)
-        .take(maxBufferSize)).runWith(Sink.seq).map { xs ⇒
+      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ => currentEventsByTag(tag, from)
+        .take(maxBufferSize)).runWith(Sink.seq).map { xs =>
         val newFromSeqNr = nextFromOffset(xs)
         Some((newFromSeqNr, xs))
       }
@@ -128,8 +128,8 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.fromFuture(Future.fromTry(serialization.deserialize(serialized, classOf[PersistentRepr])))
 
   private val deserialization = Flow[JournalEntry]
-    .flatMapConcat(entry ⇒ deserialize(entry.serialized).map(_.update(deleted = entry.deleted)))
+    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)))
 
   private val deserializationWithOrdering = Flow[JournalEntry]
-    .flatMapConcat(entry ⇒ deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _)))
+    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _)))
 }

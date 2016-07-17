@@ -56,32 +56,32 @@ trait QueryTestSpec extends TestSpec {
   lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
     .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with AllPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with EventsByPersistenceIdQuery with EventsByTagQuery]
 
-  def withCurrentPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] ⇒ Unit): Unit = {
+  def withCurrentPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
     val tp = readJournal.currentPersistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
 
-  def withAllPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] ⇒ Unit): Unit = {
+  def withAllPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
     val tp = readJournal.allPersistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
 
-  def withCurrentEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long = 0, toSequenceNr: Long = Long.MaxValue)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
+  def withCurrentEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long = 0, toSequenceNr: Long = Long.MaxValue)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def withEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long = Long.MaxValue)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
+  def withEventsByPersistenceId(within: FiniteDuration = 10.seconds)(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long = Long.MaxValue)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def withCurrentEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
+  def withCurrentEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.currentEventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] ⇒ Unit): Unit = {
+  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
@@ -117,20 +117,20 @@ trait QueryTestSpec extends TestSpec {
         writerUuid = writerUuid
       )
 
-    val msgs: Seq[PersistentEnvelope] = (fromSnr to toSnr).map(i ⇒ AtomicWrite(persistentRepr(i)))
+    val msgs: Seq[PersistentEnvelope] = (fromSnr to toSnr).map(i => AtomicWrite(persistentRepr(i)))
 
     val probe = TestProbe()
 
     journal ! WriteMessages(msgs, probe.ref, 1)
 
     probe.expectMsg(WriteMessagesSuccessful)
-    fromSnr to toSnr foreach { seqNo ⇒
+    fromSnr to toSnr foreach { seqNo =>
       probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`), _) ⇒
+        case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`), _) =>
           val id = s"a-$seqNo"
           payload should matchPattern {
-            case `id`            ⇒
-            case Tagged(`id`, _) ⇒
+            case `id`            =>
+            case Tagged(`id`, _) =>
           }
         //          println(s"==> written '$payload', for pid: '$pid', seqNo: '$seqNo'")
       }

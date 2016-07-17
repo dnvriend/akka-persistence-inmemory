@@ -17,7 +17,7 @@
 package akka.persistence.inmemory.query.javadsl
 
 import akka.NotUsed
-import akka.persistence.inmemory.query.scaladsl.{ InMemoryReadJournal ⇒ ScalaInMemoryReadJournal }
+import akka.persistence.inmemory.query.scaladsl.{ InMemoryReadJournal => ScalaInMemoryReadJournal }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.javadsl._
 import akka.stream.javadsl.Source

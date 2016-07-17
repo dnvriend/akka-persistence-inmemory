@@ -46,52 +46,52 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   val journal: ActorRef = StorageExtension(system).journalStorage
 
   private def serialize(persistentRepr: PersistentRepr): Try[(Array[Byte], Set[String])] = persistentRepr.payload match {
-    case Tagged(payload, tags) ⇒
+    case Tagged(payload, tags) =>
       serialization.serialize(persistentRepr.withPayload(payload)).map((_, tags))
-    case _ ⇒ serialization.serialize(persistentRepr).map((_, Set.empty[String]))
+    case _ => serialization.serialize(persistentRepr).map((_, Set.empty[String]))
   }
 
   private def payload(persistentRepr: PersistentRepr): PersistentRepr = persistentRepr.payload match {
-    case Tagged(payload, _) ⇒ persistentRepr.withPayload(payload)
-    case _                  ⇒ persistentRepr
+    case Tagged(payload, _) => persistentRepr.withPayload(payload)
+    case _                  => persistentRepr
   }
 
   private def toJournalEntry(tuple: (Array[Byte], Set[String]), repr: PersistentRepr): JournalEntry = tuple match {
-    case (arr, tags) ⇒ JournalEntry(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
+    case (arr, tags) => JournalEntry(repr.persistenceId, repr.sequenceNr, arr, repr, tags)
   }
 
-  val serializer = Flow[AtomicWrite].flatMapConcat { write ⇒
-    Source(write.payload).flatMapConcat { repr ⇒
+  val serializer = Flow[AtomicWrite].flatMapConcat { write =>
+    Source(write.payload).flatMapConcat { repr =>
       Source.fromFuture(Future.fromTry(serialize(repr)))
         .map(toJournalEntry(_, payload(repr)))
     }.fold(Try(List.empty[JournalEntry])) {
-      case (Success(xs), e) ⇒ Success(xs :+ e)
-      case (c, _)           ⇒ c
+      case (Success(xs), e) => Success(xs :+ e)
+      case (c, _)           => c
     }.recover {
-      case cause: Throwable ⇒ Failure(cause)
+      case cause: Throwable => Failure(cause)
     }
   }
 
   override def asyncWriteMessages(messages: Seq[AtomicWrite]): Future[Seq[Try[Unit]]] =
     Source(messages).via(serializer).mapAsync(1) {
-      case Success(xs)    ⇒ (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ ⇒ Success())
-      case Failure(cause) ⇒ Future.successful(Failure(cause))
+      case Success(xs)    => (journal ? InMemoryJournalStorage.WriteList(xs)).map(_ => Success())
+      case Failure(cause) => Future.successful(Failure(cause))
     }.runWith(Sink.seq)
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
-    (journal ? InMemoryJournalStorage.Delete(persistenceId, toSequenceNr)).map(_ ⇒ ())
+    (journal ? InMemoryJournalStorage.Delete(persistenceId, toSequenceNr)).map(_ => ())
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     (journal ? InMemoryJournalStorage.HighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]
 
-  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(recoveryCallback: (PersistentRepr) => Unit): Future[Unit] =
     Source.fromFuture((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, max)).mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserialization)
       .runForeach(recoveryCallback)
-      .map(_ ⇒ ())
+      .map(_ => ())
 
-  private val deserialization = Flow[JournalEntry].flatMapConcat { entry ⇒
+  private val deserialization = Flow[JournalEntry].flatMapConcat { entry =>
     Source.fromFuture(Future.fromTry(serialization.deserialize(entry.serialized, classOf[PersistentRepr])))
       .map(_.update(deleted = entry.deleted))
   }

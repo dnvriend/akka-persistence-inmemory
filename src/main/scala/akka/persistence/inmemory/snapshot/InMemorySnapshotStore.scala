@@ -46,21 +46,21 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     val SnapshotEntryOption: Future[Option[snapshotEntry]] = criteria match {
-      case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) ⇒
+      case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) =>
         (snapshots ? SnapshotForMaxSequenceNr(persistenceId, Long.MaxValue)).mapTo[Option[snapshotEntry]]
-      case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) ⇒
+      case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) =>
         (snapshots ? SnapshotForMaxTimestamp(persistenceId, maxTimestamp)).mapTo[Option[snapshotEntry]]
-      case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) ⇒
+      case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) =>
         (snapshots ? SnapshotForMaxSequenceNr(persistenceId, maxSequenceNr)).mapTo[Option[snapshotEntry]]
-      case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) ⇒
+      case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) =>
         (snapshots ? SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).mapTo[Option[snapshotEntry]]
-      case _ ⇒ Future.successful(None)
+      case _ => Future.successful(None)
     }
 
-    Source.fromFuture(SnapshotEntryOption).flatMapConcat { entryOption ⇒
-      Source(entryOption.toList).flatMapConcat { snapshotEntry ⇒
+    Source.fromFuture(SnapshotEntryOption).flatMapConcat { entryOption =>
+      Source(entryOption.toList).flatMapConcat { snapshotEntry =>
         Source.fromFuture(Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot])))
-          .map { snapshot ⇒
+          .map { snapshot =>
             SelectedSnapshot(
               SnapshotMetadata(
                 snapshotEntry.persistenceId,
@@ -80,17 +80,17 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   } yield ()
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =
-    (snapshots ? Delete(metadata.persistenceId, metadata.sequenceNr)).map(_ ⇒ ())
+    (snapshots ? Delete(metadata.persistenceId, metadata.sequenceNr)).map(_ => ())
 
   override def deleteAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Unit] = criteria match {
-    case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) ⇒
-      (snapshots ? DeleteAllSnapshots(persistenceId)).map(_ ⇒ ())
-    case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) ⇒
-      (snapshots ? DeleteUpToMaxTimestamp(persistenceId, maxTimestamp)).map(_ ⇒ ())
-    case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) ⇒
-      (snapshots ? DeleteUpToMaxSequenceNr(persistenceId, maxSequenceNr)).map(_ ⇒ ())
-    case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) ⇒
-      (snapshots ? DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).map(_ ⇒ ())
-    case _ ⇒ Future.successful(())
+    case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) =>
+      (snapshots ? DeleteAllSnapshots(persistenceId)).map(_ => ())
+    case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) =>
+      (snapshots ? DeleteUpToMaxTimestamp(persistenceId, maxTimestamp)).map(_ => ())
+    case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) =>
+      (snapshots ? DeleteUpToMaxSequenceNr(persistenceId, maxSequenceNr)).map(_ => ())
+    case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) =>
+      (snapshots ? DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).map(_ => ())
+    case _ => Future.successful(())
   }
 }

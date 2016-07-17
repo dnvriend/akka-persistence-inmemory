@@ -19,7 +19,7 @@ package akka.persistence.inmemory.query
 class CurrentPersistenceIdsTest extends QueryTestSpec {
 
   it should "not find any persistenceIds for empty journal" in
-    withCurrentPersistenceIds() { tp ⇒
+    withCurrentPersistenceIds() { tp =>
       tp.request(1)
       tp.expectComplete()
     }
@@ -29,7 +29,7 @@ class CurrentPersistenceIdsTest extends QueryTestSpec {
     persist("my-2")
     persist("my-3")
 
-    withCurrentPersistenceIds() { tp ⇒
+    withCurrentPersistenceIds() { tp =>
       tp.request(3)
       tp.expectNextUnordered("my-1", "my-2", "my-3")
       tp.expectComplete()
@@ -41,7 +41,7 @@ class CurrentPersistenceIdsTest extends QueryTestSpec {
     persist("my-2")
     persist("my-3")
 
-    withCurrentPersistenceIds() { tp ⇒
+    withCurrentPersistenceIds() { tp =>
       tp.request(3)
       tp.expectNextUnordered("my-1", "my-2", "my-3")
       tp.expectComplete()
@@ -51,7 +51,7 @@ class CurrentPersistenceIdsTest extends QueryTestSpec {
     deleteMessages("my-2")
     deleteMessages("my-3")
 
-    withCurrentPersistenceIds() { tp ⇒
+    withCurrentPersistenceIds() { tp =>
       tp.request(3)
       tp.expectNextUnordered("my-1", "my-2", "my-3")
       tp.expectComplete()

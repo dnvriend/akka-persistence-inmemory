@@ -25,7 +25,7 @@ class EventsByTagTest extends QueryTestSpec {
   final val NoMsgTime: FiniteDuration = 300.millis
 
   it should "find events for one tag starting with empty journal" in {
-    withEventsByTag(10.seconds)("one", 0) { tp ⇒
+    withEventsByTag(10.seconds)("one", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNoMsg(NoMsgTime)
 
@@ -75,7 +75,7 @@ class EventsByTagTest extends QueryTestSpec {
     persist(1, 1, "my-2", "number") // 2
     persist(1, 1, "my-3", "number") // 3
 
-    withEventsByTag()("number", 0) { tp ⇒
+    withEventsByTag()("number", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))

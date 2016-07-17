@@ -45,7 +45,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
     ref ! akka.actor.Status.Success("")
   }
 
-  def delete(persistenceId: String, predicate: snapshotEntry ⇒ Boolean): Unit = {
+  def delete(persistenceId: String, predicate: snapshotEntry => Boolean): Unit = {
     val pidEntries = snapshot.filter(_._1 == persistenceId)
     val notDeleted = pidEntries.mapValues(_.filterNot(predicate))
     snapshot = snapshot.filterNot(_._1 == persistenceId) |+| notDeleted
@@ -76,7 +76,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def deleteUpToMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long): Unit = {
-    delete(persistenceId, (x: snapshotEntry) ⇒ x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
+    delete(persistenceId, (x: snapshotEntry) => x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
 
     ref ! akka.actor.Status.Success("")
   }
@@ -89,34 +89,34 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def snapshotForMaxSequenceNr(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
-    val determine = snapshot.get(persistenceId).flatMap(xs ⇒ xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
+    val determine = snapshot.get(persistenceId).flatMap(xs => xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
 
     ref ! akka.actor.Status.Success(determine)
   }
 
-  def snapshotFor(ref: ActorRef, persistenceId: String)(p: snapshotEntry ⇒ Boolean): Unit = {
+  def snapshotFor(ref: ActorRef, persistenceId: String)(p: snapshotEntry => Boolean): Unit = {
     val determine: Option[snapshotEntry] = snapshot.get(persistenceId).flatMap(_.find(p))
 
     ref ! akka.actor.Status.Success(determine)
   }
 
   def snapshotForMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long): Unit = {
-    snapshotFor(ref, persistenceId)(snap ⇒ snap.sequenceNumber == sequenceNr)
+    snapshotFor(ref, persistenceId)(snap => snap.sequenceNumber == sequenceNr)
   }
 
   def snapshotForMaxTimestamp(ref: ActorRef, persistenceId: String, timestamp: Long): Unit =
     snapshotFor(ref, persistenceId)(_.created < timestamp)
 
   override def receive: Receive = {
-    case Delete(persistenceId: String, sequenceNr: Long)                                                        ⇒ delete(sender(), persistenceId, sequenceNr)
-    case DeleteAllSnapshots(persistenceId: String)                                                              ⇒ deleteAllSnapshots(sender(), persistenceId)
-    case DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long)                                      ⇒ deleteUpToMaxTimestamp(sender(), persistenceId, maxTimestamp)
-    case DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long)                                    ⇒ deleteUpToMaxSequenceNr(sender(), persistenceId, maxSequenceNr)
-    case DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long) ⇒ deleteUpToMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, maxSequenceNr, maxTimestamp)
-    case ClearSnapshots                                                                                         ⇒ clear(sender())
-    case Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte])                  ⇒ save(sender(), persistenceId, sequenceNr, timestamp, snapshot)
-    case SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long)                                      ⇒ snapshotForMaxSequenceNr(sender(), persistenceId, sequenceNr)
-    case SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long)      ⇒ snapshotForMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, sequenceNr, timestamp)
-    case SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long)                                        ⇒ snapshotForMaxTimestamp(sender(), persistenceId, timestamp)
+    case Delete(persistenceId: String, sequenceNr: Long)                                                        => delete(sender(), persistenceId, sequenceNr)
+    case DeleteAllSnapshots(persistenceId: String)                                                              => deleteAllSnapshots(sender(), persistenceId)
+    case DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long)                                      => deleteUpToMaxTimestamp(sender(), persistenceId, maxTimestamp)
+    case DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long)                                    => deleteUpToMaxSequenceNr(sender(), persistenceId, maxSequenceNr)
+    case DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long) => deleteUpToMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, maxSequenceNr, maxTimestamp)
+    case ClearSnapshots                                                                                         => clear(sender())
+    case Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte])                  => save(sender(), persistenceId, sequenceNr, timestamp, snapshot)
+    case SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long)                                      => snapshotForMaxSequenceNr(sender(), persistenceId, sequenceNr)
+    case SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long)      => snapshotForMaxSequenceNrAndMaxTimestamp(sender(), persistenceId, sequenceNr, timestamp)
+    case SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long)                                        => snapshotForMaxTimestamp(sender(), persistenceId, timestamp)
   }
 }

@@ -25,7 +25,7 @@ class CurrentEventsByTagTest extends QueryTestSpec {
     persist("my-2", "two")
     persist("my-3", "three")
 
-    withCurrentEventsByTag()("unknown", 0) { tp ⇒
+    withCurrentEventsByTag()("unknown", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
@@ -36,7 +36,7 @@ class CurrentEventsByTagTest extends QueryTestSpec {
     persist("my-2", "number")
     persist("my-3", "number")
 
-    withCurrentEventsByTag()("number", 0) { tp ⇒
+    withCurrentEventsByTag()("number", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
@@ -44,7 +44,7 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("number", 1) { tp ⇒
+    withCurrentEventsByTag()("number", 1) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
@@ -52,20 +52,20 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("number", 2) { tp ⇒
+    withCurrentEventsByTag()("number", 2) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
       tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("number", 3) { tp ⇒
+    withCurrentEventsByTag()("number", 3) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("number", 4) { tp ⇒
+    withCurrentEventsByTag()("number", 4) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
@@ -80,7 +80,7 @@ class CurrentEventsByTagTest extends QueryTestSpec {
     deleteMessages("my-2")
     deleteMessages("my-3")
 
-    withCurrentEventsByTag()("number", 0) { tp ⇒
+    withCurrentEventsByTag()("number", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
@@ -100,13 +100,13 @@ class CurrentEventsByTagTest extends QueryTestSpec {
     persist(6, 6, "my-1")
     persist(7, 7, "my-1")
 
-    withCurrentEventsByTag()("one", 0) { tp ⇒
+    withCurrentEventsByTag()("one", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("prime", 0) { tp ⇒
+    withCurrentEventsByTag()("prime", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
@@ -117,7 +117,7 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("3", 0) { tp ⇒
+    withCurrentEventsByTag()("3", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
       tp.expectNext(EventEnvelope(6, "my-2", 1, "a-1"))
@@ -125,25 +125,25 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("4", 0) { tp ⇒
+    withCurrentEventsByTag()("4", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("four", 0) { tp ⇒
+    withCurrentEventsByTag()("four", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("5", 0) { tp ⇒
+    withCurrentEventsByTag()("5", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(5, "my-1", 5, "a-5"))
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag()("five", 0) { tp ⇒
+    withCurrentEventsByTag()("five", 0) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(5, "my-1", 5, "a-5"))
       tp.expectComplete()

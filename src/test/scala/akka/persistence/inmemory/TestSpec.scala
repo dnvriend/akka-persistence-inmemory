@@ -54,7 +54,7 @@ trait TestSpec extends FlatSpec
 
   def killActors(actors: ActorRef*): Unit = {
     val tp = TestProbe()
-    actors.foreach { (actor: ActorRef) ⇒
+    actors.foreach { (actor: ActorRef) =>
       tp watch actor
       actor ! PoisonPill
       tp.expectTerminated(actor)
