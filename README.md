@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.3"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.4"
 ```
 
 ## Contribution policy ##
@@ -237,6 +237,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 # What's new?
+## 1.3.4 (2016-07-17)
+  - Codacy code cleanup release.
+
 ## 1.3.3 (2016-07-16)
   - No need for Query Publishers with the new akka-streams API.
 
