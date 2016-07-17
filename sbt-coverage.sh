@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 #!/bin/bash
+export CODACY_PROJECT_TOKEN=$INMEMORY_CODACY_TOKEN
+echo "project token: $CODACY_PROJECT_TOKEN"
 sbt clean coverage test
 sbt coverageReport
 sbt coverageAggregate
