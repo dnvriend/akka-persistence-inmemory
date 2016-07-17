@@ -55,8 +55,8 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   implicit val log: LoggingAdapter = Logging(system, this.getClass)
   val serialization = SerializationExtension(system)
   val journal: ActorRef = StorageExtension(system).journalStorage
-  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) → MILLISECONDS)
-  val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) → MILLISECONDS
+  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) -> MILLISECONDS)
+  val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) -> MILLISECONDS
   val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
 
   log.debug(

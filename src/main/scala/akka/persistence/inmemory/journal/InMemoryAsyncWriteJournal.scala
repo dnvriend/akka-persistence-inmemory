@@ -40,7 +40,7 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val mat: Materializer = ActorMaterializer()
   val log: LoggingAdapter = Logging(system, this.getClass)
-  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) → SECONDS)
+  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
   val journal: ActorRef = StorageExtension(system).journalStorage

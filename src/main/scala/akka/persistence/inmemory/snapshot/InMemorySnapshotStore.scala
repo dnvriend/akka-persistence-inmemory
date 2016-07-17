@@ -39,7 +39,7 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val mat: Materializer = ActorMaterializer()
-  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) → SECONDS)
+  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
   val snapshots: ActorRef = StorageExtension(system).snapshotStorage
@@ -75,8 +75,8 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   }
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = for {
-    snapshot ← Future.fromTry(serialization.serialize(Snapshot(snapshot)))
-    _ ← snapshots ? Save(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp, snapshot)
+    snapshot <- Future.fromTry(serialization.serialize(Snapshot(snapshot)))
+    _ <- snapshots ? Save(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp, snapshot)
   } yield ()
 
   override def deleteAsync(metadata: SnapshotMetadata): Future[Unit] =

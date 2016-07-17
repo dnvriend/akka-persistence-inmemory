@@ -83,7 +83,7 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
 
   def save(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long, data: Array[Byte]): Unit = {
     val key = persistenceId
-    snapshot = snapshot |+| Map(key → Vector(snapshotEntry(persistenceId, sequenceNr, timestamp, data)))
+    snapshot = snapshot |+| Map(key -> Vector(snapshotEntry(persistenceId, sequenceNr, timestamp, data)))
 
     ref ! akka.actor.Status.Success("")
   }
