@@ -4,8 +4,6 @@
 [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
 [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dnvriend/akka-persistence-inmemory&amp;utm_campaign=Badge_Grade)
-//[![Test Coverage](https://codeclimate.com/github/dnvriend/akka-persistence-inmemory/badges/coverage.svg)](https://codeclimate.com/github/dnvriend/akka-persistence-inmemory/coverage)
-//[![Issue Count](https://codeclimate.com/github/dnvriend/akka-persistence-inmemory/badges/issue_count.svg)](https://codeclimate.com/github/dnvriend/akka-persistence-inmemory)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
