@@ -22,6 +22,8 @@ version := "1.3.5-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+resolvers += Resolver.jcenterRepo
+
 libraryDependencies ++= {
   val akkaVersion = "2.4.8"
   Seq(
