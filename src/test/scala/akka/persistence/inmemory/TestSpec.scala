@@ -18,16 +18,18 @@ package akka.persistence.inmemory
 
 import java.util.UUID
 
+import akka.NotUsed
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.inmemory.util.ClasspathResources
 import akka.serialization.SerializationExtension
+import akka.stream.scaladsl.Source
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers }
 
 import scala.concurrent.duration._
@@ -60,6 +62,9 @@ trait TestSpec extends FlatSpec
       tp.expectTerminated(actor)
     }
   }
+
+  def withTestProbe[A](src: Source[A, NotUsed])(f: TestSubscriber.Probe[A] ⇒ Unit): Unit =
+    f(src.runWith(TestSink.probe(system)))
 
   implicit class PimpedByteArray(self: Array[Byte]) {
     def getString: String = new String(self)
