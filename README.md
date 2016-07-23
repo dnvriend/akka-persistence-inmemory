@@ -266,8 +266,8 @@ from the tagged event stream.
     added. I need this interface to load massive amounts of data, that will be processed by many actors, but initially I just want to create and store one or
     more events belonging to an actor, that will handle the business rules eventually. Using actors or a shard region for that matter, just gives to much
     actor life cycle overhead ie. too many calls to the data store. The `akka.persistence.query.scaladsl.EventWriter` interface is non-official and puts all
-    responsibility of ensuring the integrity of the journal this means when some strange things are happening caused by wrong loading of the data,
-    all the responsibility is on you, and not on the Akka team. 
+    responsibility of ensuring the integrity of the journal on you. This means when some strange things are happening caused by wrong loading of the data,
+    and therefor breaking the integrity and ruleset of akka-persistence, all the responsibility on fixing it is on you, and not on the Akka team.
 
 ## 1.3.4 (2016-07-17)
   - Codacy code cleanup release.
