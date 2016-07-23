@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.4"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.5"
 ```
 
 ## Contribution policy ##
@@ -261,6 +261,14 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 # What's new?
+## 1.3.5 (2016-07-23)
+  - Support for the __non-official__ bulk loading interface [akka.persistence.query.scaladsl.EventWriter](https://github.com/dnvriend/akka-persistence-query-writer/blob/master/src/main/scala/akka/persistence/query/scaladsl/EventWriter.scala)
+    added. I need this interface to load massive amounts of data, that will be processed by many actors, but initially I just want to create and store one or
+    more events belonging to an actor, that will handle the business rules eventually. Using actors or a shard region for that matter, just gives to much
+    actor life cycle overhead ie. too many calls to the data store. The `akka.persistence.query.scaladsl.EventWriter` interface is non-official and puts all
+    responsibility of ensuring the integrity of the journal this means when some strange things are happening caused by wrong loading of the data,
+    all the responsibility is on you, and not on the Akka team. 
+
 ## 1.3.4 (2016-07-17)
   - Codacy code cleanup release.
 
