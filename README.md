@@ -6,7 +6,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dnvriend/akka-persistence-inmemory&amp;utm_campaign=Badge_Grade)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-Akka-persistence-inmemory is a plugin for akka-persistence that writes journal and snapshot entries entries to an in-memory store. It is very useful for testing your persistent actors.
+Akka-persistence-inmemory is a plugin for akka-persistence that stores journal and snapshot messages memory, which is very useful when testing persistent actors, persistent FSM and akka cluster.
 
 ## Installation ##
 Add the following to your `build.sbt`:
@@ -50,6 +50,30 @@ inmemory-read-journal {
   # How many events to fetch in one query (replay) and keep buffered until they
   # are delivered downstreams.
   max-buffer-size = "100"
+}
+```
+
+## Clearing Journal and Snapshot messages
+It is possible to manually clear the journal an snapshot storage, for example:
+
+```scala
+import akka.actor.ActorSystem
+import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, InMemorySnapshotStorage, StorageExtension }
+import akka.testkit.TestProbe
+import org.scalatest.{ BeforeAndAfterEach, Suite }
+
+trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
+
+  implicit def system: ActorSystem
+
+  override protected def beforeEach(): Unit = {
+    val tp = TestProbe()
+    tp.send(StorageExtension(system).journalStorage, InMemoryJournalStorage.ClearJournal)
+    tp.expectMsg(akka.actor.Status.Success(""))
+    tp.send(StorageExtension(system).snapshotStorage, InMemorySnapshotStorage.ClearSnapshots)
+    tp.expectMsg(akka.actor.Status.Success(""))
+    super.beforeEach()
+  }
 }
 ```
 
