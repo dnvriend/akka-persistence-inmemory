@@ -30,21 +30,22 @@ class EventWriterTest extends TestSpec {
   lazy val journal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
     .asInstanceOf[ReadJournal with EventWriter with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery]
 
+  lazy val chars = ('a' to 'z') ++ ('A' to 'Z') ++ ('0' to '9')
+  def result(pid: String, offset: Int = 0) = chars.zipWithIndex.map {
+    case (char, index) =>
+      EventEnvelope(1 + index + offset, pid, index + 1, char)
+  }
+
   it should "write events without tags" in {
-    Source(List("a", "b", "c", "d", "e", "f", "g")).zipWithIndex.map {
+
+    Source(chars).zipWithIndex.map {
       case (pl, seqNr) =>
         WriteEvent(PersistentRepr(pl, seqNr, "foo"), Set.empty[String])
     }.via(journal.eventWriter).runWith(Sink.ignore).toTry should be a 'success
 
     withTestProbe(journal.currentEventsByPersistenceId("foo", 0, Long.MaxValue)) { tp =>
       tp.request(Long.MaxValue)
-      tp.requestNext(EventEnvelope(1, "foo", 1, "a"))
-      tp.requestNext(EventEnvelope(2, "foo", 2, "b"))
-      tp.requestNext(EventEnvelope(3, "foo", 3, "c"))
-      tp.requestNext(EventEnvelope(4, "foo", 4, "d"))
-      tp.requestNext(EventEnvelope(5, "foo", 5, "e"))
-      tp.requestNext(EventEnvelope(6, "foo", 6, "f"))
-      tp.requestNext(EventEnvelope(7, "foo", 7, "g"))
+      tp.expectNextN(result("foo"))
       tp.expectComplete()
     }
 
@@ -55,20 +56,14 @@ class EventWriterTest extends TestSpec {
   }
 
   it should "write events with tags" in {
-    Source(List("a", "b", "c", "d", "e", "f", "g")).zipWithIndex.map {
+    Source(chars).zipWithIndex.map {
       case (pl, seqNr) =>
         WriteEvent(PersistentRepr(pl, seqNr, "foobar"), Set("bar"))
     }.via(journal.eventWriter).runWith(Sink.ignore).toTry should be a 'success
 
     withTestProbe(journal.currentEventsByTag("bar", 0)) { tp =>
       tp.request(Long.MaxValue)
-      tp.requestNext(EventEnvelope(8, "foobar", 1, "a"))
-      tp.requestNext(EventEnvelope(9, "foobar", 2, "b"))
-      tp.requestNext(EventEnvelope(10, "foobar", 3, "c"))
-      tp.requestNext(EventEnvelope(11, "foobar", 4, "d"))
-      tp.requestNext(EventEnvelope(12, "foobar", 5, "e"))
-      tp.requestNext(EventEnvelope(13, "foobar", 6, "f"))
-      tp.requestNext(EventEnvelope(14, "foobar", 7, "g"))
+      tp.expectNextN(result("foobar", chars.size))
       tp.expectComplete()
     }
 
