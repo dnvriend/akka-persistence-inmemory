@@ -22,6 +22,8 @@ version := "1.3.5-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+resolvers += Resolver.bintrayRepo("dnvriend", "https://bintray.com/dnvriend/maven/")
+
 resolvers += Resolver.jcenterRepo
 
 libraryDependencies ++= {
