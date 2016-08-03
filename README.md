@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.5"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.6-RC1"
 ```
 
 ## Contribution policy ##
@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.6-RC1 (2016-08-03)
+  - Akka 2.4.8 -> 2.4.9-RC1
+
 ## 1.3.5 (2016-07-23)
   - Support for the __non-official__ bulk loading interface [akka.persistence.query.scaladsl.EventWriter](https://github.com/dnvriend/akka-persistence-query-writer/blob/master/src/main/scala/akka/persistence/query/scaladsl/EventWriter.scala)
     added. I need this interface to load massive amounts of data, that will be processed by many actors, but initially I just want to create and store one or
