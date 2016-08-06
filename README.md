@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.6-RC2 (2016-08-06)
+  - Akka 2.4.9-RC1 -> 2.4.9-RC2
+
 ## 1.3.6-RC1 (2016-08-03)
   - Akka 2.4.8 -> 2.4.9-RC1
 
