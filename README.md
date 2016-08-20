@@ -1,4 +1,4 @@
-# akka-persistence-inmemory #
+# akka-persistence-inmemory
 
 [![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory](https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg)](https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
@@ -8,21 +8,21 @@
 
 Akka-persistence-inmemory is a plugin for akka-persistence that stores journal and snapshot messages memory, which is very useful when testing persistent actors, persistent FSM and akka cluster.
 
-## Installation ##
+## Installation
 Add the following to your `build.sbt`:
 
 ```scala
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.6-RC1"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.6"
 ```
 
-## Contribution policy ##
+## Contribution policy
 
 Contributions via GitHub pull requests are gladly accepted from their original author. Along with any pull requests, please state that the contribution is your original work and that you license the work to the project under the project's open source license. Whether or not you state this explicitly, by submitting any copyrighted material via pull request, email, or other means you agree to license the material under the project's open source license and warrant that you have the legal authority to do so.
 
-## License ##
+## License
 
 This code is open source software licensed under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0.html).
 
@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.6 (2016-08-20)
+  - Akka 2.4.9-RC2 -> Akka 2.4.9
+
 ## 1.3.6-RC2 (2016-08-06)
   - Akka 2.4.9-RC1 -> 2.4.9-RC2
 

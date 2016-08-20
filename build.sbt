@@ -18,7 +18,7 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.6-RC2"
+version := "1.3.6"
 
 scalaVersion := "2.11.8"
 
@@ -27,22 +27,21 @@ resolvers += Resolver.bintrayRepo("dnvriend", "https://bintray.com/dnvriend/mave
 resolvers += Resolver.jcenterRepo
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.9-RC2"
+  val akkaVersion = "2.4.9"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.github.dnvriend" %% "akka-persistence-query-writer" % "0.0.1",
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-    "org.scalaz" %% "scalaz-core" % "7.2.4",
+    "org.scalaz" %% "scalaz-core" % "7.2.5",
     "com.github.dnvriend" %% "akka-stream-extensions" % "0.0.1" % Test,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "org.scalatest" %% "scalatest" % "2.2.6" % Test,
-    "org.scalacheck" %% "scalacheck" % "1.12.5" % Test
+    "org.scalatest" %% "scalatest" % "2.2.6" % Test
   )
 }
 
