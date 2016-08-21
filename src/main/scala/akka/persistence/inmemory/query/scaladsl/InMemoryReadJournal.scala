@@ -97,11 +97,16 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       def nextFromSeqNr(xs: Seq[EventEnvelope]): Long = {
         if (xs.isEmpty) from else xs.map(_.sequenceNr).max + 1
       }
-      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ =>
-        currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
-          .take(maxBufferSize)).runWith(Sink.seq).map { xs =>
-        val newFromSeqNr = nextFromSeqNr(xs)
-        Some((newFromSeqNr, xs))
+
+      from match {
+        case x if x > toSequenceNr => Future.successful(None)
+        case _ =>
+          Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ =>
+            currentEventsByPersistenceId(persistenceId, from, toSequenceNr)
+              .take(maxBufferSize)).runWith(Sink.seq).map { xs =>
+            val newFromSeqNr = nextFromSeqNr(xs)
+            Some((newFromSeqNr, xs))
+          }
       }
     }.mapConcat(identity)
 

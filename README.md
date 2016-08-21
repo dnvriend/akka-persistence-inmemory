@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.6"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.7"
 ```
 
 ## Contribution policy
@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.7 (2016-08-21)
+  - Fix for EventsByPersistenceId should terminate when toSequenceNumber is reached as pointed out by [monktastic](https://github.com/monktastic), thanks!
+
 ## 1.3.6 (2016-08-20)
   - Akka 2.4.9-RC2 -> Akka 2.4.9
 
