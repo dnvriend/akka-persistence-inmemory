@@ -18,7 +18,7 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.7"
+version := "1.3.8"
 
 scalaVersion := "2.11.8"
 
@@ -27,7 +27,7 @@ resolvers += Resolver.bintrayRepo("dnvriend", "https://bintray.com/dnvriend/mave
 resolvers += Resolver.jcenterRepo
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.9"
+  val akkaVersion = "2.4.10"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
