@@ -23,7 +23,7 @@ import akka.NotUsed
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
-import akka.persistence.PersistentRepr
+import akka.persistence.{ Persistence, PersistentRepr }
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl.EventWriter.WriteEvent
@@ -34,6 +34,7 @@ import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
+import scala.collection.immutable
 import scala.collection.immutable.{ Iterable, Seq }
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
@@ -134,11 +135,26 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private def deserialize(serialized: Array[Byte]) =
     Source.fromFuture(Future.fromTry(serialization.deserialize(serialized, classOf[PersistentRepr])))
 
+  private val persistence = Persistence(system)
+
+  /**
+   * Use default `journalPluginId` from config `akka.persistence.journal.plugin` to obtain event adapters.
+   */
+  private val eventAdapters = persistence.adaptersFor(journalPluginId = "")
+
+  private[akka] final def adaptFromJournal(repr: PersistentRepr): immutable.Seq[PersistentRepr] =
+    eventAdapters.get(repr.payload.getClass).fromJournal(repr.payload, repr.manifest).events map { adaptedPayload =>
+      repr.withPayload(adaptedPayload)
+    }
+
+  private def deserializeJournalEntry(entry: JournalEntry): Source[PersistentRepr, NotUsed] =
+    deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).mapConcat(adaptFromJournal)
+
   private val deserialization = Flow[JournalEntry]
-    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)))
+    .flatMapConcat(deserializeJournalEntry)
 
   private val deserializationWithOrdering = Flow[JournalEntry]
-    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _)))
+    .flatMapConcat(entry => deserializeJournalEntry(entry).map((entry.ordering, _)))
 
   override def eventWriter: Flow[WriteEvent, WriteEvent, NotUsed] = Flow[WriteEvent].flatMapConcat {
     case write @ WriteEvent(repr, tags) =>
