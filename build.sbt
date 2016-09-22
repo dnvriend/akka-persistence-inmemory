@@ -22,6 +22,8 @@ version := "1.3.9-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature")
+
 resolvers += Resolver.bintrayRepo("dnvriend", "https://bintray.com/dnvriend/maven/")
 
 resolvers += Resolver.jcenterRepo
@@ -32,16 +34,14 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
-    "com.github.dnvriend" %% "akka-persistence-query-writer" % "0.0.2",
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "org.scalaz" %% "scalaz-core" % "7.2.6",
-    "com.github.dnvriend" %% "akka-stream-extensions" % "0.0.2" % Test,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "org.scalatest" %% "scalatest" % "2.2.6" % Test
+    "org.scalatest" %% "scalatest" % "3.0.0" % Test
   )
 }
 

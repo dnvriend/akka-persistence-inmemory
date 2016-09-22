@@ -26,7 +26,6 @@ import akka.pattern.ask
 import akka.persistence.{ Persistence, PersistentRepr }
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
-import akka.persistence.query.scaladsl.EventWriter.WriteEvent
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.{ Flow, Sink, Source }
@@ -49,8 +48,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     with CurrentEventsByPersistenceIdQuery
     with EventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
-    with EventsByTagQuery
-    with EventWriter {
+    with EventsByTagQuery {
 
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val mat: Materializer = ActorMaterializer()
@@ -158,12 +156,4 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
 
   private val deserializationWithOrdering = Flow[JournalEntry]
     .flatMapConcat(entry => deserializeJournalEntry(entry).map((entry.ordering, _)))
-
-  override def eventWriter: Flow[WriteEvent, WriteEvent, NotUsed] = Flow[WriteEvent].flatMapConcat {
-    case write @ WriteEvent(repr, tags) =>
-      Source.fromFuture(Future.fromTry(serialization.serialize(repr)))
-        .map(arr => JournalEntry(repr.persistenceId, repr.sequenceNr, arr, repr, write.tags))
-        .mapAsyncUnordered(8)(entry => journal ? InMemoryJournalStorage.WriteList(List(entry)))
-        .map(_ => write)
-  }
 }

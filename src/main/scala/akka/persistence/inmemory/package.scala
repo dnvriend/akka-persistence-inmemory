@@ -16,6 +16,9 @@
 
 package akka.persistence
 
+import scala.collection.immutable._
+import scala.language.implicitConversions
+
 package object inmemory {
   type Seq[A] = scala.collection.immutable.Seq[A]
 

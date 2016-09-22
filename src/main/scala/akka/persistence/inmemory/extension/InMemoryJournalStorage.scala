@@ -25,8 +25,9 @@ import akka.persistence.PersistentRepr
 import akka.serialization.SerializationExtension
 
 import scala.util.{ Failure, Success }
-import scalaz.std.AllInstances._
-import scalaz.syntax.all._
+import scalaz._
+import Scalaz._
+import scala.collection.immutable._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
@@ -85,8 +86,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
       .mapValues(_.filter(_.sequenceNr <= toSequenceNr).map { journalEntry =>
         val updatedRepr: PersistentRepr = journalEntry.repr.update(deleted = true)
         val byteArray: Array[Byte] = serialization.serialize(updatedRepr) match {
-          case Success(arr)   => arr
-          case Failure(cause) => throw cause
+          case scala.util.Success(arr)   => arr
+          case scala.util.Failure(cause) => throw cause
         }
         journalEntry.copy(deleted = true).copy(serialized = byteArray).copy(repr = updatedRepr)
       })

@@ -290,6 +290,7 @@ Is Event Sourcing getting traction? I would say so:
     will write the events to the journal. That writePlugin has all event adapters configured and if applicable, those event adapters will be used to 
     adapt the events from the data-model to the application-model effectively you should have application-model events in your _EventEnvelope_ if
     configured correctly.
+ - Removed the non-official and never-to-be-used bulk loading interface
 
 ## 1.3.8 (2016-09-07)
   - Akka 2.4.9 -> Akka 2.4.10

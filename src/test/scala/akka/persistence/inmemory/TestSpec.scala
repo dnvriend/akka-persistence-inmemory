@@ -36,7 +36,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.util.Try
 
-trait TestSpec extends FlatSpec
+abstract class TestSpec extends FlatSpec
     with Matchers
     with ScalaFutures
     with Eventually
