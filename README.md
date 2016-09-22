@@ -282,6 +282,15 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.9 (2016-09-22)
+  - Adapted version of PR #28 by [Yury Gribkov](https://github.com/ygree) - Fix bug: It doesn't adapt events read from journal, thanks!
+  - As event adapters are no first class citizins of akka-persistence-query (yet), a workaround based on the configuration of akka-persistence-cassandra
+    has been implemented in the inmemory journal based on the work of [Yury Gribkov](https://github.com/ygree). Basically, the query-journal will look for 
+    a __write-plugin__ entry in the __inmemory-read-journal__ configuration of your application.conf that must point to the _writePluginId_ that 
+    will write the events to the journal. That writePlugin has all event adapters configured and if applicable, those event adapters will be used to 
+    adapt the events from the data-model to the application-model effectively you should have application-model events in your _EventEnvelope_ if
+    configured correctly.
+
 ## 1.3.8 (2016-09-07)
   - Akka 2.4.9 -> Akka 2.4.10
 

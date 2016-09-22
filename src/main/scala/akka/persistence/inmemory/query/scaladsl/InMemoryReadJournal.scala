@@ -23,7 +23,7 @@ import akka.NotUsed
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
-import akka.persistence.PersistentRepr
+import akka.persistence.{ Persistence, PersistentRepr }
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl.EventWriter.WriteEvent
@@ -52,14 +52,25 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     with EventsByTagQuery
     with EventWriter {
 
-  implicit val ec: ExecutionContext = system.dispatcher
-  implicit val mat: Materializer = ActorMaterializer()
-  implicit val log: LoggingAdapter = Logging(system, this.getClass)
-  val serialization = SerializationExtension(system)
-  val journal: ActorRef = StorageExtension(system).journalStorage
-  implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) -> MILLISECONDS)
-  val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) -> MILLISECONDS
-  val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
+  private implicit val ec: ExecutionContext = system.dispatcher
+  private implicit val mat: Materializer = ActorMaterializer()
+  private implicit val log: LoggingAdapter = Logging(system, this.getClass)
+  private val serialization = SerializationExtension(system)
+  private val journal: ActorRef = StorageExtension(system).journalStorage
+  private implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) -> MILLISECONDS)
+  private val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) -> MILLISECONDS
+  private val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
+
+  // As event adapters are *no* first class citizins in akka-persistence-query
+  // this workaround has to be implemented. 
+  // see akka ticket: #18050 and #21065
+  // and akka-persistence-cassandra ticket: #116
+  // 
+  // basically registering the used write-plugin in the inmemory-read-journal configuration section
+  // then looking up that plugin-id and getting configured event adapters for that write plugin id
+  // then 
+  private val writePluginId = config.getString("write-plugin")
+  private val eventAdapters = Persistence(system).adaptersFor(writePluginId)
 
   log.debug(
     """
@@ -134,11 +145,19 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private def deserialize(serialized: Array[Byte]) =
     Source.fromFuture(Future.fromTry(serialization.deserialize(serialized, classOf[PersistentRepr])))
 
+  private def adaptFromJournal(repr: PersistentRepr): Seq[PersistentRepr] =
+    eventAdapters.get(repr.payload.getClass).fromJournal(repr.payload, repr.manifest).events map { adaptedPayload =>
+      repr.withPayload(adaptedPayload)
+    }
+
+  private def deserializeJournalEntry(entry: JournalEntry): Source[PersistentRepr, NotUsed] =
+    deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).mapConcat(adaptFromJournal)
+
   private val deserialization = Flow[JournalEntry]
-    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)))
+    .flatMapConcat(deserializeJournalEntry)
 
   private val deserializationWithOrdering = Flow[JournalEntry]
-    .flatMapConcat(entry => deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).map((entry.ordering, _)))
+    .flatMapConcat(entry => deserializeJournalEntry(entry).map((entry.ordering, _)))
 
   override def eventWriter: Flow[WriteEvent, WriteEvent, NotUsed] = Flow[WriteEvent].flatMapConcat {
     case write @ WriteEvent(repr, tags) =>
