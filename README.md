@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.9"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.10"
 ```
 
 ## Contribution policy
@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.10 (2016-09-30)
+  - Akka 2.4.10 -> 2.4.11
+
 ## 1.3.9 (2016-09-22)
   - Adapted version of PR #28 by [Yury Gribkov](https://github.com/ygree) - Fix bug: It doesn't adapt events read from journal, thanks!
   - As event adapters are no first class citizins of akka-persistence-query (yet), a workaround based on the configuration of akka-persistence-cassandra
