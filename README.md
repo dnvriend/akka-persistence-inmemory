@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.10"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.11"
 ```
 
 ## Contribution policy
@@ -282,6 +282,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.11 (2016-10-23)
+  - Scala 2.11.8 and 2.12.0-RC2 compatible
+
 ## 1.3.10 (2016-09-30)
   - Akka 2.4.10 -> 2.4.11
 

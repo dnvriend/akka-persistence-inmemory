@@ -18,15 +18,13 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.10"
+version := "1.3.11-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
+crossScalaVersions := Seq("2.11.8", "2.12.0-RC2")
+
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature")
-
-resolvers += Resolver.bintrayRepo("dnvriend", "https://bintray.com/dnvriend/maven/")
-
-resolvers += Resolver.jcenterRepo
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.11"
