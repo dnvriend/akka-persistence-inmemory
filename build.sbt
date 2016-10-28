@@ -18,22 +18,22 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.11"
+version := "1.3.12-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
-crossScalaVersions := Seq("2.11.8", "2.12.0-RC2")
+//crossScalaVersions := Seq("2.11.8", "2.12.0-RC2")
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature")
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.11"
+  val akkaVersion = "2.4.12"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-    "org.scalaz" %% "scalaz-core" % "7.2.6",
+    "org.scalaz" %% "scalaz-core" % "7.2.7",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,

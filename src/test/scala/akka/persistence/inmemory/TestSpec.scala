@@ -52,7 +52,9 @@ abstract class TestSpec extends FlatSpec
   implicit val timeout = Timeout(30.seconds)
   val serialization = SerializationExtension(system)
 
-  def randomId = UUID.randomUUID.toString.take(5)
+  def randomUuid = UUID.randomUUID
+
+  def randomId = randomUuid.toString.take(5)
 
   def killActors(actors: ActorRef*): Unit = {
     val tp = TestProbe()

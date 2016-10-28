@@ -25,9 +25,8 @@ import akka.persistence.inmemory.extension.InMemoryJournalStorage.ClearJournal
 import akka.persistence.inmemory.extension.StorageExtension
 import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
-import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, PersistenceQuery }
 import akka.persistence.{ DeleteMessagesSuccess, _ }
-import akka.stream.{ DelayOverflowStrategy, OverflowStrategy }
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
@@ -54,7 +53,7 @@ trait QueryTestSpec extends TestSpec {
   lazy val journal = Persistence(system).journalFor("inmemory-journal")
 
   lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
-    .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with AllPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with EventsByPersistenceIdQuery with EventsByTagQuery]
+    .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with AllPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with CurrentEventsByTagQuery2 with EventsByPersistenceIdQuery with EventsByTagQuery with EventsByTagQuery2]
 
   def withCurrentPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
     val tp = readJournal.currentPersistenceIds().runWith(TestSink.probe[String])
@@ -81,8 +80,18 @@ trait QueryTestSpec extends TestSpec {
     tp.within(within)(f(tp))
   }
 
+  def withCurrentEventsByTag2(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope2] => Unit): Unit = {
+    val tp = readJournal.currentEventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope2])
+    tp.within(within)(f(tp))
+  }
+
   def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
+    tp.within(within)(f(tp))
+  }
+
+  def withEventsByTag2(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope2] => Unit): Unit = {
+    val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope2])
     tp.within(within)(f(tp))
   }
 

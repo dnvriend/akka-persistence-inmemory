@@ -1,8 +1,37 @@
+/*
+ * Copyright 2016 Dennis Vriend
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package akka.persistence.inmemory
 
-/**
-  * Created by dennis on 28-10-16.
-  */
-package object query {
+import akka.NotUsed
+import akka.persistence.query._
+import akka.stream.scaladsl.Source
 
+package object query {
+  implicit class OffsetOps(val that: Offset) extends AnyVal {
+    def value = that match {
+      case Sequence(offsetValue) => offsetValue
+      case NoOffset              => 0L
+      case _                     => throw new IllegalArgumentException("akka-persistence-inmemory does not support " + that.getClass.getName + " offsets")
+    }
+  }
+
+  def toOldEnvelope(env2: EventEnvelope2): EventEnvelope =
+    EventEnvelope(env2.offset.value, env2.persistenceId, env2.sequenceNr, env2.event)
+
+  implicit def newSrcToOldSrc(that: Source[EventEnvelope2, NotUsed]): Source[EventEnvelope, NotUsed] =
+    that.map(toOldEnvelope)
 }

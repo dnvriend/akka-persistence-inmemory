@@ -282,6 +282,12 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.12 (2016-10-28)
+  - Akka 2.4.11 -> 2.4.12
+  - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-quer](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
+  - The akka-persistence-inmemory plugin only supports the `akka.persistence.query.NoOffset` or `akka.persistence.query.Sequence` offset types.
+  - There is no support for the `akka.persistence.query.TimeBasedUUID` offset type. When used, akka-persistence-inmemory will throw an IllegalArgumentException.
+
 ## 1.3.11 (2016-10-23)
   - Scala 2.11.8 and 2.12.0-RC2 compatible
 

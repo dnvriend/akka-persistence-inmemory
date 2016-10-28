@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package akka.persistence.inmemory.query.javadsl
+package akka.persistence.inmemory.query
+package javadsl
 
 import akka.NotUsed
 import akka.persistence.inmemory.query.scaladsl.{ InMemoryReadJournal => ScalaInMemoryReadJournal }
-import akka.persistence.query.EventEnvelope
 import akka.persistence.query.javadsl._
+import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, Sequence }
 import akka.stream.javadsl.Source
 
 object InMemoryReadJournal {
@@ -32,7 +33,9 @@ class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
     with CurrentEventsByPersistenceIdQuery
     with EventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
-    with EventsByTagQuery {
+    with CurrentEventsByTagQuery2
+    with EventsByTagQuery
+    with EventsByTagQuery2 {
 
   override def currentPersistenceIds(): Source[String, NotUsed] =
     journal.currentPersistenceIds().asJava
@@ -47,8 +50,14 @@ class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
     journal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
 
   override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
+    journal.currentEventsByTag(tag, Sequence(offset)).map(toOldEnvelope).asJava
+
+  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
     journal.currentEventsByTag(tag, offset).asJava
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
+    journal.eventsByTag(tag, Sequence(offset)).map(toOldEnvelope).asJava
+
+  override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
     journal.eventsByTag(tag, offset).asJava
 }

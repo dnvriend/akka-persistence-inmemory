@@ -15,7 +15,8 @@
  */
 
 package akka.persistence.inmemory
-package query.scaladsl
+package query
+package scaladsl
 
 import java.util.concurrent.TimeUnit
 
@@ -25,7 +26,7 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
 import akka.persistence.{ Persistence, PersistentRepr }
 import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
-import akka.persistence.query.EventEnvelope
+import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, Sequence }
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.{ Flow, Sink, Source }
@@ -48,7 +49,9 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     with CurrentEventsByPersistenceIdQuery
     with EventsByPersistenceIdQuery
     with CurrentEventsByTagQuery
-    with EventsByTagQuery {
+    with CurrentEventsByTagQuery2
+    with EventsByTagQuery
+    with EventsByTagQuery2 {
 
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val mat: Materializer = ActorMaterializer()
@@ -120,22 +123,28 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     }.mapConcat(identity)
 
   override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
+    currentEventsByTag(tag, Sequence(offset))
+
+  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
+    Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset.value))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserializationWithOrdering)
       .map {
-        case (ordering, repr) => EventEnvelope(ordering, repr.persistenceId, repr.sequenceNr, repr.payload)
+        case (ordering, repr) => EventEnvelope2(Sequence(ordering), repr.persistenceId, repr.sequenceNr, repr.payload)
       }
 
   override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    Source.unfoldAsync[Long, Seq[EventEnvelope]](offset) { (from: Long) =>
-      def nextFromOffset(xs: Seq[EventEnvelope]): Long = {
-        if (xs.isEmpty) from else xs.map(_.offset).max + 1
+    eventsByTag(tag, Sequence(offset))
+
+  override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
+    Source.unfoldAsync[Long, Seq[EventEnvelope2]](offset.value) { (from: Long) =>
+      def nextFromOffset(xs: Seq[EventEnvelope2]): Long = {
+        if (xs.isEmpty) from else xs.map(_.offset.value).max + 1
       }
-      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ => currentEventsByTag(tag, from)
+      Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ => currentEventsByTag(tag, Sequence(from))
         .take(maxBufferSize)).runWith(Sink.seq).map { xs =>
-        val newFromSeqNr = nextFromOffset(xs)
+        val newFromSeqNr: Long = nextFromOffset(xs)
         Some((newFromSeqNr, xs))
       }
     }.mapConcat(identity)
