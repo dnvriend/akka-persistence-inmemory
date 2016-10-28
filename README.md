@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.11"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.12"
 ```
 
 ## Contribution policy
@@ -284,7 +284,7 @@ Is Event Sourcing getting traction? I would say so:
 # What's new?
 ## 1.3.12 (2016-10-28)
   - Akka 2.4.11 -> 2.4.12
-  - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-quer](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
+  - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-query](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
   - The akka-persistence-inmemory plugin only supports the `akka.persistence.query.NoOffset` or `akka.persistence.query.Sequence` offset types.
   - There is no support for the `akka.persistence.query.TimeBasedUUID` offset type. When used, akka-persistence-inmemory will throw an IllegalArgumentException.
 
