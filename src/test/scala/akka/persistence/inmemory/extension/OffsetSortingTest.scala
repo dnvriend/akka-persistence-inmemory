@@ -37,29 +37,29 @@ class OffsetSortingTest extends TestSpec {
     xs.sorted(ordering2) shouldBe Vector(Sequence(1), Sequence(2), Sequence(3))
   }
 
-  //  it should "sort a timebaseduuid offset" in {
-  //    val sdf = new SimpleDateFormat("yyyy-MM-dd")
-  //    val uuid1 = UUIDs.startOf(sdf.parse("2000-01-01").getTime)
-  //    val uuid2 = UUIDs.startOf(sdf.parse("2010-01-01").getTime)
-  //    val uuid3 = UUIDs.startOf(sdf.parse("2020-01-01").getTime)
-  //
-  //    val xs = Vector(TimeBasedUUID(uuid3), TimeBasedUUID(uuid1), TimeBasedUUID(uuid2))
-  //    xs.sorted shouldBe Vector(TimeBasedUUID(uuid1), TimeBasedUUID(uuid2), TimeBasedUUID(uuid3))
-  //  }
-  //
+  it should "sort a timebaseduuid offset" in {
+    val sdf = new SimpleDateFormat("yyyy-MM-dd")
+    val uuid1 = UUIDs.startOf(sdf.parse("2000-01-01").getTime)
+    val uuid2 = UUIDs.startOf(sdf.parse("2010-01-01").getTime)
+    val uuid3 = UUIDs.startOf(sdf.parse("2020-01-01").getTime)
+
+    val xs = Vector(TimeBasedUUID(uuid3), TimeBasedUUID(uuid1), TimeBasedUUID(uuid2))
+    xs.sorted shouldBe Vector(TimeBasedUUID(uuid1), TimeBasedUUID(uuid2), TimeBasedUUID(uuid3))
+  }
+
   it should "filter a sequence offset" in {
     val xs = Vector(Sequence(3), Sequence(1), Sequence(2))
     xs.filter(_ > Sequence(2)) shouldBe Vector(Sequence(3))
   }
-  //
-  //  it should "filter a timebaseduuid offset" in {
-  //    val sdf = new SimpleDateFormat("yyyy-MM-dd")
-  //    val uuid1 = UUIDs.startOf(sdf.parse("2000-01-01").getTime)
-  //    val uuid2 = UUIDs.startOf(sdf.parse("2010-01-01").getTime)
-  //    val uuid3 = UUIDs.startOf(sdf.parse("2020-01-01").getTime)
-  //
-  //    val xs = Vector(TimeBasedUUID(uuid3), TimeBasedUUID(uuid1), TimeBasedUUID(uuid2))
-  //    // filter uses the Ordering[A] implementation
-  //    xs.filter(_ > TimeBasedUUID(uuid2)) shouldBe Vector(TimeBasedUUID(uuid3))
-  //  }
+
+  it should "filter a timebaseduuid offset" in {
+    val sdf = new SimpleDateFormat("yyyy-MM-dd")
+    val uuid1 = UUIDs.startOf(sdf.parse("2000-01-01").getTime)
+    val uuid2 = UUIDs.startOf(sdf.parse("2010-01-01").getTime)
+    val uuid3 = UUIDs.startOf(sdf.parse("2020-01-01").getTime)
+
+    val xs = Vector(TimeBasedUUID(uuid3), TimeBasedUUID(uuid1), TimeBasedUUID(uuid2))
+    // filter uses the Ordering[A] implementation
+    xs.filter(_ > TimeBasedUUID(uuid2)) shouldBe Vector(TimeBasedUUID(uuid3))
+  }
 }
