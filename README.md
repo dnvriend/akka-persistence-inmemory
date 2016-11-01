@@ -15,11 +15,10 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.12"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.13"
 ```
 
 ## Contribution policy
-
 Contributions via GitHub pull requests are gladly accepted from their original author. Along with any pull requests, please state that the contribution is your original work and that you license the work to the project under the project's open source license. Whether or not you state this explicitly, by submitting any copyrighted material via pull request, email, or other means you agree to license the material under the project's open source license and warrant that you have the legal authority to do so.
 
 ## License
@@ -44,6 +43,19 @@ The query API can be configured by overriding the defaults by placing the follow
 ```
 # Optional
 inmemory-read-journal {
+  # Absolute path to the write journal plugin configuration section to get the event adapters from
+  write-plugin = "inmemory-journal"
+
+  # there are two modes; sequence or uuid. If set to "sequence" and NoOffset will be requested, then
+  # the query will return Sequence offset types. If set to "uuid" and NoOffset will be requested, then
+  # the query will return TimeBasedUUID offset types. When the query is called with Sequence then
+  # the query will return Sequence offset types and if the query is called with TimeBasedUUID types then
+  # the query will return TimeBasedUUID offset types.
+  offset-mode = "sequence"
+
+  # ask timeout on Futures
+  ask-timeout = "10s"
+
   # New events are retrieved (polled) with this interval.
   refresh-interval = "100ms"
 
@@ -76,6 +88,25 @@ trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
   }
 }
 ```
+
+## offset-mode
+akka-persistence-query introduces `akka.persistence.query.Offset`, an ADT that defines `akka.persistence.query.NoOffset`,
+`akka.persistence.query.Sequence` and `akka.persistence.query.TimeBasedUUID`. These offsets can be used when using the
+queries `akka.persistence.query.scaladsl.EventsByTagQuery2` and `akka.persistence.query.scaladsl.CurrentEventsByTagQuery2`
+to request and offset in the stream of events.
+
+Because akka-persistence-inmemory implements both the Sequence-based number offset strategy as the TimeBasedUUID strategy
+it is required to configure the `inmemory-read-journal.offset-mode="sequence"`. This way akka-persistence-inmemory knows
+what kind of journal it should emulate when a NoOffset type is requested. EventEnvelope will contain either a Sequence
+when the configuration is `sequence` or a TimeBasedUUID when the configuration is `uuid`.
+
+By default the setting is `sequence`.
+
+## query and event-adapters
+Write plugins (ie. akka-persistence-plugins that write events) can define event adapters. These event adapters can be
+reused when executing a query so that the EventEnvelope contains the `application domain event` and not the data-model
+representation of that event. Set the  `inmemory-read-journal.write-plugin="inmemory-journal"` and configure it with the
+write plugin name (defaults to the `inmemory-journal`).
 
 ## Refresh Interval
 The async query API uses polling to query the journal for new events. The refresh interval can be configured
@@ -282,6 +313,11 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.13 (2016-11-01 - Birthday Edition!)
+  - Implemented support for the `akka.persistence.query.TimeBasedUUID`.
+  - You should set the __new__ configuration key `inmemory-read-journal.offset-mode = "uuid"`, defaults to `sequence`
+    to produce `EventEnvelope2` that contain `TimeBasedUUID` offset fields.
+
 ## 1.3.12 (2016-10-28)
   - Akka 2.4.11 -> 2.4.12
   - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-query](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.

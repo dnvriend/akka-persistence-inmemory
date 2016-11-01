@@ -16,19 +16,13 @@
 
 package akka.persistence.inmemory.query
 
-import akka.persistence.query.{ EventEnvelope2, NoOffset, Sequence, TimeBasedUUID }
+import akka.persistence.query.{ EventEnvelope2, NoOffset, Sequence }
 
-class CurrentEventsByTag2Test extends QueryTestSpec {
-
-  it should "not support TimeBasedUUID offsets" in {
-    intercept[IllegalArgumentException] {
-      withCurrentEventsByTag2()("unknown", TimeBasedUUID(randomUuid)) { tp =>
-        tp.request(Int.MaxValue)
-        tp.expectComplete()
-      }
-    }
-  }
-
+/**
+ * This test sets the offset-mode to sequence, this means that when a NoOffset type is
+ * requested, the offset type in the Envelope will be a Sequence
+ */
+class CurrentEventsByTag2SequenceJournalTest extends QueryTestSpec {
   it should "not find an event by tag for unknown tag" in {
     persist("my-1", "one")
     persist("my-2", "two")

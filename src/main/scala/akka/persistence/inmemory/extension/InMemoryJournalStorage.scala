@@ -17,23 +17,24 @@
 package akka.persistence.inmemory
 package extension
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
-import akka.serialization.SerializationExtension
+import akka.persistence.query.{ NoOffset, Offset, Sequence, TimeBasedUUID }
+import akka.serialization.Serialization
 
-import scala.util.{ Failure, Success }
-import scalaz._
-import Scalaz._
 import scala.collection.immutable._
+import scalaz.Scalaz._
+import scalaz._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
   case object AllPersistenceIds extends JournalCommand
   final case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long) extends JournalCommand
-  final case class EventsByTag(tag: String, offset: Long) extends JournalCommand
+  final case class EventsByTag(tag: String, offset: Offset) extends JournalCommand
   final case class PersistenceIds(queryListOfPersistenceIds: Seq[String]) extends JournalCommand
   final case class WriteList(xs: Seq[JournalEntry]) extends JournalCommand
   final case class Delete(persistenceId: String, toSequenceNr: Long) extends JournalCommand
@@ -42,9 +43,8 @@ object InMemoryJournalStorage {
   case object ClearJournal extends JournalCommand
 }
 
-class InMemoryJournalStorage extends Actor with ActorLogging {
+class InMemoryJournalStorage(serialization: Serialization) extends Actor with ActorLogging {
   import InMemoryJournalStorage._
-  val serialization = SerializationExtension(context.system)
 
   var ordering = new AtomicLong()
 
@@ -54,7 +54,8 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     ref ! akka.actor.Status.Success(journal.keySet)
 
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
-    val xs = journal.filter(_._1 == persistenceId)
+    val xs = journal
+      .filter(_._1 == persistenceId)
       .values.flatMap(identity)
       .map(_.sequenceNr)
     val highestSequenceNrJournal = if (xs.nonEmpty) xs.max else 0
@@ -62,11 +63,18 @@ class InMemoryJournalStorage extends Actor with ActorLogging {
     ref ! akka.actor.Status.Success(highestSequenceNrJournal)
   }
 
-  def eventsByTag(ref: ActorRef, tag: String, offset: Long): Unit = {
-    val xs = journal.values.flatMap(identity)
-      .filter(_.ordering >= offset)
-      .filter(_.tags.exists(tags => tags.contains(tag))).toList
-      .sortBy(_.ordering)
+  def eventsByTag(ref: ActorRef, tag: String, offset: Offset): Unit = {
+    def getByOffset(p: JournalEntry => Boolean) =
+      journal.values.flatMap(identity)
+        .filter(p)
+        .filter(_.tags.exists(tags => tags.contains(tag))).toList
+        .sortBy(_.ordering)
+
+    val xs: List[JournalEntry] = offset match {
+      case NoOffset             => getByOffset(_.ordering >= 0L)
+      case Sequence(value)      => getByOffset(_.ordering >= value)
+      case value: TimeBasedUUID => getByOffset(_.timestamp >= value)
+    }
 
     ref ! akka.actor.Status.Success(xs)
   }

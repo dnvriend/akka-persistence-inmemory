@@ -18,11 +18,11 @@ name := "akka-persistence-inmemory"
 
 organization := "com.github.dnvriend"
 
-version := "1.3.12"
+version := "1.3.13-SNAPSHOT"
 
 scalaVersion := "2.11.8"
 
-//crossScalaVersions := Seq("2.11.8", "2.12.0-RC2")
+//crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature")
 
@@ -34,6 +34,7 @@ libraryDependencies ++= {
     "com.typesafe.akka" %% "akka-persistence-query-experimental" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "org.scalaz" %% "scalaz-core" % "7.2.7",
+    "com.datastax.cassandra" % "cassandra-driver-core" % "3.1.2",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.1.7" % Test,
     "com.typesafe.akka" %% "akka-persistence-tck" % akkaVersion % Test,
@@ -47,11 +48,12 @@ fork in Test := true
 
 parallelExecution in Test := false
 
-licenses +=("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
+licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php"))
 
 // enable scala code formatting //
-import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
+
+import scalariform.formatter.preferences._
 
 // Scalariform settings
 SbtScalariform.autoImport.scalariformPreferences := SbtScalariform.autoImport.scalariformPreferences.value

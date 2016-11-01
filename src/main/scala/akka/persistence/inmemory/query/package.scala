@@ -19,18 +19,13 @@ package akka.persistence.inmemory
 import akka.NotUsed
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
+import scala.language.implicitConversions
 
 package object query {
-  implicit class OffsetOps(val that: Offset) extends AnyVal {
-    def value = that match {
-      case Sequence(offsetValue) => offsetValue
-      case NoOffset              => 0L
-      case _                     => throw new IllegalArgumentException("akka-persistence-inmemory does not support " + that.getClass.getName + " offsets")
-    }
+  def toOldEnvelope(env2: EventEnvelope2): EventEnvelope = env2 match {
+    case EventEnvelope2(Sequence(offset), persistenceId, sequenceNr, event) =>
+      EventEnvelope(offset, persistenceId, sequenceNr, event)
   }
-
-  def toOldEnvelope(env2: EventEnvelope2): EventEnvelope =
-    EventEnvelope(env2.offset.value, env2.persistenceId, env2.sequenceNr, env2.event)
 
   implicit def newSrcToOldSrc(that: Source[EventEnvelope2, NotUsed]): Source[EventEnvelope, NotUsed] =
     that.map(toOldEnvelope)

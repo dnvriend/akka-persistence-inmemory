@@ -34,7 +34,7 @@ import akka.testkit.TestProbe
 import scala.collection.immutable.Seq
 import scala.concurrent.duration.{ FiniteDuration, _ }
 
-trait QueryTestSpec extends TestSpec {
+abstract class QueryTestSpec(config: String = "application.conf") extends TestSpec(config) {
 
   case class DeleteCmd(toSequenceNr: Long = Long.MaxValue) extends Serializable
 
