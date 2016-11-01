@@ -11,3 +11,7 @@ notifications:
   email:
     - dnvriend@gmail.com
 script: "./build.sh"
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
