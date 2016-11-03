@@ -50,7 +50,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
 
   def withTags(payload: Any, tags: String*) = Tagged(payload, Set(tags: _*))
 
-  lazy val journal = Persistence(system).journalFor("inmemory-journal")
+  lazy val journal: ActorRef = Persistence(system).journalFor("inmemory-journal")
 
   lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
     .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with AllPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with CurrentEventsByTagQuery2 with EventsByPersistenceIdQuery with EventsByTagQuery with EventsByTagQuery2]
