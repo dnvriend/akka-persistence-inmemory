@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.13"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.14"
 ```
 
 ## Contribution policy
@@ -313,6 +313,9 @@ Is Event Sourcing getting traction? I would say so:
 - [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
 
 # What's new?
+## 1.3.14 (2016-11-03)
+  - cross scala 2.11.8 and 2.12.0 build
+
 ## 1.3.13 (2016-11-01 - Birthday Edition!)
   - Implemented support for the `akka.persistence.query.TimeBasedUUID`.
   - You should set the __new__ configuration key `inmemory-read-journal.offset-mode = "uuid"`, defaults to `sequence`
