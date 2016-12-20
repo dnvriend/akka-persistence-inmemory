@@ -55,8 +55,8 @@ abstract class TestSpec(config: Config) extends FlatSpec
   implicit val mat: Materializer = ActorMaterializer()
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val log: LoggingAdapter = Logging(system, this.getClass)
-  implicit val pc: PatienceConfig = PatienceConfig(timeout = 30.seconds, interval = 300.millis)
-  implicit val timeout = Timeout(30.seconds)
+  implicit val pc: PatienceConfig = PatienceConfig(timeout = 60.minutes, interval = 300.millis)
+  implicit val timeout = Timeout(60.minutes)
   val serialization = SerializationExtension(system)
 
   def now: Long = Platform.currentTime
