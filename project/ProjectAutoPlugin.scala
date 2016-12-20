@@ -61,6 +61,7 @@ object ProjectAutoPlugin extends AutoPlugin {
   import autoImport._
 
   override lazy val projectSettings = SbtScalariform.scalariformSettings ++ Seq(
+    name := "akka-persistence-inmemory",
     organization := "com.github.dnvriend",
     organizationName := "Dennis Vriend",
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
