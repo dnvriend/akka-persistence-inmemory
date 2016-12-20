@@ -17,18 +17,14 @@
 package akka.persistence.inmemory
 package extension
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicLong
-
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
-import akka.persistence.query.{ NoOffset, Offset, Sequence, TimeBasedUUID }
+import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.serialization.Serialization
 
 import scala.collection.immutable._
 import scalaz.Scalaz._
-import scalaz._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
@@ -41,12 +37,25 @@ object InMemoryJournalStorage {
   final case class GetJournalEntriesExceptDeleted(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long) extends JournalCommand
   final case class GetAllJournalEntries(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long) extends JournalCommand
   case object ClearJournal extends JournalCommand
+
+  def getPersistenceId(prod: (String, Vector[JournalEntry])): String = prod._1
+  def getEntries(prod: (String, Vector[JournalEntry])): Vector[JournalEntry] = prod._2
+  def getEventsByPid(pid: String, journal: Map[String, Vector[JournalEntry]]): Option[Vector[JournalEntry]] =
+    journal.find(_._1 == pid).map(_._2)
+  def getAllEvents(journal: Map[String, Vector[JournalEntry]]): Vector[JournalEntry] =
+    journal.values.flatten[JournalEntry].toVector
+  def getMaxSequenceNr(xs: Vector[JournalEntry]): Long = xs.map(_.sequenceNr).max
 }
 
 class InMemoryJournalStorage(serialization: Serialization) extends Actor with ActorLogging {
   import InMemoryJournalStorage._
 
-  var ordering = new AtomicLong()
+  var ordering: Long = 0L
+
+  def incrementAndGet: Long = {
+    ordering += 1
+    ordering
+  }
 
   var journal = Map.empty[String, Vector[JournalEntry]]
 
@@ -54,18 +63,13 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
     ref ! akka.actor.Status.Success(journal.keySet)
 
   def highestSequenceNr(ref: ActorRef, persistenceId: String, fromSequenceNr: Long): Unit = {
-    val xs = journal
-      .filter(_._1 == persistenceId)
-      .values.flatMap(identity)
-      .map(_.sequenceNr)
-    val highestSequenceNrJournal = if (xs.nonEmpty) xs.max else 0
-
+    val highestSequenceNrJournal = getEventsByPid(persistenceId, journal).map(getMaxSequenceNr).getOrElse(0L)
     ref ! akka.actor.Status.Success(highestSequenceNrJournal)
   }
 
   def eventsByTag(ref: ActorRef, tag: String, offset: Offset): Unit = {
-    def getByOffset(p: JournalEntry => Boolean) =
-      journal.values.flatMap(identity)
+    def getByOffset(p: JournalEntry => Boolean): List[JournalEntry] =
+      getAllEvents(journal)
         .filter(p)
         .filter(_.tags.exists(tags => tags.contains(tag))).toList
         .sortBy(_.ordering)
@@ -80,7 +84,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
   }
 
   def writelist(ref: ActorRef, xs: Seq[JournalEntry]): Unit = {
-    val ys = xs.map(_.copy(ordering = ordering.incrementAndGet())).groupBy(_.persistenceId)
+    val ys = xs.map(_.copy(ordering = incrementAndGet)).groupBy(_.persistenceId)
     journal = journal |+| ys
 
     ref ! akka.actor.Status.Success(())
@@ -121,7 +125,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
   }
 
   def clear(ref: ActorRef): Unit = {
-    ordering = new AtomicLong()
+    ordering = 0L
     journal = Map.empty[String, Vector[JournalEntry]]
 
     ref ! akka.actor.Status.Success("")

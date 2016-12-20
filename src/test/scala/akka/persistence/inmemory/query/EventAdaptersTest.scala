@@ -16,9 +16,9 @@
 
 package akka.persistence.inmemory.query
 
-import akka.actor.{ Actor, ActorRef }
+import akka.actor.{Actor, ActorRef}
 import akka.persistence.JournalProtocol._
-import akka.persistence.{ AtomicWrite, PersistentEnvelope, PersistentImpl, PersistentRepr }
+import akka.persistence.{AtomicWrite, PersistentEnvelope, PersistentImpl, PersistentRepr}
 import akka.persistence.journal._
 import akka.persistence.query.EventEnvelope
 import akka.testkit.TestProbe

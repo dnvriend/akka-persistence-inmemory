@@ -6,7 +6,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dnvriend/akka-persistence-inmemory&amp;utm_campaign=Badge_Grade)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-Akka-persistence-inmemory is a plugin for akka-persistence that stores journal and snapshot messages memory, which is very useful when testing persistent actors, persistent FSM and akka cluster.
+[akka-persistence-inmemory](https://github.com/dnvriend/akka-persistence-inmemory) is a plugin for akka-persistence that stores journal and snapshot messages memory, which is very useful when testing persistent actors, persistent FSM and akka cluster.
 
 ## Installation
 Add the following to your `build.sbt`:
@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.14"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.17"
 ```
 
 ## Contribution policy
@@ -25,23 +25,22 @@ Contributions via GitHub pull requests are gladly accepted from their original a
 
 This code is open source software licensed under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0.html).
 
-# Configuration
+## Configuration
 Add the following to the application.conf:
 
-```
+```scala
 akka {
   persistence {
     journal.plugin = "inmemory-journal"
     snapshot-store.plugin = "inmemory-snapshot-store"
   }
 }
-```   
+```
 
-# Configuring the query API
+## Configuring the query API
 The query API can be configured by overriding the defaults by placing the following in application.conf:
  
 ```
-# Optional
 inmemory-read-journal {
   # Absolute path to the write journal plugin configuration section to get the event adapters from
   write-plugin = "inmemory-journal"
@@ -291,49 +290,41 @@ The returned event stream contains only events that correspond to the given tag,
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
 from the tagged event stream. 
 
-# Some videos about Akka Persistence, streams and Event Sourcing
-Is Event Sourcing getting traction? I would say so:
+## Changelog
 
-- [Konrad Malawski - Akka Streams & Reactive Streams in action (2016)](https://www.youtube.com/watch?v=x62K4ObBtw4)
-- [Björn Antonsson & Konrad Malawski - Resilient Applications with Akka Persistence (2016)](https://www.youtube.com/watch?v=qqNsGomfabc)
-- [Aleksei Irbe - Akka persistence (2016)](https://www.youtube.com/watch?v=Oc9lHVVn1YQ)
-- [Greg Young - Event Sourcing is actually just functional code (2016)](https://www.youtube.com/watch?v=kZL41SMXWdM)
-- [Greg Young — A Decade of DDD, CQRS, Event Sourcing (2016)](https://www.youtube.com/watch?v=LDW0QWie21s)
-- [Packt - Introduction to Akka Persistence (2016)](https://www.youtube.com/watch?v=QwsA8hkNGOA)
-- [Paweł Szulc - Event Sourcing & Functional Programming - a pair made in heaven (2016)](https://www.youtube.com/watch?v=1rFY2SfdDoE)
-- [Konrad Malawski - Akka and the Zen of Reactive System Design (2016)](https://www.youtube.com/watch?v=Mg5ZmoMddJI)
-- [Renato Cavalcanti - Field guide to DDD/CQRS using the Scala Type System and Akka (2015)](https://www.youtube.com/watch?v=fQkKu4tTgCE)
-- [Martin Zapletal: Data in Motion - Streaming Static Data Efficiently in Akka Persistence (2016)](https://www.youtube.com/watch?v=K4FY0XKediU)
-- [Martin Krasser - Event Sourcing and CQRS with Akka Persistence and Eventuate (2015)](https://www.youtube.com/watch?v=vFVry457XLk)
-- [Duncan DeVore - CQRS/ES with Scala and Akka Persistence (2015)](https://www.youtube.com/watch?v=uA2AsZW0I7A)
-- [Sander Mak - Event-Sourced Architectures with Akka (2015)](https://www.youtube.com/watch?v=gvsRl6xZiiE)
-- [Sidharth Khattri - Akka Persistence | Event Sourcing (2015)](https://www.youtube.com/watch?v=yAI71_smS34)
-- [Michał Płachta - Building multiplayer game using Reactive Streams](https://www.youtube.com/watch?v=iKTFalVfoSU)
-- [Patrik Nordwall - Intro to Akka persistence (2014)](https://www.youtube.com/watch?v=r5lecCBazvE)
-- [Greg Young - Event Sourcing(2014)](https://www.youtube.com/watch?v=8JKjvY4etTY)
+### 1.3.18 (2016-12-20)
+  - Akka 2.4.14 -> 2.4.16
 
-# What's new?
-## 1.3.14 (2016-11-03)
+### 1.3.17 (2016-12-08)
+  - Scala 2.12.0 -> 2.12.1
+
+### 1.3.16 (2016-11-22)
+  - Akka 2.4.13 -> 2.4.14
+
+### 1.3.15 (2016-11-19)
+  - Akka 2.4.12 -> 2.4.13
+
+### 1.3.14 (2016-11-03)
   - cross scala 2.11.8 and 2.12.0 build
 
-## 1.3.13 (2016-11-01 - Birthday Edition!)
+### 1.3.13 (2016-11-01 - Birthday Edition!)
   - Implemented support for the `akka.persistence.query.TimeBasedUUID`.
   - You should set the __new__ configuration key `inmemory-read-journal.offset-mode = "uuid"`, defaults to `sequence`
     to produce `EventEnvelope2` that contain `TimeBasedUUID` offset fields.
 
-## 1.3.12 (2016-10-28)
+### 1.3.12 (2016-10-28)
   - Akka 2.4.11 -> 2.4.12
   - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-query](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
   - The akka-persistence-inmemory plugin only supports the `akka.persistence.query.NoOffset` or `akka.persistence.query.Sequence` offset types.
   - There is no support for the `akka.persistence.query.TimeBasedUUID` offset type. When used, akka-persistence-inmemory will throw an IllegalArgumentException.
 
-## 1.3.11 (2016-10-23)
+### 1.3.11 (2016-10-23)
   - Scala 2.11.8 and 2.12.0-RC2 compatible
 
-## 1.3.10 (2016-09-30)
+### 1.3.10 (2016-09-30)
   - Akka 2.4.10 -> 2.4.11
 
-## 1.3.9 (2016-09-22)
+### 1.3.9 (2016-09-22)
   - Adapted version of PR #28 by [Yury Gribkov](https://github.com/ygree) - Fix bug: It doesn't adapt events read from journal, thanks!
   - As event adapters are no first class citizins of akka-persistence-query (yet), a workaround based on the configuration of akka-persistence-cassandra
     has been implemented in the inmemory journal based on the work of [Yury Gribkov](https://github.com/ygree). Basically, the query-journal will look for 
@@ -343,22 +334,22 @@ Is Event Sourcing getting traction? I would say so:
     configured correctly.
  - Removed the non-official and never-to-be-used bulk loading interface
 
-## 1.3.8 (2016-09-07)
+### 1.3.8 (2016-09-07)
   - Akka 2.4.9 -> Akka 2.4.10
 
-## 1.3.7 (2016-08-21)
+### 1.3.7 (2016-08-21)
   - Fix for EventsByPersistenceId should terminate when toSequenceNumber is reached as pointed out by [monktastic](https://github.com/monktastic), thanks!
 
-## 1.3.6 (2016-08-20)
+### 1.3.6 (2016-08-20)
   - Akka 2.4.9-RC2 -> Akka 2.4.9
 
-## 1.3.6-RC2 (2016-08-06)
+### 1.3.6-RC2 (2016-08-06)
   - Akka 2.4.9-RC1 -> 2.4.9-RC2
 
-## 1.3.6-RC1 (2016-08-03)
+### 1.3.6-RC1 (2016-08-03)
   - Akka 2.4.8 -> 2.4.9-RC1
 
-## 1.3.5 (2016-07-23)
+### 1.3.5 (2016-07-23)
   - Support for the __non-official__ bulk loading interface [akka.persistence.query.scaladsl.EventWriter](https://github.com/dnvriend/akka-persistence-query-writer/blob/master/src/main/scala/akka/persistence/query/scaladsl/EventWriter.scala)
     added. I need this interface to load massive amounts of data, that will be processed by many actors, but initially I just want to create and store one or
     more events belonging to an actor, that will handle the business rules eventually. Using actors or a shard region for that matter, just gives to much
@@ -366,67 +357,67 @@ Is Event Sourcing getting traction? I would say so:
     responsibility of ensuring the integrity of the journal on you. This means when some strange things are happening caused by wrong loading of the data,
     and therefor breaking the integrity and ruleset of akka-persistence, all the responsibility on fixing it is on you, and not on the Akka team.
 
-## 1.3.4 (2016-07-17)
+### 1.3.4 (2016-07-17)
   - Codacy code cleanup release.
 
-## 1.3.3 (2016-07-16)
+### 1.3.3 (2016-07-16)
   - No need for Query Publishers with the new akka-streams API.
 
-## 1.3.2 (2016-07-09)
+### 1.3.2 (2016-07-09)
   - Journal entry 'deleted' fixed, must be set manually.
 
-## 1.3.1 (2016-07-09)
+### 1.3.1 (2016-07-09)
   - Akka 2.4.7 -> 2.4.8,
   - Behavior of akka-persistence-query *byTag query should be up to spec,
   - Refactored the inmemory plugin code base, should be more clean now.
 
-## 1.3.0 (2016-06-09)
+### 1.3.0 (2016-06-09)
   - Removed the queries `eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag` as they are not supported by Akka natively and can be configured by filtering the event stream.
   - Implemented true async queries using the polling strategy
 
-## 1.2.15 (2016-06-05)
+### 1.2.15 (2016-06-05)
   - Akka 2.4.6 -> 2.4.7
 
-## 1.2.14 (2016-05-25)
+### 1.2.14 (2016-05-25)
   - Fixed issue Unable to differentiate between persistence failures and serialization issues
   - Akka 2.4.4 -> 2.4.6
 
-## 1.2.13 (2016-04-14)
+### 1.2.13 (2016-04-14)
   - Akka 2.4.3 -> 2.4.4
   
-## 1.2.12 (2016-04-01)
+### 1.2.12 (2016-04-01)
   - Scala 2.11.7 -> 2.11.8
   - Akka 2.4.2 -> 2.4.3
 
-## 1.2.11 (2016-03-18)
+### 1.2.11 (2016-03-18)
   - Fixed issue on the query api where the offset on eventsByTag and eventsByPersistenceIdAndTag queries were not sequential  
   
-## 1.2.10 (2016-03-17)
+### 1.2.10 (2016-03-17)
   - Refactored the akka-persistence-query interfaces, integrated it back again in one jar, for jcenter deployment simplicity
 
-## 1.2.9 (2016-03-16)
+### 1.2.9 (2016-03-16)
   - Added the appropriate Maven POM resources to be publishing to Bintray's JCenter
 
-## 1.2.8 (2016-03-03)
+### 1.2.8 (2016-03-03)
   - Fix for propagating serialization errors to akka-persistence so that any error regarding the persistence of messages will be handled by the callback handler of the Persistent Actor; `onPersistFailure`.
 
-## 1.2.7 (2016-02-18)
+### 1.2.7 (2016-02-18)
   - Better storage implementation for journal and snapshot
 
-## 1.2.6 (2016-02-17)
+### 1.2.6 (2016-02-17)
   - Akka 2.4.2-RC3 -> 2.4.2
 
-## 1.2.5 (2016-02-13)
+### 1.2.5 (2016-02-13)
   - akka-persistence-jdbc-query 1.0.0 -> 1.0.1
 
-## 1.2.4 (2016-02-13)
+### 1.2.4 (2016-02-13)
   - Akka 2.4.2-RC2 -> 2.4.2-RC3
 
-## 1.2.3 (2016-02-08)
+### 1.2.3 (2016-02-08)
   - Compatibility with Akka 2.4.2-RC2
   - Refactored the akka-persistence-query extension interfaces to its own jar: `"com.github.dnvriend" %% "akka-persistence-jdbc-query" % "1.0.0"`
 
-## 1.2.2 (2016-01-30)
+### 1.2.2 (2016-01-30)
   - Code is based on [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc)
   - Supports the following queries:
     - `allPersistenceIds` and `currentPersistenceIds`
@@ -434,82 +425,82 @@ Is Event Sourcing getting traction? I would say so:
     - `eventsByTag` and `currentEventsByTag`
     - `eventsByPersistenceIdAndTag` and `currentEventsByPersistenceIdAndTag`
   
-## 1.2.1 (2016-01-28)
+### 1.2.1 (2016-01-28)
   - Supports for the javadsl query API
 
-## 1.2.0 (2016-01-26)
+### 1.2.0 (2016-01-26)
   - Compatibility with Akka 2.4.2-RC1 
 
-## 1.1.6 (2015-12-02)
+### 1.1.6 (2015-12-02)
  - Compatibility with Akka 2.4.1
  - Merged PR #17 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Upgrade to AKKA 2.4.1, thanks!
 
-## 1.1.5 (2015-10-24)
+### 1.1.5 (2015-10-24)
  - Compatibility with Akka 2.4.0
  - Merged PR #13 [Evgeny Shepelyuk](https://github.com/eshepelyuk) HighestSequenceNo should be kept on message deletion, thanks!
  - Should be a fix for [Issue #13 - HighestSequenceNo should be kept on message deletion](https://github.com/dnvriend/akka-persistence-inmemory/issues/13) as per [Akka issue #18559](https://github.com/akka/akka/issues/18559) 
 
-## 1.1.4 (2015-10-17)
+### 1.1.4 (2015-10-17)
  - Compatibility with Akka 2.4.0
  - Merged PR #12 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of eventsByPersistenceId, thanks!
  
-## 1.1.3 (2015-10-02)
+### 1.1.3 (2015-10-02)
  - Compatibility with Akka 2.4.0
  - Akka 2.4.0-RC3 -> 2.4.0
  
-## 1.1.3-RC3 (2015-09-24)
+### 1.1.3-RC3 (2015-09-24)
  - Merged PR #10 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Live version of allPersistenceIds, thanks!
  - Compatibility with Akka 2.4.0-RC3
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.3-RC3"` 
 
-## 1.1.1-RC3 (2015-09-19)
+### 1.1.1-RC3 (2015-09-19)
  - Merged Issue #9 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Initial implemenation of Persistence Query for In Memory journal, thanks!
  - Compatibility with Akka 2.4.0-RC3
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.1-RC3"` 
 
-## 1.1.0-RC3 (2015-09-17)
+### 1.1.0-RC3 (2015-09-17)
  - Merged Issue #6 [Evgeny Shepelyuk](https://github.com/eshepelyuk) Conditional ability to perform full serialization while adding messages to journal, thanks!
  - Compatibility with Akka 2.4.0-RC3
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC3"` 
 
-## 1.1.0-RC2 (2015-09-05)
+### 1.1.0-RC2 (2015-09-05)
  - Compatibility with Akka 2.4.0-RC2
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC2"` 
 
-## 1.0.5 (2015-09-04)
+### 1.0.5 (2015-09-04)
  - Compatibilty with Akka 2.3.13
  - Akka 2.3.12 -> 2.3.13
 
-## 1.1.0-RC1 (2015-09-02)
+### 1.1.0-RC1 (2015-09-02)
  - Compatibility with Akka 2.4.0-RC1
  - Use the following library dependency: `"com.github.dnvriend" %% "akka-persistence-inmemory" % "1.1.0-RC1"` 
    
-## 1.0.4 (2015-08-16)
+### 1.0.4 (2015-08-16)
  - Scala 2.11.6 -> 2.11.7
  - Akka 2.3.11 -> 2.3.12
  - Apache-2.0 license
        
-## 1.0.3 (2015-05-25)
+### 1.0.3 (2015-05-25)
  - Merged Issue #2 [Sebastián Ortega](https://github.com/sortega) Regression: Fix corner case when persisted events are deleted, thanks!
  - Added test for the corner case issue #1 and #2
 
-## 1.0.2 (2015-05-20)
+### 1.0.2 (2015-05-20)
  - Refactored from the ConcurrentHashMap implementation to a pure Actor managed concurrency model
 
-## 1.0.1 (2015-05-16)
+### 1.0.1 (2015-05-16)
  - Some refactoring, fixed some misconceptions about the behavior of Scala Futures one year ago :)
  - Akka 2.3.6 -> 2.3.11
  - Scala 2.11.1 -> 2.11.6
  - Scala 2.10.4 -> 2.10.5
  - Merged Issue #1 [Sebastián Ortega](https://github.com/sortega) Fix corner case when persisted events are deleted, thanks!
 
-## 1.0.0 (2014-09-25)
+### 1.0.0 (2014-09-25)
  - Moved to bintray
 
-## 0.0.2 (2014-09-05)
+### 0.0.2 (2014-09-05)
  - Akka 2.3.4 -> 2.3.6
 
-## 0.0.1 (2014-08-19)
+### 0.0.1 (2014-08-19)
  - Initial Release
 
 Have fun!

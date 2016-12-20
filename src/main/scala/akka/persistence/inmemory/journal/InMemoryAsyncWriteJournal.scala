@@ -19,21 +19,21 @@ package journal
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.event.{ Logging, LoggingAdapter }
+import akka.actor.{ActorRef, ActorSystem}
+import akka.event.{Logging, LoggingAdapter}
 import akka.pattern.ask
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
-import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
-import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.persistence.inmemory.extension.{InMemoryJournalStorage, StorageExtension}
+import akka.persistence.journal.{AsyncWriteJournal, Tagged}
+import akka.persistence.{AtomicWrite, PersistentRepr}
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val system: ActorSystem = context.system

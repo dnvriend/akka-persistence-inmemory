@@ -18,7 +18,7 @@ package akka.persistence.inmemory.journal
 
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 
 class InMemoryJournalSpec extends JournalSpec(ConfigFactory.load("application.conf")) {
   override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true

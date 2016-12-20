@@ -19,7 +19,7 @@ package akka.persistence.inmemory.extension
 import java.text.SimpleDateFormat
 
 import akka.persistence.inmemory.TestSpec
-import akka.persistence.query.{ Sequence, TimeBasedUUID }
+import akka.persistence.query.{Sequence, TimeBasedUUID}
 import com.datastax.driver.core.utils.UUIDs
 
 // see: http://alvinalexander.com/scala/how-sort-scala-sequences-seq-list-array-buffer-vector-ordering-ordered

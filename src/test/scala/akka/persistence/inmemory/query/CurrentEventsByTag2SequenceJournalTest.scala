@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.persistence.query.{ EventEnvelope2, NoOffset, Sequence }
+import akka.persistence.query.{EventEnvelope2, NoOffset, Sequence}
 
 /**
  * This test sets the offset-mode to sequence, this means that when a NoOffset type is

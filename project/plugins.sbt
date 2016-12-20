@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-resolvers += "sonatype-releases" at "https://oss.sonatype.org/content/repositories/releases/"
-
-resolvers += "bintray-sbt-plugin-releases" at "http://dl.bintray.com/content/sbt/sbt-plugin-releases"
 
 // to deploy to bintray
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
-
-// to show a dependency graph
-addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.2")
 
 // to format scala source code
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.6.0")
 
 // enable updating file headers eg. for copyright
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "1.5.1")
+
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.6.1")
+
+addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.3")
