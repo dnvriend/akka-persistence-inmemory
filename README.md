@@ -15,7 +15,7 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.18"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.3.17"
 ```
 
 ## Contribution policy
@@ -291,9 +291,6 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
-
-### 1.3.18 (2016-12-20)
-  - Akka 2.4.14 -> 2.4.16
 
 ### 1.3.17 (2016-12-08)
   - Scala 2.12.0 -> 2.12.1

@@ -45,7 +45,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  val AkkaVersion = "2.4.16"
+  val AkkaVersion = "2.4.14"
   val ScalazVersion = "7.2.8"
   val ScalazScalaTestVersion = "1.1.1"
   val CassandraVersion = "3.1.2"
@@ -69,7 +69,7 @@ object ProjectAutoPlugin extends AutoPlugin {
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
     scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.11.8, 2.12.0"),
+    crossScalaVersions := Seq("2.11.8", "2.12.1"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
