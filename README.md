@@ -292,6 +292,16 @@ from the tagged event stream.
 
 ## Changelog
 
+### 2.5.0.0-M1 (2017-01-29)
+  - New versioning scheme; now using the version of Akka with the akka-persistence-inmemory version appended to it, starting from `.0`
+  - Support for Akka 2.5-M1
+  - Support akka 2.11.x and 2.12.x
+  - You need Java 8 or higher
+  - Please read the [Akka 2.4 -> 2.5 Migration Guide](http://doc.akka.io/docs/akka/2.5-M1/project/migration-guide-2.4.x-2.5.x.html)
+  - Changed how the `byTag` queries work, the requested offset is excluding, so if a materialized stream is created, when you ask for Sequence(2) for example, you will get Sequence(3) and so on
+    so this is for the use case when you store the lastest offset on the read side, you can just put that value in the query and the stream will continue with the next offset,
+    no need to manually do the plus-one operation.
+
 ### 1.3.18 (2016-12-21)
   - Akka 2.4.14 -> 2.4.16
 
