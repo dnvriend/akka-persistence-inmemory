@@ -25,8 +25,9 @@ import akka.persistence.inmemory.extension.InMemoryJournalStorage.ClearJournal
 import akka.persistence.inmemory.extension.StorageExtension
 import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
-import akka.persistence.query.{EventEnvelope, EventEnvelope2, Offset, PersistenceQuery}
+import akka.persistence.query.{EventEnvelope, Offset, PersistenceQuery}
 import akka.persistence.{DeleteMessagesSuccess, _}
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
@@ -53,15 +54,15 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
   lazy val journal: ActorRef = Persistence(system).journalFor("inmemory-journal")
 
   lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
-    .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with AllPersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with CurrentEventsByTagQuery2 with EventsByPersistenceIdQuery with EventsByTagQuery with EventsByTagQuery2]
+    .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with PersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with EventsByPersistenceIdQuery with EventsByTagQuery]
 
   def withCurrentPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
     val tp = readJournal.currentPersistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
 
-  def withAllPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
-    val tp = readJournal.allPersistenceIds().runWith(TestSink.probe[String])
+  def withPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit): Unit = {
+    val tp = readJournal.persistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
 
@@ -75,25 +76,18 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     tp.within(within)(f(tp))
   }
 
-  def withCurrentEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
+  def withCurrentEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.currentEventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def withCurrentEventsByTag2(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope2] => Unit): Unit = {
-    val tp = readJournal.currentEventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope2])
-    tp.within(within)(f(tp))
-  }
-
-  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Long)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
+  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
     val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def withEventsByTag2(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope2] => Unit): Unit = {
-    val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope2])
-    tp.within(within)(f(tp))
-  }
+  def currentEventsByTagAsList(tag: String, offset: Offset): List[EventEnvelope] =
+    readJournal.currentEventsByTag(tag, offset).runWith(Sink.seq).futureValue.toList
 
   /**
    * Persists a single event for a persistenceId with optionally

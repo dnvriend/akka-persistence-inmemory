@@ -21,16 +21,15 @@ import akka.persistence.query._
 import scala.concurrent.duration._
 
 /**
- * This test sets the offset-mode to uuid, this means that when a NoOffset type is
- * requested, the offset type in the Envelope will be a TimeBasedUUID else it would
- * be a Sequence
+ * This test sets the offset-mode to sequence, this means that when a NoOffset type is
+ * requested, the offset type in the Envelope will be a Sequence
  */
-class EventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf") {
+class EventsByTagSequenceJournalTest extends QueryTestSpec {
 
   final val NoMsgTime: FiniteDuration = 300.millis
 
   it should "not find events for empty journal using unknown tag for timebased uuid" in {
-    withEventsByTag2()("unknown", getNowUUID) { tp =>
+    withEventsByTag()("unknown", getNowUUID) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNoMsg(NoMsgTime)
       tp.cancel()
@@ -38,21 +37,21 @@ class EventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf")
   }
 
   it should "find events for one tag starting with empty journal" in {
-    withEventsByTag2(10.seconds)("one", NoOffset) { tp =>
+    withEventsByTag(10.seconds)("one", NoOffset) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNoMsg(NoMsgTime)
 
       persist(1, 1, "my-1", "one") // 1
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNext(EventEnvelope(Sequence(1), "my-1", 1, "a-1"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(1, 1, "my-2", "one") // 2
 
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNext(EventEnvelope(Sequence(2), "my-2", 1, "a-1"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(1, 1, "my-3", "one") // 3
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNext(EventEnvelope(Sequence(3), "my-3", 1, "a-1"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(2, 2, "my-1", "two") // 4
@@ -65,15 +64,15 @@ class EventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf")
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-1", "one") // 7
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 3, "a-3") => }
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-2", "one") // 8
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 3, "a-3") => }
+      tp.expectNext(EventEnvelope(Sequence(5), "my-2", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-3", "one") // 9
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 3, "a-3") => }
+      tp.expectNext(EventEnvelope(Sequence(6), "my-3", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(4, 4, "my-1", "two") // 10
@@ -88,59 +87,61 @@ class EventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf")
     persist(1, 1, "my-2", "number") // 2
     persist(1, 1, "my-3", "number") // 3
 
-    withEventsByTag2()("number", NoOffset) { tp =>
+    withEventsByTag()("number", NoOffset) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNext(EventEnvelope(Sequence(1), "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(2), "my-2", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(3), "my-3", 1, "a-1"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(2, 2, "my-1", "number") // 4
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 2, "a-2") => }
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 2, "a-2"))
 
       persist(3, 3, "my-1", "number") // 5
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 3, "a-3") => }
+      tp.expectNext(EventEnvelope(Sequence(5), "my-1", 3, "a-3"))
 
       persist(4, 4, "my-1", "number") // 6
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 4, "a-4") => }
+      tp.expectNext(EventEnvelope(Sequence(6), "my-1", 4, "a-4"))
 
       persist(2, 2, "my-2", "number") // 7
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 2, "a-2") => }
+      tp.expectNext(EventEnvelope(Sequence(7), "my-2", 2, "a-2"))
 
       persist(2, 2, "my-3", "number") // 8
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 2, "a-2") => }
+      tp.expectNext(EventEnvelope(Sequence(8), "my-3", 2, "a-2"))
 
       tp.cancel()
     }
   }
 
   it should "find events for one tag, starting with non-empty journal requesting from TimeBasedUUID should contain TimeBasedUUID" in {
-    val nowUuid = getNowUUID
+    val started = getNowUUID
     persist(1, 1, "my-1", "number") // 1
     persist(1, 1, "my-2", "number") // 2
     persist(1, 1, "my-3", "number") // 3
 
-    withEventsByTag2()("number", nowUuid) { tp =>
+    val (id1 :: id2 :: id3 :: Nil) = currentEventsByTagAsList("number", started).map(_.offset)
+
+    withEventsByTag()("number", started) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(`id1`, "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(`id2`, "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(`id3`, "my-3", 1, "a-1") => }
       tp.expectNoMsg(NoMsgTime)
 
       persist(2, 2, "my-1", "number") // 4
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 2, "a-2") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 2, "a-2") => }
 
       persist(3, 3, "my-1", "number") // 5
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 3, "a-3") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 3, "a-3") => }
 
       persist(4, 4, "my-1", "number") // 6
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 4, "a-4") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 4, "a-4") => }
 
       persist(2, 2, "my-2", "number") // 7
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 2, "a-2") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 2, "a-2") => }
 
       persist(2, 2, "my-3", "number") // 8
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 2, "a-2") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 2, "a-2") => }
 
       tp.cancel()
     }
@@ -151,27 +152,27 @@ class EventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf")
     persist(1, 1, "my-2", "number") // 2
     persist(1, 1, "my-3", "number") // 3
 
-    withEventsByTag2()("number", Sequence(0)) { tp =>
+    withEventsByTag()("number", Sequence(0)) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope2(Sequence(1), "my-1", 1, "a-1"))
-      tp.expectNext(EventEnvelope2(Sequence(2), "my-2", 1, "a-1"))
-      tp.expectNext(EventEnvelope2(Sequence(3), "my-3", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(1), "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(2), "my-2", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(3), "my-3", 1, "a-1"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(2, 2, "my-1", "number") // 4
-      tp.expectNext(EventEnvelope2(Sequence(4), "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 2, "a-2"))
 
       persist(3, 3, "my-1", "number") // 5
-      tp.expectNext(EventEnvelope2(Sequence(5), "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(Sequence(5), "my-1", 3, "a-3"))
 
       persist(4, 4, "my-1", "number") // 6
-      tp.expectNext(EventEnvelope2(Sequence(6), "my-1", 4, "a-4"))
+      tp.expectNext(EventEnvelope(Sequence(6), "my-1", 4, "a-4"))
 
       persist(2, 2, "my-2", "number") // 7
-      tp.expectNext(EventEnvelope2(Sequence(7), "my-2", 2, "a-2"))
+      tp.expectNext(EventEnvelope(Sequence(7), "my-2", 2, "a-2"))
 
       persist(2, 2, "my-3", "number") // 8
-      tp.expectNext(EventEnvelope2(Sequence(8), "my-3", 2, "a-2"))
+      tp.expectNext(EventEnvelope(Sequence(8), "my-3", 2, "a-2"))
 
       tp.cancel()
     }
