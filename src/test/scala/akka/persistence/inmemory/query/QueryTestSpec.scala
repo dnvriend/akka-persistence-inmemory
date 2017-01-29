@@ -27,6 +27,7 @@ import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
 import akka.persistence.query.{EventEnvelope, EventEnvelope2, Offset, PersistenceQuery}
 import akka.persistence.{DeleteMessagesSuccess, _}
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
@@ -94,6 +95,9 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope2])
     tp.within(within)(f(tp))
   }
+
+  def currentEventsByTagAsList(tag: String, offset: Offset): List[EventEnvelope2] =
+    readJournal.currentEventsByTag(tag, offset).runWith(Sink.seq).futureValue.toList
 
   /**
    * Persists a single event for a persistenceId with optionally

@@ -46,7 +46,6 @@ class CurrentEventsByTagTest extends QueryTestSpec {
 
     withCurrentEventsByTag()("number", 1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
       tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
@@ -54,14 +53,12 @@ class CurrentEventsByTagTest extends QueryTestSpec {
 
     withCurrentEventsByTag()("number", 2) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
       tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("number", 3) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
@@ -111,41 +108,41 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
       tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNext(EventEnvelope(5, "my-1", 5, "a-5"))
-      tp.expectNext(EventEnvelope(6, "my-2", 1, "a-1"))
-      tp.expectNext(EventEnvelope(7, "my-3", 1, "a-1"))
+      tp.expectNext(EventEnvelope(4, "my-1", 5, "a-5"))
+      tp.expectNext(EventEnvelope(5, "my-2", 1, "a-1"))
+      tp.expectNext(EventEnvelope(6, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("3", 0) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
-      tp.expectNext(EventEnvelope(6, "my-2", 1, "a-1"))
-      tp.expectNext(EventEnvelope(7, "my-3", 1, "a-1"))
+      tp.expectNext(EventEnvelope(1, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(2, "my-2", 1, "a-1"))
+      tp.expectNext(EventEnvelope(3, "my-3", 1, "a-1"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("4", 0) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectNext(EventEnvelope(1, "my-1", 4, "a-4"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("four", 0) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectNext(EventEnvelope(1, "my-1", 4, "a-4"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("5", 0) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(5, "my-1", 5, "a-5"))
+      tp.expectNext(EventEnvelope(1, "my-1", 5, "a-5"))
       tp.expectComplete()
     }
 
     withCurrentEventsByTag()("five", 0) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(5, "my-1", 5, "a-5"))
+      tp.expectNext(EventEnvelope(1, "my-1", 5, "a-5"))
       tp.expectComplete()
     }
   }

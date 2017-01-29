@@ -65,13 +65,13 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
 
   // As event adapters are *no* first class citizins in akka-persistence-query
-  // this workaround has to be implemented. 
+  // this workaround has to be implemented.
   // see akka ticket: #18050 and #21065
   // and akka-persistence-cassandra ticket: #116
-  // 
+  //
   // basically registering the used write-plugin in the inmemory-read-journal configuration section
   // then looking up that plugin-id and getting configured event adapters for that write plugin id
-  // then 
+  // then
   private val writePluginId = config.getString("write-plugin")
   private val eventAdapters = Persistence(system).adaptersFor(writePluginId)
 
@@ -143,7 +143,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
     Source.unfoldAsync[Offset, Seq[EventEnvelope2]](offset) { (from: Offset) =>
       def nextFromOffset(xs: Seq[EventEnvelope2]): Offset = {
         if (xs.isEmpty) from else xs.last.offset match {
-          case Sequence(n)         => Sequence(n + 1)
+          case Sequence(n)         => Sequence(n)
           case TimeBasedUUID(time) => TimeBasedUUID(UUIDs.startOf(UUIDs.unixTimestamp(time) + 1))
         }
       }
@@ -176,11 +176,14 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private def deserializeJournalEntry(entry: JournalEntry): Source[PersistentRepr, NotUsed] =
     deserialize(entry.serialized).map(_.update(deleted = entry.deleted)).mapConcat(adaptFromJournal)
 
-  def determineOffset(offset: Offset, entry: JournalEntry): Offset = offset match {
-    case _: Sequence                          => Sequence(entry.ordering)
-    case _: TimeBasedUUID                     => entry.timestamp
-    case _ if offsetMode.contains("sequence") => Sequence(entry.ordering)
-    case _                                    => entry.timestamp
+  def determineOffset(offset: Offset, entry: JournalEntry): Offset = {
+    def sequence = Sequence(entry.offset.getOrElse(throw new IllegalStateException("No offset in stream")))
+    offset match {
+      case _: Sequence                          => sequence
+      case _: TimeBasedUUID                     => entry.timestamp
+      case _ if offsetMode.contains("sequence") => sequence
+      case _                                    => entry.timestamp
+    }
   }
 
   private def deserializationWithOffset(offset: Offset): Flow[JournalEntry, (Offset, PersistentRepr), NotUsed] = Flow[JournalEntry]

@@ -68,16 +68,23 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
   }
 
   def eventsByTag(ref: ActorRef, tag: String, offset: Offset): Unit = {
-    def getByOffset(p: JournalEntry => Boolean): List[JournalEntry] =
-      getAllEvents(journal)
-        .filter(p)
+    def increment(offset: Long): Long = offset + 1
+    def getByOffset(p: JournalEntry => Boolean): List[JournalEntry] = {
+      val xs = getAllEvents(journal)
         .filter(_.tags.exists(tags => tags.contains(tag))).toList
         .sortBy(_.ordering)
+        .zipWithIndex.map {
+          case (entry, index) =>
+            entry.copy(offset = Option(increment(index)))
+        }
+
+      xs.filter(p)
+    }
 
     val xs: List[JournalEntry] = offset match {
-      case NoOffset             => getByOffset(_.ordering >= 0L)
-      case Sequence(value)      => getByOffset(_.ordering >= value)
-      case value: TimeBasedUUID => getByOffset(_.timestamp >= value)
+      case NoOffset             => getByOffset(_.offset.exists(_ >= 0L))
+      case Sequence(value)      => getByOffset(_.offset.exists(_ > value))
+      case value: TimeBasedUUID => getByOffset(_.timestamp > value)
     }
 
     ref ! akka.actor.Status.Success(xs)

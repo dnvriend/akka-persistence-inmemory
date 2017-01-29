@@ -52,15 +52,15 @@ class EventsByTagTest extends QueryTestSpec {
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-1", "one") // 7
-      tp.expectNext(EventEnvelope(7, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-2", "one") // 8
-      tp.expectNext(EventEnvelope(8, "my-2", 3, "a-3"))
+      tp.expectNext(EventEnvelope(5, "my-2", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(3, 3, "my-3", "one") // 9
-      tp.expectNext(EventEnvelope(9, "my-3", 3, "a-3"))
+      tp.expectNext(EventEnvelope(6, "my-3", 3, "a-3"))
       tp.expectNoMsg(NoMsgTime)
 
       persist(4, 4, "my-1", "two") // 10

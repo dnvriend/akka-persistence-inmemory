@@ -33,7 +33,7 @@ package object inmemory {
   def nowUuid: UUID = UUIDs.timeBased()
   def getTimeBasedUUID: TimeBasedUUID = TimeBasedUUID(nowUuid)
 
-  final case class JournalEntry(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], deleted: Boolean = false, ordering: Long = -1, timestamp: TimeBasedUUID = getTimeBasedUUID)
+  final case class JournalEntry(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], deleted: Boolean = false, ordering: Long = -1, timestamp: TimeBasedUUID = getTimeBasedUUID, offset: Option[Long] = None)
   final case class snapshotEntry(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
 
   implicit def seqToVector[A](xs: Seq[A]): Vector[A] = xs.toVector
