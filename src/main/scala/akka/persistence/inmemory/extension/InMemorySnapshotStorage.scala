@@ -38,14 +38,14 @@ object InMemorySnapshotStorage {
 class InMemorySnapshotStorage extends Actor with ActorLogging {
   import InMemorySnapshotStorage._
 
-  var snapshot = Map.empty[String, Vector[snapshotEntry]]
+  var snapshot = Map.empty[String, Vector[SnapshotEntry]]
 
   def clear(ref: ActorRef): Unit = {
-    snapshot = Map.empty[String, Vector[snapshotEntry]]
+    snapshot = Map.empty[String, Vector[SnapshotEntry]]
     ref ! akka.actor.Status.Success("")
   }
 
-  def delete(persistenceId: String, predicate: snapshotEntry => Boolean): Unit = {
+  def delete(persistenceId: String, predicate: SnapshotEntry => Boolean): Unit = {
     val pidEntries = snapshot.filter(_._1 == persistenceId)
     val notDeleted = pidEntries.mapValues(_.filterNot(predicate))
     snapshot = snapshot.filterNot(_._1 == persistenceId) |+| notDeleted
@@ -70,42 +70,49 @@ class InMemorySnapshotStorage extends Actor with ActorLogging {
   }
 
   def deleteUpToMaxTimestamp(ref: ActorRef, persistenceId: String, maxTimestamp: Long): Unit = {
-    delete(persistenceId, _.created <= maxTimestamp)
+    val deleteUpToMaxTimestampPredicate: SnapshotEntry => Boolean =
+      (entry: SnapshotEntry) => entry.created <= maxTimestamp
+
+    delete(persistenceId, deleteUpToMaxTimestampPredicate)
 
     ref ! akka.actor.Status.Success("")
   }
 
   def deleteUpToMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long): Unit = {
-    delete(persistenceId, (x: snapshotEntry) => x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
+    delete(persistenceId, (x: SnapshotEntry) => x.sequenceNumber <= maxSequenceNr && x.created <= maxTimestamp)
 
     ref ! akka.actor.Status.Success("")
   }
 
   def save(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long, data: Array[Byte]): Unit = {
     val key = persistenceId
-    snapshot = snapshot |+| Map(key -> Vector(snapshotEntry(persistenceId, sequenceNr, timestamp, data)))
+    snapshot = snapshot |+| Map(key -> Vector(SnapshotEntry(persistenceId, sequenceNr, timestamp, data)))
 
     ref ! akka.actor.Status.Success("")
   }
 
-  def snapshotForMaxSequenceNr(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
-    val determine = snapshot.get(persistenceId).flatMap(xs => xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
+  def snapshotFor(ref: ActorRef, persistenceId: String)(p: SnapshotEntry => Boolean): Unit = {
+    val determine: Option[SnapshotEntry] = snapshot.get(persistenceId).flatMap(_.find(p))
 
     ref ! akka.actor.Status.Success(determine)
   }
 
-  def snapshotFor(ref: ActorRef, persistenceId: String)(p: snapshotEntry => Boolean): Unit = {
-    val determine: Option[snapshotEntry] = snapshot.get(persistenceId).flatMap(_.find(p))
-
+  def snapshotForMaxSequenceNr(ref: ActorRef, persistenceId: String, sequenceNr: Long): Unit = {
+    val determine = snapshot.get(persistenceId).flatMap(xs => xs.filter(_.sequenceNumber <= sequenceNr).toList.sortBy(_.sequenceNumber).reverse.headOption)
     ref ! akka.actor.Status.Success(determine)
   }
 
   def snapshotForMaxSequenceNrAndMaxTimestamp(ref: ActorRef, persistenceId: String, sequenceNr: Long, timestamp: Long): Unit = {
-    snapshotFor(ref, persistenceId)(snap => snap.sequenceNumber == sequenceNr)
+    val snapshotForMaxSequenceNrAndMaxTimestampPredicate: SnapshotEntry => Boolean =
+      (entry: SnapshotEntry) => entry.sequenceNumber == sequenceNr && entry.created <= timestamp
+    snapshotFor(ref, persistenceId)(snapshotForMaxSequenceNrAndMaxTimestampPredicate)
   }
 
-  def snapshotForMaxTimestamp(ref: ActorRef, persistenceId: String, timestamp: Long): Unit =
-    snapshotFor(ref, persistenceId)(_.created < timestamp)
+  def snapshotForMaxTimestamp(ref: ActorRef, persistenceId: String, timestamp: Long): Unit = {
+    val snapshotForMaxTimestampPredicate: SnapshotEntry => Boolean =
+      (entry: SnapshotEntry) => entry.created < timestamp
+    snapshotFor(ref, persistenceId)(snapshotForMaxTimestampPredicate)
+  }
 
   override def receive: Receive = {
     case Delete(persistenceId: String, sequenceNr: Long)                                                        => delete(sender(), persistenceId, sequenceNr)

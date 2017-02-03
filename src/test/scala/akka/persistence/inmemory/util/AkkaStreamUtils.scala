@@ -30,7 +30,7 @@ trait AkkaStreamUtils extends FlatSpecLike with Matchers { _: Suite =>
   implicit def system: ActorSystem
 
   implicit class SourceOps[A, M](src: Source[A, M]) {
-    def testProbe(f: TestSubscriber.Probe[A] ⇒ Unit): Unit =
+    def testProbe(f: TestSubscriber.Probe[A] => Unit): Unit =
       f(src.runWith(TestSink.probe(system)))
   }
 
@@ -38,9 +38,9 @@ trait AkkaStreamUtils extends FlatSpecLike with Matchers { _: Suite =>
     def assertNext(right: PartialFunction[Any, _]) = tp.requestNext() should matchPattern(right)
   }
 
-  def withIteratorSrc[T](start: Int = 0)(f: Source[Int, NotUsed] ⇒ Unit): Unit =
-    f(Source.fromIterator(() ⇒ Iterator from start))
+  def withIteratorSrc[T](start: Int = 0)(f: Source[Int, NotUsed] => Unit): Unit =
+    f(Source.fromIterator(() => Iterator from start))
 
-  def fromCollectionProbe[A](xs: Seq[A])(f: TestSubscriber.Probe[A] ⇒ Unit): Unit =
+  def fromCollectionProbe[A](xs: Seq[A])(f: TestSubscriber.Probe[A] => Unit): Unit =
     f(Source(xs).runWith(TestSink.probe(system)))
 }

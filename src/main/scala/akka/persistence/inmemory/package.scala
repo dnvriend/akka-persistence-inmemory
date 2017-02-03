@@ -18,12 +18,11 @@ package akka.persistence
 
 import java.util.UUID
 
+import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query.TimeBasedUUID
 
 import scala.collection.immutable._
-import com.datastax.driver.core.utils.UUIDs
 import scala.language.implicitConversions
-
 import scala.compat.Platform
 
 package object inmemory {
@@ -34,7 +33,7 @@ package object inmemory {
   def getTimeBasedUUID: TimeBasedUUID = TimeBasedUUID(nowUuid)
 
   final case class JournalEntry(persistenceId: String, sequenceNr: Long, serialized: Array[Byte], repr: PersistentRepr, tags: Set[String], deleted: Boolean = false, ordering: Long = -1, timestamp: TimeBasedUUID = getTimeBasedUUID, offset: Option[Long] = None)
-  final case class snapshotEntry(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
+  final case class SnapshotEntry(persistenceId: String, sequenceNumber: Long, created: Long, snapshot: Array[Byte])
 
   implicit def seqToVector[A](xs: Seq[A]): Vector[A] = xs.toVector
   implicit def setToVector[A](xs: Set[A]): Vector[A] = xs.toVector

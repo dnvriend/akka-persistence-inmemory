@@ -48,7 +48,6 @@ object ProjectAutoPlugin extends AutoPlugin {
   val AkkaVersion = "2.4.16"
   val ScalazVersion = "7.2.8"
   val ScalazScalaTestVersion = "1.1.1"
-  val CassandraVersion = "3.1.2"
   val ScalaTestVersion = "3.0.1"
 
   override def requires = com.typesafe.sbt.SbtScalariform
@@ -116,7 +115,6 @@ object ProjectAutoPlugin extends AutoPlugin {
    libraryDependencies += "com.typesafe.akka" %% "akka-persistence-query-experimental" % AkkaVersion,
    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
    libraryDependencies += "org.scalaz" %% "scalaz-core" % ScalazVersion,
-   libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % CassandraVersion,
    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.9" % Test,
    libraryDependencies += "org.typelevel" %% "scalaz-scalatest" % ScalazScalaTestVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,

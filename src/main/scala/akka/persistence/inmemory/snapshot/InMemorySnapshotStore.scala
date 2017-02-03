@@ -27,13 +27,14 @@ import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
 import com.typesafe.config.Config
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scalaz.OptionT
+import scalaz.std.AllInstances._
 
 class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   implicit val system: ActorSystem = context.system
@@ -44,34 +45,28 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
 
   val snapshots: ActorRef = StorageExtension(system).snapshotStorage
 
+  def deserialize(snapshotEntry: SnapshotEntry): Future[Option[Snapshot]] =
+    Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot])).map(Option(_))
+
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
-    val SnapshotEntryOption: Future[Option[snapshotEntry]] = criteria match {
+    val maybeEntry: Future[Option[SnapshotEntry]] = criteria match {
       case SnapshotSelectionCriteria(Long.MaxValue, Long.MaxValue, _, _) =>
-        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, Long.MaxValue)).mapTo[Option[snapshotEntry]]
+        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, Long.MaxValue)).mapTo[Option[SnapshotEntry]]
       case SnapshotSelectionCriteria(Long.MaxValue, maxTimestamp, _, _) =>
-        (snapshots ? SnapshotForMaxTimestamp(persistenceId, maxTimestamp)).mapTo[Option[snapshotEntry]]
+        (snapshots ? SnapshotForMaxTimestamp(persistenceId, maxTimestamp)).mapTo[Option[SnapshotEntry]]
       case SnapshotSelectionCriteria(maxSequenceNr, Long.MaxValue, _, _) =>
-        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, maxSequenceNr)).mapTo[Option[snapshotEntry]]
+        (snapshots ? SnapshotForMaxSequenceNr(persistenceId, maxSequenceNr)).mapTo[Option[SnapshotEntry]]
       case SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, _, _) =>
-        (snapshots ? SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).mapTo[Option[snapshotEntry]]
+        (snapshots ? SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId, maxSequenceNr, maxTimestamp)).mapTo[Option[SnapshotEntry]]
       case _ => Future.successful(None)
     }
 
-    Source.fromFuture(SnapshotEntryOption).flatMapConcat { entryOption =>
-      Source(entryOption.toList).flatMapConcat { snapshotEntry =>
-        Source.fromFuture(Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot])))
-          .map { snapshot =>
-            SelectedSnapshot(
-              SnapshotMetadata(
-                snapshotEntry.persistenceId,
-                snapshotEntry.sequenceNumber,
-                snapshotEntry.created
-              ),
-              snapshot.data
-            )
-          }
-      }
-    }.runWith(Sink.headOption)
+    val result = for {
+      entry <- OptionT(maybeEntry)
+      snapshot <- OptionT(deserialize(entry))
+    } yield SelectedSnapshot(SnapshotMetadata(entry.persistenceId, entry.sequenceNumber, entry.created), snapshot.data)
+
+    result.run
   }
 
   override def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = for {
