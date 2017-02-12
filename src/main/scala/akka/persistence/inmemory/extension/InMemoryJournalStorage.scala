@@ -71,7 +71,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
     def increment(offset: Long): Long = offset + 1
     def getByOffset(p: JournalEntry => Boolean): List[JournalEntry] = {
       val xs = getAllEvents(journal)
-        .filter(_.tags.exists(tags => tags.contains(tag))).toList
+        .filter(_.tags.contains(tag)).toList
         .sortBy(_.ordering)
         .zipWithIndex.map {
           case (entry, index) =>
