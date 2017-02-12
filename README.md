@@ -291,6 +291,10 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.4.17.1 (2017-02-12)
+  - Fix for PR #31 'eventsByTag including substrings of tag' by [jibbers42](https://github.com/jibbers42), thanks!
+  - Tags will be matched against the whole tag so tag 'foo' will be matched against 'foo' and not 'fo' or 'f' which was the previous behavior.
+
 ### 2.4.17.0 (2017-02-11)
   - Akka 2.4.16 -> 2.4.17
 

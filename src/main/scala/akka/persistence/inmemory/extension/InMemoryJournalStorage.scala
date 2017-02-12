@@ -24,7 +24,8 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.serialization.Serialization
 
 import scala.collection.immutable._
-import scalaz.Scalaz._
+import scalaz.syntax.semigroup._
+import scalaz.std.AllInstances._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
@@ -118,8 +119,8 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
 
   def messages(ref: ActorRef, persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long, all: Boolean): Unit = {
     def toTake = if (max >= Int.MaxValue) Int.MaxValue else max.toInt
-    val pidEntries = journal.filter(_._1 == persistenceId)
-    val xs: List[JournalEntry] = pidEntries.values.flatMap(identity)
+    val pidEntries: Map[String, Vector[JournalEntry]] = journal.filter(_._1 == persistenceId)
+    val xs: List[JournalEntry] = pidEntries.flatMap(_._2)
       .filter(_.sequenceNr >= fromSequenceNr)
       .filter(_.sequenceNr <= toSequenceNr)
       .toList.sortBy(_.sequenceNr)

@@ -29,6 +29,21 @@ class CurrentEventsByTagTest extends QueryTestSpec {
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
+
+    withCurrentEventsByTag()("on", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectComplete()
+    }
+
+    withCurrentEventsByTag()("tw", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectComplete()
+    }
+
+    withCurrentEventsByTag()("thre", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectComplete()
+    }
   }
 
   it should "find all events by tag" in {
