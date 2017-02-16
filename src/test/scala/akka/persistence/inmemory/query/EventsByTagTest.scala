@@ -100,5 +100,64 @@ class EventsByTagTest extends QueryTestSpec {
       tp.cancel()
     }
   }
+
+  it should "find deleted events" in {
+    persist(1, 4, "my-1", "number")
+
+    deleteMessages("my-1", 0)
+
+    withCurrentEventsByTag()("number", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 1)
+
+    withCurrentEventsByTag()("number", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 2)
+
+    withCurrentEventsByTag()("number", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 3)
+
+    withCurrentEventsByTag()("number", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 4)
+
+    withCurrentEventsByTag()("number", 0) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+  }
 }
 

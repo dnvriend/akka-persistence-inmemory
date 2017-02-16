@@ -22,7 +22,6 @@ import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query.TimeBasedUUID
 
 import scala.collection.immutable._
-import scala.language.implicitConversions
 import scala.compat.Platform
 
 package object inmemory {

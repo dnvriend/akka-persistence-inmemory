@@ -87,21 +87,48 @@ class CurrentEventsByPersistenceIdTest extends QueryTestSpec {
   it should "find events for deleted messages" in {
     persist(1, 4, "my-1")
 
-    withCurrentEventsByPersistenceId()("my-1", 1, 3) { tp =>
+    deleteMessages("my-1", 0)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
       tp.request(Int.MaxValue)
       tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1"))
       tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
       tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 1)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
       tp.expectComplete()
     }
 
     deleteMessages("my-1", 2)
 
-    withCurrentEventsByPersistenceId()("my-1", 1, 3) { tp =>
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNext(EventEnvelope(1, "my-1", 1, "a-1")) // deleted
-      tp.expectNext(EventEnvelope(2, "my-1", 2, "a-2")) // deleted
-      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3")) // not-deleted
+      tp.expectNext(EventEnvelope(3, "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 3)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(4, "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 4)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
       tp.expectComplete()
     }
   }
