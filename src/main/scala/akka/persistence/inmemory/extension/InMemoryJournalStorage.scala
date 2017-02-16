@@ -24,7 +24,8 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.serialization.Serialization
 
 import scala.collection.immutable._
-import scalaz.Scalaz._
+import scalaz.syntax.semigroup._
+import scalaz.std.AllInstances._
 
 object InMemoryJournalStorage {
   sealed trait JournalCommand
@@ -71,7 +72,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
     def increment(offset: Long): Long = offset + 1
     def getByOffset(p: JournalEntry => Boolean): List[JournalEntry] = {
       val xs = getAllEvents(journal)
-        .filter(_.tags.exists(tags => tags.contains(tag))).toList
+        .filter(_.tags.contains(tag)).toList
         .sortBy(_.ordering)
         .zipWithIndex.map {
           case (entry, index) =>
@@ -84,7 +85,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
     val xs: List[JournalEntry] = offset match {
       case NoOffset             => getByOffset(_.offset.exists(_ >= 0L))
       case Sequence(value)      => getByOffset(_.offset.exists(_ > value))
-      case value: TimeBasedUUID => getByOffset(_.timestamp > value) // todo figure out how this works
+      case value: TimeBasedUUID => getByOffset(_.timestamp > value)
     }
 
     ref ! akka.actor.Status.Success(xs)
@@ -118,8 +119,8 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
 
   def messages(ref: ActorRef, persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long, all: Boolean): Unit = {
     def toTake = if (max >= Int.MaxValue) Int.MaxValue else max.toInt
-    val pidEntries = journal.filter(_._1 == persistenceId)
-    val xs: List[JournalEntry] = pidEntries.values.flatMap(identity)
+    val pidEntries: Map[String, Vector[JournalEntry]] = journal.filter(_._1 == persistenceId)
+    val xs: List[JournalEntry] = pidEntries.flatMap(_._2)
       .filter(_.sequenceNr >= fromSequenceNr)
       .filter(_.sequenceNr <= toSequenceNr)
       .toList.sortBy(_.sequenceNr)

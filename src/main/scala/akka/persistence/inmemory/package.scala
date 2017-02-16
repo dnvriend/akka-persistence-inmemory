@@ -18,12 +18,10 @@ package akka.persistence
 
 import java.util.UUID
 
+import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query.TimeBasedUUID
 
 import scala.collection.immutable._
-import com.datastax.driver.core.utils.UUIDs
-import scala.language.implicitConversions
-
 import scala.compat.Platform
 
 package object inmemory {

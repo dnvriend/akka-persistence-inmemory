@@ -17,9 +17,11 @@
 package akka.persistence.inmemory.query
 
 import akka.stream.scaladsl.Sink
+import org.scalatest.Ignore
 
 import scala.compat.Platform
 
+@Ignore
 class QueryPerfSpec extends QueryTestSpec {
   def writeToJournal(numberOfEvents: Int): Unit = {
     val start = Platform.currentTime

@@ -31,7 +31,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.datastax.driver.core.utils.UUIDs
+import akka.persistence.inmemory.util.UUIDs
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}

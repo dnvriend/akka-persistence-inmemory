@@ -246,4 +246,53 @@ class CurrentEventsByTagSequenceJournalTest extends QueryTestSpec {
       tp.expectComplete()
     }
   }
+
+  it should "find events for deleted messages" in {
+    persist(1, 4, "my-1")
+
+    deleteMessages("my-1", 0)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(Sequence(1), "my-1", 1, "a-1"))
+      tp.expectNext(EventEnvelope(Sequence(2), "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(Sequence(3), "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 1)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(Sequence(2), "my-1", 2, "a-2"))
+      tp.expectNext(EventEnvelope(Sequence(3), "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 2)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(Sequence(3), "my-1", 3, "a-3"))
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 3)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectNext(EventEnvelope(Sequence(4), "my-1", 4, "a-4"))
+      tp.expectComplete()
+    }
+
+    deleteMessages("my-1", 4)
+
+    withCurrentEventsByPersistenceId()("my-1", 1) { tp =>
+      tp.request(Int.MaxValue)
+      tp.expectComplete()
+    }
+  }
 }

@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.persistence.query.{EventEnvelope, NoOffset, TimeBasedUUID}
+import akka.persistence.query.{EventEnvelope, NoOffset, Sequence, TimeBasedUUID}
 
 /**
  * This test sets the offset-mode to uuid, this means that when a NoOffset type is
@@ -266,6 +266,5 @@ class CurrentEventsByTagUUIDJournalTest extends QueryTestSpec("uuid-offset-mode.
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
-
   }
 }

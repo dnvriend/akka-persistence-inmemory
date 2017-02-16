@@ -26,13 +26,13 @@ import akka.event.{Logging, LoggingAdapter}
 import akka.pattern.ask
 import akka.persistence.{Persistence, PersistentRepr}
 import akka.persistence.inmemory.extension.{InMemoryJournalStorage, StorageExtension}
+import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query._
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.util.Timeout
-import com.datastax.driver.core.utils.UUIDs
 import com.typesafe.config.Config
 
 import scala.collection.immutable.{Iterable, Seq}
@@ -98,7 +98,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       }
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
-    Source.fromFuture((journal ? InMemoryJournalStorage.GetAllJournalEntries(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
+    Source.fromFuture((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserialization)
