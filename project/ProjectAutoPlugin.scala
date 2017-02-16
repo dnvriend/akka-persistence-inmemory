@@ -47,8 +47,6 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 object ProjectAutoPlugin extends AutoPlugin {
   val AkkaVersion = "2.5-M1"
   val ScalazVersion = "7.2.8"
-  val ScalazScalaTestVersion = "1.1.1"
-  val CassandraVersion = "3.1.2"
   val ScalaTestVersion = "3.0.1"
 
   override def requires = com.typesafe.sbt.SbtScalariform
