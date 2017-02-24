@@ -45,7 +45,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  val AkkaVersion = "2.5-M1"
+  val AkkaVersion = "2.5-M2"
   val ScalazVersion = "7.2.8"
   val ScalaTestVersion = "3.0.1"
 
