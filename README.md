@@ -291,6 +291,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.4.17.3 (2017-02-24)
+  - Changed to a simpler Time-based UUID generator.
+
 ### 2.4.17.2 (2017-02-16)
   - Fix for issue #33 'InMemoryReadJournal.eventsByPersistenceId returns deleted messages'
 
