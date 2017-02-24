@@ -291,6 +291,10 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.5.0.0-M2 (2017-02-24)
+  - Support for Akka 2.5-M2
+  - Changed to a simpler Time-based UUID generator.
+
 ### 2.4.17.3 (2017-02-24)
   - Changed to a simpler Time-based UUID generator.
 
