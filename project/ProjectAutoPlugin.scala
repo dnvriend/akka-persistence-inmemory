@@ -45,8 +45,8 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  val AkkaVersion = "2.5-M2"
-  val ScalazVersion = "7.2.8"
+  val AkkaVersion = "2.5.0-RC1"
+  val ScalazVersion = "7.2.10"
   val ScalaTestVersion = "3.0.1"
 
   override def requires = com.typesafe.sbt.SbtScalariform
@@ -114,7 +114,7 @@ object ProjectAutoPlugin extends AutoPlugin {
    libraryDependencies += "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
    libraryDependencies += "org.scalaz" %% "scalaz-core" % ScalazVersion,
-   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.1" % Test,
+   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.2" % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-persistence-tck" % AkkaVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
