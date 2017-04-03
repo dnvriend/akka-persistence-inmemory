@@ -1,1 +1,1 @@
-version := "2.5.0.0-RC1"
+version := "2.5.0.0-RC2"
