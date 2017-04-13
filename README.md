@@ -15,6 +15,10 @@ Add the following to your `build.sbt`:
 // the library is available in Bintray's JCenter
 resolvers += Resolver.jcenterRepo
 
+// akka 2.5.x
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.0.0"
+
+// akka 2.4.x
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.17.1"
 ```
 
