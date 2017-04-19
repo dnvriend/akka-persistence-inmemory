@@ -46,9 +46,9 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 //
 object ProjectAutoPlugin extends AutoPlugin {
   val AkkaVersion = "2.4.17"
-  val ScalazVersion = "7.2.8"
-  val ScalazScalaTestVersion = "1.1.1"
-  val ScalaTestVersion = "3.0.1"
+  val ScalazVersion = "7.2.11"
+  val ScalazScalaTestVersion = "1.1.2"
+  val ScalaTestVersion = "3.0.2"
 
   override def requires = com.typesafe.sbt.SbtScalariform
 
@@ -64,12 +64,12 @@ object ProjectAutoPlugin extends AutoPlugin {
     organization := "com.github.dnvriend",
     organizationName := "Dennis Vriend",
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
-    startYear := Some(2016),
+    startYear := Some(2014),
 
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
-    scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    scalaVersion := "2.12.2",
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
