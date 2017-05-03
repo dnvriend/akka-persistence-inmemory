@@ -1,11 +1,12 @@
 import sbt._
 import sbt.Keys._
-
 import de.heikoseeberger.sbtheader._
 import de.heikoseeberger.sbtheader.HeaderKey._
 import de.heikoseeberger.sbtheader.license.Apache2_0
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+
+import scalariform.formatter.preferences.FormattingPreferences
 
 // A plugin extends the build definition, most commonly by adding new settings. The new settings could be new tasks.
 // Plugins usually provide settings that get added to a project to enable the plugin’s functionality.
@@ -45,30 +46,39 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  val AkkaVersion = "2.5.0"
-  val ScalazVersion = "7.2.10"
-  val ScalaTestVersion = "3.0.1"
+  final val AkkaVersion = "2.5.1"
+  final val ScalazVersion = "7.2.12"
+  final val ScalaTestVersion = "3.0.3"
+  final val LogbackVersion = "1.2.3"
 
-  override def requires = com.typesafe.sbt.SbtScalariform
+  final val formattingPreferences: FormattingPreferences = {
+    import scalariform.formatter.preferences._
+    FormattingPreferences()
+      .setPreference(AlignSingleLineCaseStatements, true)
+      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
+      .setPreference(DoubleIndentClassDeclaration, true)
+  }
 
-  override def trigger = allRequirements
+  override val requires = com.typesafe.sbt.SbtScalariform
+
+  override val trigger: PluginTrigger = allRequirements
 
   object autoImport {
   }
 
   import autoImport._
 
-  override lazy val projectSettings = SbtScalariform.scalariformSettings ++ Seq(
+  override lazy val projectSettings: Seq[Setting[_]] = SbtScalariform.scalariformSettings ++ Seq(
     name := "akka-persistence-inmemory",
     organization := "com.github.dnvriend",
     organizationName := "Dennis Vriend",
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
-    startYear := Some(2016),
+    startYear := Some(2014),
 
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
-    scalaVersion := "2.11.8",
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    scalaVersion := "2.12.2",
+    crossScalaVersions := Seq("2.11.11", "2.12.2"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
@@ -89,22 +99,19 @@ object ProjectAutoPlugin extends AutoPlugin {
       "-target:jvm-1.8"
     ),
 
-    javacOptions ++= Seq(
-      "-Xlint:unchecked"
-    ),
+    scalacOptions += "-Ypartial-unification",
+    scalacOptions += "-Ydelambdafy:method",
 
-    // show full stack traces and test case durations
+      // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
     headers := headers.value ++ Map(
-      "scala" -> Apache2_0("2016", "Dennis Vriend"),
-      "conf" -> Apache2_0("2016", "Dennis Vriend", "#")
+      "scala" -> Apache2_0("2017", "Dennis Vriend"),
+      "conf" -> Apache2_0("2017", "Dennis Vriend", "#")
     ),
 
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += Resolver.jcenterRepo,
-    resolvers += Resolver.bintrayRepo("scalaz", "releases"),
-    resolvers += Resolver.bintrayRepo("stew", "snapshots"),
 
     ScalariformKeys.preferences in Compile := formattingPreferences,
     ScalariformKeys.preferences in Test := formattingPreferences,
@@ -114,20 +121,11 @@ object ProjectAutoPlugin extends AutoPlugin {
    libraryDependencies += "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
    libraryDependencies += "org.scalaz" %% "scalaz-core" % ScalazVersion,
-   libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
+   libraryDependencies += "ch.qos.logback" % "logback-classic" % LogbackVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-slf4j" % AkkaVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-persistence-tck" % AkkaVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
    libraryDependencies +="com.typesafe.akka" %% "akka-testkit" % AkkaVersion % Test,
    libraryDependencies +="org.scalatest" %% "scalatest" % ScalaTestVersion % Test
-   
    )
-
-  def formattingPreferences = {
-    import scalariform.formatter.preferences._
-    FormattingPreferences()
-      .setPreference(AlignSingleLineCaseStatements, true)
-      .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
-      .setPreference(DoubleIndentClassDeclaration, true)
-  }
 }
