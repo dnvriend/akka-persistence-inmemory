@@ -295,6 +295,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.4.18.0 (2017-05-03)
+  - Akka 2.4.17 -> 2.4.18
+  
 ### 2.5.0.0 (2017-04-13)
   - Support for Akka 2.5.0
 
