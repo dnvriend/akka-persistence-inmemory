@@ -16,10 +16,10 @@ Add the following to your `build.sbt`:
 resolvers += Resolver.jcenterRepo
 
 // akka 2.5.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1"
 
 // akka 2.4.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.18.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.18.1"
 ```
 
 ## Contribution policy
@@ -295,6 +295,12 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.5.1.1 (2017-05-23)
+  - Fix for issue #35 "no serializer for internal plugin messages"
+
+### 2.4.18.1 (2017-05-23)
+  - Fix for issue #35 "no serializer for internal plugin messages"
+
 ### 2.5.1.0 (2017-05-03)
   - Akka 2.5.0 -> 2.5.1
 
