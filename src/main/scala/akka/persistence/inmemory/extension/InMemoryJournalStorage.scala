@@ -17,7 +17,7 @@
 package akka.persistence.inmemory
 package extension
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded}
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
@@ -28,7 +28,7 @@ import scalaz.syntax.semigroup._
 import scalaz.std.AllInstances._
 
 object InMemoryJournalStorage {
-  sealed trait JournalCommand
+  sealed trait JournalCommand extends NoSerializationVerificationNeeded
   case object AllPersistenceIds extends JournalCommand
   final case class HighestSequenceNr(persistenceId: String, fromSequenceNr: Long) extends JournalCommand
   final case class EventsByTag(tag: String, offset: Offset) extends JournalCommand
