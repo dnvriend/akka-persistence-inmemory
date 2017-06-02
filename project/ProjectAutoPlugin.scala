@@ -47,7 +47,7 @@ import scalariform.formatter.preferences.FormattingPreferences
 //
 object ProjectAutoPlugin extends AutoPlugin {
   final val AkkaVersion = "2.4.18"
-  final val ScalazVersion = "7.2.12"
+  final val ScalazVersion = "7.2.13"
   final val ScalaTestVersion = "3.0.3"
   final val LogbackVersion = "1.2.3"
 

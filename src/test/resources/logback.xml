@@ -11,7 +11,7 @@
     </appender>
 
 
-    <logger name="akka" level="debug"/>
+    <!--<logger name="akka" level="debug"/>-->
     <!--<logger name="akka.persistence" level="debug"/>-->
 
     <root level="error">
