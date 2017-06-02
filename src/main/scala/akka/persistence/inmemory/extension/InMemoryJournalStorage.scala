@@ -20,6 +20,7 @@ package extension
 import akka.actor.{Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded}
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
+import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.serialization.Serialization
 
@@ -85,7 +86,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
     val xs: List[JournalEntry] = offset match {
       case NoOffset             => getByOffset(_.offset.exists(_ >= 0L))
       case Sequence(value)      => getByOffset(_.offset.exists(_ > value))
-      case value: TimeBasedUUID => getByOffset(_.timestamp > value)
+      case value: TimeBasedUUID => getByOffset(p => UUIDs.TimeBasedUUIDOrdering.gt(p.timestamp, value))
     }
 
     ref ! akka.actor.Status.Success(xs)
