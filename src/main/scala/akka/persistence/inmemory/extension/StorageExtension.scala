@@ -18,17 +18,32 @@ package akka.persistence.inmemory.extension
 
 import akka.actor._
 import akka.serialization.SerializationExtension
+import com.typesafe.config.Config
+
+import scala.collection.mutable
 
 object StorageExtension extends ExtensionId[StorageExtensionImpl] with ExtensionIdProvider {
+  private[extension] final val KeySpaceKey = "keyspace"
+  type Keyspace = String
+
   override def createExtension(system: ExtendedActorSystem): StorageExtensionImpl = new StorageExtensionImpl()(system)
 
   override def lookup(): ExtensionId[_ <: Extension] = StorageExtension
+
+  def keyspaceFrom(config: Config): Option[Keyspace] = if (config.hasPath(KeySpaceKey)) Some(config.getString(KeySpaceKey)) else None
 }
 
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends Extension {
-  val serialization = SerializationExtension(system)
+  import StorageExtension._
+  private val serialization = SerializationExtension(system)
+  private val existingActors: mutable.Map[String, ActorRef] = mutable.Map.empty
 
-  val journalStorage: ActorRef = system.actorOf(Props(new InMemoryJournalStorage(serialization)), "JournalStorage")
+  def journalStorage(keyspace: Option[Keyspace] = None): ActorRef = localNonClusteredActorSingleton(Props(new InMemoryJournalStorage(serialization)), "JournalStorage", keyspace)
 
-  val snapshotStorage: ActorRef = system.actorOf(Props(new InMemorySnapshotStorage), "SnapshotStorage")
+  def snapshotStorage(keyspace: Option[Keyspace] = None): ActorRef = localNonClusteredActorSingleton(Props(new InMemorySnapshotStorage), "SnapshotStorage", keyspace)
+
+  private def localNonClusteredActorSingleton(props: Props, prefix: String, keyspace: Option[Keyspace]) = {
+    val actorName = s"$prefix${keyspace.map(ks => s"@$ks").getOrElse("")}"
+    existingActors.getOrElseUpdate(actorName, system.actorOf(props, actorName))
+  }
 }

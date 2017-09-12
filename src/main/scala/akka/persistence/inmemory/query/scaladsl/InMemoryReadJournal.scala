@@ -56,7 +56,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private implicit val mat: Materializer = ActorMaterializer()
   private implicit val log: LoggingAdapter = Logging(system, this.getClass)
   private val serialization = SerializationExtension(system)
-  private val journal: ActorRef = StorageExtension(system).journalStorage
+  private val journal: ActorRef = StorageExtension(system).journalStorage(StorageExtension.keyspaceFrom(config))
   private val offsetMode: String = config.getString("offset-mode").toLowerCase()
   private implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.MILLISECONDS) -> MILLISECONDS)
   private val refreshInterval: FiniteDuration = config.getDuration("refresh-interval", TimeUnit.MILLISECONDS) -> MILLISECONDS
