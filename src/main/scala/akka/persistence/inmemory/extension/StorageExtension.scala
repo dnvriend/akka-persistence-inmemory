@@ -42,8 +42,20 @@ class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends E
 
   def snapshotStorage(keyspace: Option[Keyspace] = None): ActorRef = localNonClusteredActorSingleton(Props(new InMemorySnapshotStorage), "SnapshotStorage", keyspace)
 
-  private def localNonClusteredActorSingleton(props: Props, prefix: String, keyspace: Option[Keyspace]) = {
+  private def localNonClusteredActorSingleton(props: Props, prefix: String, keyspace: Option[Keyspace]): ActorRef = {
     val actorName = s"$prefix${keyspace.map(ks => s"@$ks").getOrElse("")}"
-    existingActors.getOrElseUpdate(actorName, system.actorOf(props, actorName))
+    existingActors.get(actorName) match {
+      case Some(a) => a
+      case None =>
+        existingActors.synchronized {
+          existingActors.get(actorName) match {
+            case Some(a) => a
+            case None =>
+              val newActor = system.actorOf(props, actorName)
+              existingActors.put(actorName, newActor)
+              newActor
+          }
+        }
+    }
   }
 }
