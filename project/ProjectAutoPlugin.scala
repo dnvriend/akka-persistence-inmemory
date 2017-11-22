@@ -76,8 +76,8 @@ object ProjectAutoPlugin extends AutoPlugin {
 
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
-    scalaVersion := "2.12.2",
-    crossScalaVersions := Seq("2.11.11", "2.12.2"),
+    scalaVersion := "2.12.4",
+    crossScalaVersions := Seq("2.11.11", "2.12.4"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
