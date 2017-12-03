@@ -19,7 +19,7 @@ resolvers += Resolver.jcenterRepo
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1"
 
 // akka 2.4.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.18.2-SNAPSHOT"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.18.2"
 ```
 
 ## Contribution policy
@@ -295,7 +295,7 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
-### 2.4.18.2 (2017-12-03) (Not yet released)
+### 2.4.18.2 (2017-12-03)
   - Merged #42 "Scala 2.12.4 support" by [sullis](https://github.com/sullis), thanks!
 
 ### 2.5.1.1 (2017-05-23)
