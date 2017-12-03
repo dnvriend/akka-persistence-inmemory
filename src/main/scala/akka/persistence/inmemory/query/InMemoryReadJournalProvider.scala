@@ -17,11 +17,12 @@
 package akka.persistence.inmemory.query
 
 import akka.actor.ExtendedActorSystem
+import akka.persistence.inmemory.extension.StorageExtension
 import akka.persistence.query.ReadJournalProvider
 import com.typesafe.config.Config
 
 class InMemoryReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
-  override val scaladslReadJournal = new scaladsl.InMemoryReadJournal(config)(system)
+  override val scaladslReadJournal = new scaladsl.InMemoryReadJournal(config, StorageExtension(system).journalStorage)(system)
 
   override val javadslReadJournal = new javadsl.InMemoryReadJournal(scaladslReadJournal)
 }
