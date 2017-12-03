@@ -17,7 +17,7 @@
 package akka.persistence.inmemory
 package extension
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import scalaz.std.AllInstances._
 import scalaz.syntax.all._
 

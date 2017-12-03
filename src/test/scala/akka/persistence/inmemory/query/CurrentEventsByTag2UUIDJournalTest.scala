@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.persistence.query.{EventEnvelope2, NoOffset, TimeBasedUUID}
+import akka.persistence.query.{ EventEnvelope2, NoOffset, TimeBasedUUID }
 
 /**
  * This test sets the offset-mode to uuid, this means that when a NoOffset type is

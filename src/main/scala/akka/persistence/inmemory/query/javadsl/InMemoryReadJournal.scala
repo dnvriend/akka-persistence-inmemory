@@ -18,9 +18,9 @@ package akka.persistence.inmemory.query
 package javadsl
 
 import akka.NotUsed
-import akka.persistence.inmemory.query.scaladsl.{InMemoryReadJournal => ScalaInMemoryReadJournal}
+import akka.persistence.inmemory.query.scaladsl.{ InMemoryReadJournal => ScalaInMemoryReadJournal }
 import akka.persistence.query.javadsl._
-import akka.persistence.query.{EventEnvelope, EventEnvelope2, Offset, Sequence}
+import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, Sequence }
 import akka.stream.javadsl.Source
 
 object InMemoryReadJournal {
@@ -28,14 +28,14 @@ object InMemoryReadJournal {
 }
 
 class InMemoryReadJournal(journal: ScalaInMemoryReadJournal) extends ReadJournal
-    with CurrentPersistenceIdsQuery
-    with AllPersistenceIdsQuery
-    with CurrentEventsByPersistenceIdQuery
-    with EventsByPersistenceIdQuery
-    with CurrentEventsByTagQuery
-    with CurrentEventsByTagQuery2
-    with EventsByTagQuery
-    with EventsByTagQuery2 {
+  with CurrentPersistenceIdsQuery
+  with AllPersistenceIdsQuery
+  with CurrentEventsByPersistenceIdQuery
+  with EventsByPersistenceIdQuery
+  with CurrentEventsByTagQuery
+  with CurrentEventsByTagQuery2
+  with EventsByTagQuery
+  with EventsByTagQuery2 {
 
   override def currentPersistenceIds(): Source[String, NotUsed] =
     journal.currentPersistenceIds().asJava

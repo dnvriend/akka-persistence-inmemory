@@ -21,23 +21,23 @@ package scaladsl
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
-import akka.actor.{ActorRef, ExtendedActorSystem}
-import akka.event.{Logging, LoggingAdapter}
+import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
-import akka.persistence.{Persistence, PersistentRepr}
-import akka.persistence.inmemory.extension.{InMemoryJournalStorage, StorageExtension}
+import akka.persistence.{ Persistence, PersistentRepr }
+import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
 import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query._
 import akka.persistence.query.scaladsl._
 import akka.serialization.SerializationExtension
-import akka.stream.scaladsl.{Flow, Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.util.Timeout
 import com.typesafe.config.Config
 
-import scala.collection.immutable.{Iterable, Seq}
+import scala.collection.immutable.{ Iterable, Seq }
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 object InMemoryReadJournal {
@@ -45,14 +45,14 @@ object InMemoryReadJournal {
 }
 
 class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSystem) extends ReadJournal
-    with CurrentPersistenceIdsQuery
-    with AllPersistenceIdsQuery
-    with CurrentEventsByPersistenceIdQuery
-    with EventsByPersistenceIdQuery
-    with CurrentEventsByTagQuery
-    with CurrentEventsByTagQuery2
-    with EventsByTagQuery
-    with EventsByTagQuery2 {
+  with CurrentPersistenceIdsQuery
+  with AllPersistenceIdsQuery
+  with CurrentEventsByPersistenceIdQuery
+  with EventsByPersistenceIdQuery
+  with CurrentEventsByTagQuery
+  with CurrentEventsByTagQuery2
+  with EventsByTagQuery
+  with EventsByTagQuery2 {
 
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val mat: Materializer = ActorMaterializer()

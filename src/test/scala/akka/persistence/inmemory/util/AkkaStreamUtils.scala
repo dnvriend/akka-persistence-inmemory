@@ -22,7 +22,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
-import org.scalatest.{FlatSpecLike, Matchers, Suite}
+import org.scalatest.{ FlatSpecLike, Matchers, Suite }
 import scala.collection.immutable._
 
 trait AkkaStreamUtils extends FlatSpecLike with Matchers { _: Suite =>

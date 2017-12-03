@@ -1,19 +1,12 @@
 import sbt._
 import sbt.Keys._
-import bintray.BintrayKeys._
+import bintray.{BintrayKeys, BintrayPlugin}
 
-object PublishAutoPlugin extends AutoPlugin { 
+object PublishSettings extends AutoPlugin with BintrayKeys {
+  override def trigger = allRequirements
+  override def requires = plugins.JvmPlugin && sbtrelease.ReleasePlugin && BintrayPlugin && ProjectSettings
 
-  override val trigger: PluginTrigger = allRequirements
-
-  override val requires: Plugins = sbtrelease.ReleasePlugin
-
-  object autoImport {
-  }
-
- import autoImport._
-
- override val projectSettings = Seq(
+ override def projectSettings = Seq(
     publishMavenStyle := true,
     pomExtraSetting("akka-persistence-inmemory"),
     homepageSetting("akka-persistence-inmemory"),
@@ -40,11 +33,11 @@ def pomExtraSetting(name: String) = pomExtra :=
     def bintrayPackageLabelsSettings(labels: String*) = 
 	  bintrayPackageLabels := Seq("akka", "persistence") ++ labels
 
-    def bintrayPackageAttributesSettings(name: String) = bintrayPackageAttributes ~=
-	  (_ ++ Map(
-	    "website_url" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name")),
-	    "github_repo" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name.git")),
-	    "issue_tracker_url" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name.git/issues/"))
-	  )
-)
+    def bintrayPackageAttributesSettings(name: String) = {
+      bintrayPackageAttributes ~= (_ ++ Map(
+          "website_url" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name")),
+          "github_repo" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name.git")),
+          "issue_tracker_url" -> Seq(bintry.Attr.String(s"https://github.com/dnvriend/$name.git/issues/"))
+        ))
+    }
 }

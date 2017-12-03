@@ -17,11 +17,11 @@
 package akka.persistence.inmemory
 package extension
 
-import akka.actor.{Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded}
+import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded }
 import akka.event.LoggingReceive
 import akka.persistence.PersistentRepr
 import akka.persistence.inmemory.util.UUIDs
-import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
+import akka.persistence.query.{ NoOffset, Offset, Sequence, TimeBasedUUID }
 import akka.serialization.Serialization
 
 import scala.collection.immutable._

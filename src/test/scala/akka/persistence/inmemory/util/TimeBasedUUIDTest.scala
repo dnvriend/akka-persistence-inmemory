@@ -1,6 +1,6 @@
 package akka.persistence.inmemory.util
 
-import java.time.{OffsetDateTime, ZoneOffset}
+import java.time.{ OffsetDateTime, ZoneOffset }
 
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.query.TimeBasedUUID

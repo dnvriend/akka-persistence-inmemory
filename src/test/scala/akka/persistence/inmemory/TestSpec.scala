@@ -20,33 +20,33 @@ import java.text.SimpleDateFormat
 import java.util.UUID
 
 import akka.NotUsed
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import akka.event.{Logging, LoggingAdapter}
-import akka.persistence.inmemory.util.{ClasspathResources, UUIDs}
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.persistence.inmemory.util.{ ClasspathResources, UUIDs }
 import akka.persistence.query.TimeBasedUUID
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers }
 
 import scala.compat.Platform
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.util.Try
 
 abstract class TestSpec(config: Config) extends FlatSpec
-    with Matchers
-    with ScalaFutures
-    with Eventually
-    with ClasspathResources
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+  with Matchers
+  with ScalaFutures
+  with Eventually
+  with ClasspathResources
+  with BeforeAndAfterAll
+  with BeforeAndAfterEach {
 
   def this(config: String = "application.conf") = this(ConfigFactory.load(config))
 
