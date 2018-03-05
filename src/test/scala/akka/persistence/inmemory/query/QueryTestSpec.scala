@@ -163,7 +163,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     import akka.pattern.ask
     senderProbe = TestProbe()
     _writerUuid = UUID.randomUUID.toString
-    (StorageExtension(system).journalStorage ? ClearJournal).toTry should be a 'success
+    (StorageExtension(system).retrieveJournalStorage() ? ClearJournal).toTry should be a 'success
     super.beforeEach()
   }
 

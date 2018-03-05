@@ -16,19 +16,52 @@
 
 package akka.persistence.inmemory.extension
 
+import java.util.concurrent.ConcurrentHashMap
+
 import akka.actor._
 import akka.serialization.SerializationExtension
+import com.typesafe.config.Config
+
+import scala.concurrent.Future
 
 object StorageExtension extends ExtensionId[StorageExtensionImpl] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): StorageExtensionImpl = new StorageExtensionImpl()(system)
 
   override def lookup(): ExtensionId[_ <: Extension] = StorageExtension
+
+  def storageId(config: Config): String =
+    if (config.hasPath("storage-id")) config.getString("storage-id") else DefaultStorageId
+
+  final val DefaultStorageId = "Storage"
+
 }
 
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends Extension {
   val serialization = SerializationExtension(system)
 
-  val journalStorage: ActorRef = system.actorOf(Props(new InMemoryJournalStorage(serialization)), "JournalStorage")
+  private val journalStorages = new ConcurrentHashMap[String, ActorRef]()
+  private val snapshotStorages = new ConcurrentHashMap[String, ActorRef]()
 
-  val snapshotStorage: ActorRef = system.actorOf(Props(new InMemorySnapshotStorage), "SnapshotStorage")
+  private def retrieveStorage(storages: ConcurrentHashMap[String, ActorRef], name: String, props: Props, prefix: String): ActorRef = {
+    Option(storages.get(name)) match {
+      case Some(ref) =>
+        ref
+      case None =>
+        val ref = system.actorOf(props, prefix + name)
+        storages.put(name, ref)
+        ref
+    }
+  }
+
+  def retrieveJournalStorage(name: String = StorageExtension.DefaultStorageId): ActorRef = {
+    retrieveStorage(journalStorages, name, Props(new InMemoryJournalStorage(serialization)), "Journal")
+  }
+
+  def retrieveSnapshotStorage(name: String = StorageExtension.DefaultStorageId): ActorRef = {
+    retrieveStorage(snapshotStorages, name, Props(new InMemorySnapshotStorage), "Snapshot")
+  }
+
+  val defaultJournalStorage = retrieveJournalStorage()
+  val defaultSnapshotStorate = retrieveSnapshotStorage()
+
 }

@@ -43,7 +43,8 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
-  val journal: ActorRef = StorageExtension(system).journalStorage
+  val storageId = StorageExtension.storageId(config)
+  val journal: ActorRef = StorageExtension(system).retrieveJournalStorage(storageId)
 
   private def serialize(persistentRepr: PersistentRepr): Try[(Array[Byte], Set[String])] = persistentRepr.payload match {
     case Tagged(payload, tags) =>
