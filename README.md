@@ -294,6 +294,31 @@ The returned event stream contains only events that correspond to the given tag,
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
 from the tagged event stream. 
 
+## Multiple inmemory journals in one process.
+
+  Sometimes it is usefull to have multiple different inmemory journals in one actor system for unit tests. It is possible to define in configuration a few journals with different 'storage-id' option.
+```
+inmemory-journal-1 {
+  class = "akka.persistence.inmemory.journal.InMemoryAsyncWriteJournal"
+  storage-id = "S1"
+  ...
+}
+
+inmemory-snapshot-store-1 {
+  class = "akka.persistence.inmemory.snapshot.InMemorySnapshotStore"
+  storage-id = "S1"
+  ...
+}
+
+inmemory-journal-2 {
+  class = "akka.persistence.inmemory.journal.InMemoryAsyncWriteJournal"
+  storage-id = "S2"
+  ...
+}
+
+```
+ Here, persistend actors, binded to inmemory-journal-1 and inmemory-journal-2 will have different underlying storage.
+
 ## Changelog
 ### 2.4.18.2 (2017-12-03)
   - Merged #42 "Scala 2.12.4 support" by [sullis](https://github.com/sullis), thanks!
