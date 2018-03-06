@@ -1,6 +1,6 @@
 package akka.persistence.inmemory.multistorage
 
-import akka.actor.Props
+import akka.actor.{ ActorRef, Props }
 import akka.persistence.{ PersistentActor, SnapshotOffer }
 import akka.persistence.inmemory.TestSpec
 import akka.testkit.TestProbe
@@ -59,24 +59,21 @@ class MultistorageTest extends TestSpec(ConfigFactory.load("multistorage.conf"))
 
   it should "run actors in different journals independed" in {
 
-    val a1 = system.actorOf(Props(new S1TestActor("aaa")), "1")
-    val a2 = system.actorOf(Props(new S2TestActor("aaa")), "2")
+    val a1 = system.actorOf(Props(new S1TestActor("aaa")), "a1")
+    val a2 = system.actorOf(Props(new S2TestActor("aaa")), "a2")
 
     a1 ! AddCommand(1)
     a2 ! AddCommand(2)
     a1 ! AddCommand(3)
     a2 ! AddCommand(4)
 
-    val tp = TestProbe()
-    tp.watch(a1)
-    a1.tell(StopCommand, tp.ref)
-    tp.expectTerminated(a1)
-    tp.watch(a2)
-    a2.tell(StopCommand, tp.ref)
-    tp.expectTerminated(a2)
+    shutdownActors(a1, a2)
 
-    val a1n = system.actorOf(Props(new S1TestActor("aaa")), "1")
-    val a2n = system.actorOf(Props(new S2TestActor("aaa")), "2")
+    // not reuse names.  In real life, supervisor will shure that
+    //  actors are died and will create same with the same names.
+    // In test - we just create actor with different names and same persistenceId
+    val a1n = system.actorOf(Props(new S1TestActor("aaa")), "a1n")
+    val a2n = system.actorOf(Props(new S2TestActor("aaa")), "a2n")
 
     val a1l = TestProbe()
     val a2l = TestProbe()
@@ -87,8 +84,7 @@ class MultistorageTest extends TestSpec(ConfigFactory.load("multistorage.conf"))
     a1l.expectMsg(Set(1, 3))
     a2l.expectMsg(Set(2, 4))
 
-    a1n ! StopCommand
-    a2n ! StopCommand
+    shutdownActors(a1n, a2n)
 
   }
 
@@ -104,16 +100,10 @@ class MultistorageTest extends TestSpec(ConfigFactory.load("multistorage.conf"))
     b1 ! SnapshotCommand
     b2 ! SnapshotCommand
 
-    val tp = TestProbe()
-    tp.watch(b1)
-    b1.tell(StopCommand, tp.ref)
-    tp.expectTerminated(b1)
-    tp.watch(b2)
-    b2.tell(StopCommand, tp.ref)
-    tp.expectTerminated(b2)
+    shutdownActors(b1, b2)
 
-    val b1n = system.actorOf(Props(new S1TestActor("bbb")), "b1")
-    val b2n = system.actorOf(Props(new S2TestActor("bbb")), "b2")
+    val b1n = system.actorOf(Props(new S1TestActor("bbb")), "b1n")
+    val b2n = system.actorOf(Props(new S2TestActor("bbb")), "b2n")
 
     val b1l = TestProbe()
     val b2l = TestProbe()
@@ -124,6 +114,17 @@ class MultistorageTest extends TestSpec(ConfigFactory.load("multistorage.conf"))
     b1l.expectMsg(Set(5, 7))
     b2l.expectMsg(Set(6, 8))
 
+    shutdownActors(b1n, b2n)
+
+  }
+
+  def shutdownActors(refs: ActorRef*): Unit = {
+    val tp = TestProbe()
+    for (ref <- refs) {
+      tp.watch(ref)
+      ref ! StopCommand
+      tp.expectTerminated(ref)
+    }
   }
 
 }
