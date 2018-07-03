@@ -28,11 +28,18 @@ object InMemorySnapshotStorage {
   final case class DeleteUpToMaxSequenceNr(persistenceId: String, maxSequenceNr: Long) extends SnapshotCommand
   final case class DeleteUpToMaxTimestamp(persistenceId: String, maxTimestamp: Long) extends SnapshotCommand
   final case class DeleteUpToMaxSequenceNrAndMaxTimestamp(persistenceId: String, maxSequenceNr: Long, maxTimestamp: Long) extends SnapshotCommand
-  case object ClearSnapshots extends SnapshotCommand
   final case class Save(persistenceId: String, sequenceNr: Long, timestamp: Long, snapshot: Array[Byte]) extends SnapshotCommand
   final case class SnapshotForMaxSequenceNr(persistenceId: String, sequenceNr: Long) extends SnapshotCommand
   final case class SnapshotForMaxSequenceNrAndMaxTimestamp(persistenceId: String, sequenceNr: Long, timestamp: Long) extends SnapshotCommand
   final case class SnapshotForMaxTimestamp(persistenceId: String, timestamp: Long) extends SnapshotCommand
+
+  sealed abstract class ClearSnapshots
+  case object ClearSnapshots extends ClearSnapshots with SnapshotCommand
+
+  /**
+    * Java API
+    */
+  def clearSnapshots(): ClearSnapshots = ClearSnapshots
 }
 
 class InMemorySnapshotStorage extends Actor with ActorLogging {

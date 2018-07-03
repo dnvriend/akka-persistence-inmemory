@@ -92,6 +92,20 @@ trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
 }
 ```
 
+From Java:
+
+```java
+ActorRef actorRef = extension.journalStorage();
+
+InMemoryJournalStorage.ClearJournal clearJournal = InMemoryJournalStorage.clearJournal();
+tp.send(actorRef, clearJournal);
+tp.expectMsg(new Status.Success(""));
+
+InMemorySnapshotStorage.ClearSnapshots clearSnapshots = InMemorySnapshotStorage.clearSnapshots();
+tp.send(actorRef, clearSnapshots);
+tp.expectMsg(new Status.Success(""));
+```
+
 ## offset-mode
 akka-persistence-query introduces `akka.persistence.query.Offset`, an ADT that defines `akka.persistence.query.NoOffset`,
 `akka.persistence.query.Sequence` and `akka.persistence.query.TimeBasedUUID`. These offsets can be used when using the
