@@ -63,13 +63,13 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
   private val maxBufferSize: Int = Try(config.getString("max-buffer-size").toInt).getOrElse(config.getInt("max-buffer-size"))
 
   // As event adapters are *no* first class citizins in akka-persistence-query
-  // this workaround has to be implemented. 
+  // this workaround has to be implemented.
   // see akka ticket: #18050 and #21065
   // and akka-persistence-cassandra ticket: #116
-  // 
+  //
   // basically registering the used write-plugin in the inmemory-read-journal configuration section
   // then looking up that plugin-id and getting configured event adapters for that write plugin id
-  // then 
+  // then
   private val writePluginId = config.getString("write-plugin")
   private val eventAdapters = Persistence(system).adaptersFor(writePluginId)
 

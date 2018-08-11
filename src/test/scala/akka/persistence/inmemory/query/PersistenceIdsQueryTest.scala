@@ -22,35 +22,35 @@ class PersistenceIdsQueryTest extends QueryTestSpec {
   it should "not terminate the stream when there are no pids" in
     withPersistenceIds() { tp =>
       tp.request(Long.MaxValue)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
       tp.cancel()
     }
 
   it should "find persistenceIds" in {
     withPersistenceIds() { tp =>
       tp.request(Long.MaxValue)
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(1, 1, "my-1")
       tp.expectNext("my-1")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(1, 1, "my-2")
       tp.expectNext("my-2")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(1, 1, "my-3")
       tp.expectNext("my-3")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(2, 10, "my-1")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(2, 10, "my-2")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       persist(2, 10, "my-3")
-      tp.expectNoMsg(100.millis)
+      tp.expectNoMessage(100.millis)
 
       tp.cancel()
     }
