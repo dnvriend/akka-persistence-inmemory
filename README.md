@@ -295,6 +295,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.5.1.2
+
+
 ### 2.4.18.2 (2017-12-03)
   - Merged #42 "Scala 2.12.4 support" by [sullis](https://github.com/sullis), thanks!
 
