@@ -1,8 +1,7 @@
 import sbt._
 import sbt.Keys._
+import de.heikoseeberger.sbtheader.HeaderPlugin
 import de.heikoseeberger.sbtheader._
-import de.heikoseeberger.sbtheader.HeaderKey._
-import de.heikoseeberger.sbtheader.license.Apache2_0
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
@@ -46,9 +45,9 @@ import scalariform.formatter.preferences.FormattingPreferences
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  final val AkkaVersion = "2.5.1"
-  final val ScalazVersion = "7.2.12"
-  final val ScalaTestVersion = "3.0.3"
+  final val AkkaVersion = "2.5.14"
+  final val ScalazVersion = "7.2.25"
+  final val ScalaTestVersion = "3.0.5"
   final val LogbackVersion = "1.2.3"
 
   final val formattingPreferences: FormattingPreferences = {
@@ -56,10 +55,10 @@ object ProjectAutoPlugin extends AutoPlugin {
     FormattingPreferences()
       .setPreference(AlignSingleLineCaseStatements, true)
       .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 100)
-      .setPreference(DoubleIndentClassDeclaration, true)
+      .setPreference(DoubleIndentConstructorArguments, true)
   }
 
-  override val requires = com.typesafe.sbt.SbtScalariform
+  override val requires = com.typesafe.sbt.SbtScalariform && HeaderPlugin
 
   override val trigger: PluginTrigger = allRequirements
 
@@ -67,6 +66,8 @@ object ProjectAutoPlugin extends AutoPlugin {
   }
 
   import autoImport._
+  import HeaderPlugin.autoImport._
+  import SbtScalariform.autoImport._
 
   override lazy val projectSettings: Seq[Setting[_]] = SbtScalariform.scalariformSettings ++ Seq(
     name := "akka-persistence-inmemory",
@@ -75,10 +76,12 @@ object ProjectAutoPlugin extends AutoPlugin {
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
     startYear := Some(2014),
 
+    scalariformAutoformat := false,
+
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
-    scalaVersion := "2.12.2",
-    crossScalaVersions := Seq("2.11.11", "2.12.2"),
+    scalaVersion := "2.12.6",
+    crossScalaVersions := Seq("2.11.11", "2.12.6"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
@@ -105,10 +108,7 @@ object ProjectAutoPlugin extends AutoPlugin {
       // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
 
-    headers := headers.value ++ Map(
-      "scala" -> Apache2_0("2017", "Dennis Vriend"),
-      "conf" -> Apache2_0("2017", "Dennis Vriend", "#")
-    ),
+    headerLicense := Some(HeaderLicense.ALv2("2017", "Dennis Vriend")),
 
     resolvers += Resolver.typesafeRepo("releases"),
     resolvers += Resolver.jcenterRepo,
