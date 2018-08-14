@@ -295,11 +295,12 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
-### 2.5.1.2
 
+### 2.5.1.2 (2018-08-14)
+  - Merged PR #53 "Bump dependencies" by [Artsiom Miklushou](https://github.com/mikla), thanks!
 
 ### 2.4.18.2 (2017-12-03)
-  - Merged #42 "Scala 2.12.4 support" by [sullis](https://github.com/sullis), thanks!
+  - Merged PR #42 "Scala 2.12.4 support" by [sullis](https://github.com/sullis), thanks!
 
 ### 2.5.1.1 (2017-05-23)
   - Fix for issue #35 "no serializer for internal plugin messages"
