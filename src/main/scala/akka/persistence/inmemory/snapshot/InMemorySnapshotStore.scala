@@ -42,7 +42,7 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
-  val snapshots: ActorRef = StorageExtension(system).snapshotStorage
+  val snapshots: ActorRef = StorageExtension(system).snapshotStorage(StorageExtension.keyspaceFrom(config))
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     val SnapshotEntryOption: Future[Option[snapshotEntry]] = criteria match {
