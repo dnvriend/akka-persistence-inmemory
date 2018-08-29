@@ -45,7 +45,7 @@ import scalariform.formatter.preferences.FormattingPreferences
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  final val AkkaVersion = "2.5.14"
+  final val AkkaVersion = "2.5.15"
   final val ScalazVersion = "7.2.25"
   final val ScalaTestVersion = "3.0.5"
   final val LogbackVersion = "1.2.3"
