@@ -19,7 +19,7 @@ resolvers += Resolver.jcenterRepo
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1"
 
 // akka 2.4.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.18.2"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.0"
 ```
 
 ## Contribution policy
