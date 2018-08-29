@@ -309,6 +309,9 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.5.15.0 (2018-08-29)
+  - Applied PR #50 "Fix for Akka Typed Persistence" by [Lukasz Sanek](https://github.com/s4nk), thanks!
+
 ### 2.4.20.0 (2018-08-29)
   - Merged PR #50 "Fix for Akka Typed Persistence" by [Lukasz Sanek](https://github.com/s4nk), thanks!
   - Merged PR #52 "Provide nice Java API for clearing journal" by [Christopher Batey](https://github.com/chbatey), thanks!
