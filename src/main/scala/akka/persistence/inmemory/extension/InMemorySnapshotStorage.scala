@@ -37,8 +37,8 @@ object InMemorySnapshotStorage {
   case object ClearSnapshots extends ClearSnapshots with SnapshotCommand
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   def clearSnapshots(): ClearSnapshots = ClearSnapshots
 }
 
