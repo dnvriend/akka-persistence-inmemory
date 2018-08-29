@@ -23,6 +23,11 @@ object StorageExtension extends ExtensionId[StorageExtensionImpl] with Extension
   override def createExtension(system: ExtendedActorSystem): StorageExtensionImpl = new StorageExtensionImpl()(system)
 
   override def lookup(): ExtensionId[_ <: Extension] = StorageExtension
+
+  /**
+   * Java API
+   */
+  override def get(as: ActorSystem): StorageExtensionImpl = apply(as)
 }
 
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends Extension {

@@ -38,7 +38,14 @@ object InMemoryJournalStorage {
   final case class Delete(persistenceId: String, toSequenceNr: Long) extends JournalCommand
   final case class GetJournalEntriesExceptDeleted(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long) extends JournalCommand
   final case class GetAllJournalEntries(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long) extends JournalCommand
-  case object ClearJournal extends JournalCommand
+
+  /**
+   * Java API
+   */
+  def clearJournal(): ClearJournal = ClearJournal
+
+  sealed abstract class ClearJournal
+  case object ClearJournal extends ClearJournal with JournalCommand
 
   def getPersistenceId(prod: (String, Vector[JournalEntry])): String = prod._1
   def getEntries(prod: (String, Vector[JournalEntry])): Vector[JournalEntry] = prod._2

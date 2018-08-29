@@ -19,8 +19,8 @@ object ProjectSettings extends AutoPlugin {
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
     startYear := Some(2014),
 
-    scalaVersion := "2.12.4",
-    crossScalaVersions := Seq("2.11.11", "2.12.4"),
+    scalaVersion := "2.12.6",
+    crossScalaVersions := Seq("2.11.11", "2.12.6"),
     crossVersion := CrossVersion.binary,
 
     licenses := Seq(("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))),
