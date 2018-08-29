@@ -28,7 +28,7 @@ object StorageExtension extends ExtensionId[StorageExtensionImpl] with Extension
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends Extension {
   val serialization = SerializationExtension(system)
 
-  val journalStorage: ActorRef = system.actorOf(Props(new InMemoryJournalStorage(serialization)), "JournalStorage")
+  val journalStorage: ActorRef = system.systemActorOf(Props(new InMemoryJournalStorage(serialization)), "JournalStorage")
 
-  val snapshotStorage: ActorRef = system.actorOf(Props(new InMemorySnapshotStorage), "SnapshotStorage")
+  val snapshotStorage: ActorRef = system.systemActorOf(Props(new InMemorySnapshotStorage), "SnapshotStorage")
 }
