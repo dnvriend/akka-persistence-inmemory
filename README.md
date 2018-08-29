@@ -295,6 +295,8 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.4.18.3 (NOT YET RELEASED)
+  - Merged PR #50 "Fix for Akka Typed Persistence" by [Lukasz Sanek](https://github.com/s4nk), thanks!
 
 ### 2.5.1.2 (2018-08-14)
   - Merged PR #53 "Bump dependencies" by [Artsiom Miklushou](https://github.com/mikla), thanks!
