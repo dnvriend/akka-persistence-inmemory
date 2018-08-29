@@ -16,7 +16,7 @@ Add the following to your `build.sbt`:
 resolvers += Resolver.jcenterRepo
 
 // akka 2.5.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.1.1"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.0"
 
 // akka 2.4.x
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.0"
