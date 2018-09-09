@@ -16,7 +16,7 @@ Add the following to your `build.sbt`:
 resolvers += Resolver.jcenterRepo
 
 // akka 2.5.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.1"
 
 // akka 2.4.x
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.0"
@@ -309,8 +309,12 @@ The same stream elements (in same order) are returned for multiple executions of
 from the tagged event stream. 
 
 ## Changelog
+### 2.5.15.1 (2018-09-09)
+  - Java 8 binary release
+
 ### 2.5.15.0 (2018-08-29)
   - Applied PR #50 "Fix for Akka Typed Persistence" by [Lukasz Sanek](https://github.com/s4nk), thanks!
+  - Java 10 binary release
 
 ### 2.4.20.0 (2018-08-29)
   - Merged PR #50 "Fix for Akka Typed Persistence" by [Lukasz Sanek](https://github.com/s4nk), thanks!
