@@ -308,6 +308,17 @@ The returned event stream contains only events that correspond to the given tag,
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
 from the tagged event stream. 
 
+## Storage extension
+You can change the default storage using this configuration.
+```
+# the storage in use
+inmemory-storage {
+  # default storage using direct inmemory journals
+  class = "akka.persistence.inmemory.extension.StorageExtensionImpl"
+}
+```
+
+
 ## Changelog
 ### 2.5.15.1 (2018-09-09)
   - Java 8 binary release

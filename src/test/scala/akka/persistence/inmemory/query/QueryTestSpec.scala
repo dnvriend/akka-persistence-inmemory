@@ -22,7 +22,7 @@ import akka.actor.ActorRef
 import akka.persistence.JournalProtocol.{ DeleteMessagesTo, WriteMessageSuccess, WriteMessages, WriteMessagesSuccessful }
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.extension.InMemoryJournalStorage.ClearJournal
-import akka.persistence.inmemory.extension.StorageExtension
+import akka.persistence.inmemory.extension.StorageExtensionProvider
 import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
 import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, PersistenceQuery }
@@ -163,7 +163,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     import akka.pattern.ask
     senderProbe = TestProbe()
     _writerUuid = UUID.randomUUID.toString
-    (StorageExtension(system).journalStorage ? ClearJournal).toTry should be a 'success
+    (StorageExtensionProvider(system).journalStorage ? ClearJournal).toTry should be a 'success
     super.beforeEach()
   }
 
