@@ -17,11 +17,12 @@
 package akka.persistence.inmemory.extension
 
 import akka.actor._
+import com.typesafe.config.Config
 
 trait StorageExtension extends Extension {
-  def journalStorage: ActorRef
+  def journalStorage(config: Config): ActorRef
 
-  def snapshotStorage: ActorRef
+  def snapshotStorage(config: Config): ActorRef
 }
 
 object StorageExtensionProvider extends ExtensionId[StorageExtension] with ExtensionIdProvider {

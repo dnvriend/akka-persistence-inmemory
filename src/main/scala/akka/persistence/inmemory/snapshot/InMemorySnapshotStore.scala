@@ -43,7 +43,7 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
-  val snapshots: ActorRef = StorageExtensionProvider(system).snapshotStorage
+  val snapshots: ActorRef = StorageExtensionProvider(system).snapshotStorage(config)
 
   def deserialize(snapshotEntry: SnapshotEntry): Future[Option[Snapshot]] =
     Future.fromTry(serialization.deserialize(snapshotEntry.snapshot, classOf[Snapshot])).map(Option(_))

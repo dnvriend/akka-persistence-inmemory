@@ -14,7 +14,7 @@ public class StorageExtensionCompileOnlyTest {
         StorageExtension extension = StorageExtensionProvider.get(actorSystem);
 
         InMemoryJournalStorage.ClearJournal clearJournal = InMemoryJournalStorage.clearJournal();
-        ActorRef actorRef = extension.journalStorage();
+        ActorRef actorRef = extension.journalStorage(actorSystem.settings().config());
         tp.send(actorRef, clearJournal);
         tp.expectMsg(new Status.Success(""));
 
