@@ -13,7 +13,7 @@ Add the following to your `build.sbt`:
 
 ```scala
 // the library is available in Bintray repository
-resolvers += "dnvriend" at "http://dl.bintray.com/dnvriend/maven"
+resolvers += Resolver.bintrayRepo("dnvriend", "maven")
 
 // akka 2.5.x
 libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.1"
