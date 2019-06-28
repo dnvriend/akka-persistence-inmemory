@@ -5,8 +5,8 @@ import com.typesafe.sbt.SbtScalariform
 
 object ProjectSettings extends AutoPlugin {
   final val AkkaVersion = "2.4.20"
-  final val ScalazVersion = "7.2.17"
-  final val ScalaTestVersion = "3.0.4"
+  final val ScalazVersion = "7.2.28"
+  final val ScalaTestVersion = "3.0.8"
   final val LogbackVersion = "1.2.3"
 
   override def requires = plugins.JvmPlugin && SbtScalariform
@@ -20,7 +20,7 @@ object ProjectSettings extends AutoPlugin {
     startYear := Some(2014),
 
     scalaVersion := "2.12.6",
-    crossScalaVersions := Seq("2.11.11", "2.12.6"),
+    crossScalaVersions := Seq("2.11.12", "2.12.8"),
     crossVersion := CrossVersion.binary,
 
     licenses := Seq(("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))),
