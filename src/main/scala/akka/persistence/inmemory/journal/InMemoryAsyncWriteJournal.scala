@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.ask
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtension }
+import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtensionProvider }
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.serialization.SerializationExtension
@@ -43,7 +43,7 @@ class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
-  val journal: ActorRef = StorageExtension(system).journalStorage
+  val journal: ActorRef = StorageExtensionProvider(system).journalStorage(config)
 
   private def serialize(persistentRepr: PersistentRepr): Try[(Array[Byte], Set[String])] = persistentRepr.payload match {
     case Tagged(payload, tags) =>

@@ -3,10 +3,7 @@ package akka.persistence.inmemory;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Status;
-import akka.persistence.inmemory.extension.InMemoryJournalStorage;
-import akka.persistence.inmemory.extension.InMemorySnapshotStorage;
-import akka.persistence.inmemory.extension.StorageExtension;
-import akka.persistence.inmemory.extension.StorageExtensionImpl;
+import akka.persistence.inmemory.extension.*;
 import akka.testkit.TestProbe;
 
 public class StorageExtensionCompileOnlyTest {
@@ -14,10 +11,10 @@ public class StorageExtensionCompileOnlyTest {
     public void shouldHaveANiceJavaAPI() {
         ActorSystem actorSystem = ActorSystem.create();
         TestProbe tp = new TestProbe(actorSystem);
-        StorageExtensionImpl extension = StorageExtension.get(actorSystem);
+        StorageExtension extension = StorageExtensionProvider.get(actorSystem);
 
         InMemoryJournalStorage.ClearJournal clearJournal = InMemoryJournalStorage.clearJournal();
-        ActorRef actorRef = extension.journalStorage();
+        ActorRef actorRef = extension.journalStorage(actorSystem.settings().config());
         tp.send(actorRef, clearJournal);
         tp.expectMsg(new Status.Success(""));
 

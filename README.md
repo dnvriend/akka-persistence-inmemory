@@ -308,6 +308,20 @@ The returned event stream contains only events that correspond to the given tag,
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
 from the tagged event stream. 
 
+## Storage extension
+You can change the default storage to store a journal by defined property keys using this configuration. 
+This can be useful to configure a behavior similar to cassandra key spaces.
+```
+# the storage in use
+inmemory-storage {
+  # storage using inmemory journal for each different value for the configured property keys
+  class = "akka.persistence.inmemory.extension.StorageExtensionByProperty"
+  # property keys in journal plugin configuration, for each different value a own journal will be stored
+  property-keys = ["keyspace"]
+}
+```
+
+
 ## Changelog
 ### 2.5.15.1 (2018-09-09)
   - Java 8 binary release
