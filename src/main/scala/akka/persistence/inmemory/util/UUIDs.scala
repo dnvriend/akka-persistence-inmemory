@@ -2,7 +2,6 @@ package akka.persistence.inmemory.util
 
 import java.util.UUID
 
-import scala.compat.Platform
 import scala.util.Random
 
 object UUIDs {
@@ -18,7 +17,7 @@ object UUIDs {
   }
 
   final val ClockSeqAndNode: Long = {
-    val clock: Long = new Random(Platform.currentTime).nextLong()
+    val clock: Long = new Random(System.currentTimeMillis()).nextLong()
     0L |
       (clock & 0x0000000000003FFFL) << 48 |
       0x8000000000000000L |

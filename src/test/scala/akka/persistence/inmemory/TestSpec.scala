@@ -22,7 +22,6 @@ import java.util.UUID
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.event.{Logging, LoggingAdapter}
-import akka.persistence.inmemory.util.ClasspathResources
 import akka.persistence.query.TimeBasedUUID
 import akka.serialization.SerializationExtension
 import akka.stream.scaladsl.Source
@@ -45,7 +44,6 @@ abstract class TestSpec(config: Config) extends FlatSpec
     with Matchers
     with ScalaFutures
     with Eventually
-    with ClasspathResources
     with BeforeAndAfterAll
     with BeforeAndAfterEach {
 
@@ -59,7 +57,7 @@ abstract class TestSpec(config: Config) extends FlatSpec
   implicit val timeout = Timeout(60.minutes)
   val serialization = SerializationExtension(system)
 
-  def now: Long = Platform.currentTime
+  def now: Long = System.currentTimeMillis()
   def getNowUUID: TimeBasedUUID = TimeBasedUUID(UUIDs.timeBased())
   def getTimeBasedUUIDFromTimestamp(timestamp: Long): TimeBasedUUID =
     TimeBasedUUID(UUIDs.startOf(timestamp))

@@ -18,16 +18,16 @@ package akka.persistence
 
 import java.util.UUID
 
+import akka.persistence.inmemory.bridge.CollectionsBridge
 import akka.persistence.inmemory.util.UUIDs
 import akka.persistence.query.TimeBasedUUID
 
 import scala.collection.immutable._
-import scala.compat.Platform
 
-package object inmemory {
+package object inmemory extends CollectionsBridge {
   type Seq[A] = scala.collection.immutable.Seq[A]
 
-  def now: Long = Platform.currentTime
+  def now: Long = System.currentTimeMillis()
   def nowUuid: UUID = UUIDs.timeBased()
   def getTimeBasedUUID: TimeBasedUUID = TimeBasedUUID(nowUuid)
 
