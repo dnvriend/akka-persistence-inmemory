@@ -32,7 +32,7 @@ class QueryPerfSpec extends QueryTestSpec {
 
   def allEventsFromJournal: Seq[Any] = {
     val start = Platform.currentTime
-    val xs = readJournal.currentEventsByPersistenceId("pid", 0, Long.MaxValue)
+    val xs = defaultReadJournal.currentEventsByPersistenceId("pid", 0, Long.MaxValue)
       .runWith(Sink.seq).futureValue
     val end = Platform.currentTime
     info(s"currrentEventsByPersistenceId for ${xs.size} events took: ${end - start} ms")
@@ -41,7 +41,7 @@ class QueryPerfSpec extends QueryTestSpec {
 
   def eventsFromJournal(numberOfEvents: Int): Seq[Any] = {
     val start = Platform.currentTime
-    val xs = readJournal.eventsByPersistenceId("pid", 0, Long.MaxValue)
+    val xs = defaultReadJournal.eventsByPersistenceId("pid", 0, Long.MaxValue)
       .take(numberOfEvents)
       .runWith(Sink.seq).futureValue
     val end = Platform.currentTime
