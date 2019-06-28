@@ -16,10 +16,10 @@ Add the following to your `build.sbt`:
 resolvers += Resolver.bintrayRepo("dnvriend", "maven")
 
 // akka 2.5.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.1"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"
 
 // akka 2.4.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.0"
+libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.1"
 ```
 
 ## Contribution policy
@@ -323,6 +323,10 @@ inmemory-storage {
 
 
 ## Changelog
+### 2.5.15.2 (2019-06-28)
+  - Scala 2.11.x, 2.12.x, 2.13.x support
+  - Akka 2.5.15 -> 2.5.23
+
 ### 2.4.20.1 (2019-06-28)
   - Merged PR #59 "Pluggable storage" by [Beat Sager](https://github.com/BeatSager), thanks!
 

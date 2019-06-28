@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 #!/bin/bash
-sbt clean test
+sbt clean +test
