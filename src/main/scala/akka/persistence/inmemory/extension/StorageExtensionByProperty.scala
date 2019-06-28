@@ -16,7 +16,6 @@
 
 package akka.persistence.inmemory.extension
 
-
 import akka.actor._
 import akka.serialization.SerializationExtension
 import com.typesafe.config.Config

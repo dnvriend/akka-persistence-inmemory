@@ -1,6 +1,6 @@
 package akka.persistence.inmemory.extension
 
-import akka.actor.{ActorRef, ExtendedActorSystem, Props}
+import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
 
 import scala.collection.mutable
 

@@ -323,6 +323,9 @@ inmemory-storage {
 
 
 ## Changelog
+### 2.4.20.1 (2019-06-28)
+  - Merged PR #59 "Pluggable storage" by [Beat Sager](https://github.com/BeatSager), thanks!
+
 ### 2.5.15.1 (2018-09-09)
   - Java 8 binary release
 

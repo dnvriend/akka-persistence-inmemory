@@ -37,9 +37,8 @@ object StorageExtensionProvider extends ExtensionId[StorageExtension] with Exten
   override def lookup(): ExtensionId[_ <: Extension] = StorageExtensionProvider
 
   /**
-    * Java API
-    */
+   * Java API
+   */
   override def get(as: ActorSystem): StorageExtension = apply(as)
 }
-
 

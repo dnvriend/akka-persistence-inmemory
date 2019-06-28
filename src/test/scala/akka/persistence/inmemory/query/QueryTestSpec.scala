@@ -19,21 +19,21 @@ package akka.persistence.inmemory.query
 import java.util.UUID
 
 import akka.actor.ActorRef
-import akka.persistence.JournalProtocol.{DeleteMessagesTo, WriteMessageSuccess, WriteMessages, WriteMessagesSuccessful}
+import akka.persistence.JournalProtocol.{ DeleteMessagesTo, WriteMessageSuccess, WriteMessages, WriteMessagesSuccessful }
 import akka.persistence.inmemory.TestSpec
 import akka.persistence.inmemory.extension.InMemoryJournalStorage.ClearJournal
 import akka.persistence.inmemory.extension.StorageExtensionProvider
 import akka.persistence.journal.Tagged
 import akka.persistence.query.scaladsl._
-import akka.persistence.query.{EventEnvelope, EventEnvelope2, Offset, PersistenceQuery}
-import akka.persistence.{DeleteMessagesSuccess, _}
+import akka.persistence.query.{ EventEnvelope, EventEnvelope2, Offset, PersistenceQuery }
+import akka.persistence.{ DeleteMessagesSuccess, _ }
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 
 import scala.collection.immutable.Seq
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{ FiniteDuration, _ }
 
 abstract class QueryTestSpec(config: String = "application.conf") extends TestSpec(config) {
 
@@ -103,7 +103,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
    * Persists a single event for a persistenceId with optionally
    * a number of tags.
    */
-  def persist(pid: String, tags: String*)(implicit journal : ActorRef): String = {
+  def persist(pid: String, tags: String*)(implicit journal: ActorRef): String = {
     writeMessages(journal, 1, 1, pid, senderProbe.ref, writerUuid, tags: _*)
     pid
   }
@@ -115,12 +115,12 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
    * persist a single event with seqno 3. The value associated with the
    * event is 'a-seqno' eg. persist(3, 3, pid, tags) will store value 'a-3'.
    */
-  def persist(from: Int, to: Int, pid: String, tags: String*)(implicit journal : ActorRef): String = {
+  def persist(from: Int, to: Int, pid: String, tags: String*)(implicit journal: ActorRef): String = {
     writeMessages(journal, from, to, pid, senderProbe.ref, writerUuid, tags: _*)
     pid
   }
 
-  private def writeMessages(journal: ActorRef ,fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String, tags: String*): Unit = {
+  private def writeMessages(journal: ActorRef, fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String, tags: String*): Unit = {
     def persistentRepr(sequenceNr: Long) =
       PersistentRepr(
         payload = if (tags.isEmpty) s"a-$sequenceNr" else Tagged(s"a-$sequenceNr", Set(tags: _*)),

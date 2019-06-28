@@ -1,7 +1,7 @@
 package akka.persistence.inmemory.extension
 
-import akka.actor.{ActorRef, ExtendedActorSystem, Props}
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.serialization.{ Serialization, SerializationExtension }
 import com.typesafe.config.Config
 
 class StorageExtensionImpl()(implicit val system: ExtendedActorSystem) extends StorageExtension with ActorSingletonSupport {
