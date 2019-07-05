@@ -18,6 +18,7 @@ package akka.persistence.inmemory
 package query
 package scaladsl
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
@@ -137,7 +138,7 @@ class InMemoryReadJournal(config: Config)(implicit val system: ExtendedActorSyst
       def nextFromOffset(xs: Seq[EventEnvelope]): Offset = {
         if (xs.isEmpty) from else xs.last.offset match {
           case Sequence(n)         => Sequence(n)
-          case TimeBasedUUID(time) => TimeBasedUUID(UUIDs.startOf(UUIDs.unixTimestamp(time) + 1))
+          case TimeBasedUUID(time) => TimeBasedUUID(new UUID(UUIDs.makeMSB(time.timestamp() + 1), UUIDs.MIN_CLOCK_SEQ_AND_NODE))
         }
       }
       ticker.flatMapConcat(_ => currentEventsByTag(tag, from)
