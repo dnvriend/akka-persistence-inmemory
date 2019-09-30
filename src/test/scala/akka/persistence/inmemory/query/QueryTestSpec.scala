@@ -54,14 +54,14 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
   implicit lazy val defaultJournal: ActorRef = Persistence(system).journalFor("inmemory-journal")
 
   implicit lazy val defaultReadJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
-    .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with PersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with EventsByPersistenceIdQuery with EventsByTagQuery]
+      .asInstanceOf[ReadJournal with CurrentPersistenceIdsQuery with PersistenceIdsQuery with CurrentEventsByPersistenceIdQuery with CurrentEventsByTagQuery with EventsByPersistenceIdQuery with EventsByTagQuery]
 
   def withCurrentPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit)(implicit readJournal: CurrentPersistenceIdsQuery): Unit = {
     val tp = readJournal.currentPersistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
 
-  def withPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit)(implicit readJournal: AllPersistenceIdsQuery): Unit = {
+  def withPersistenceIds(within: FiniteDuration = 10.seconds)(f: TestSubscriber.Probe[String] => Unit)(implicit readJournal: PersistenceIdsQuery): Unit = {
     val tp = readJournal.persistenceIds().runWith(TestSink.probe[String])
     tp.within(within)(f(tp))
   }
@@ -81,19 +81,19 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     tp.within(within)(f(tp))
   }
 
-  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope] => Unit): Unit = {
+  def withEventsByTag(within: FiniteDuration = 10.seconds)(tag: String, offset: Offset)(f: TestSubscriber.Probe[EventEnvelope] => Unit)(implicit readJournal: EventsByTagQuery): Unit = {
     val tp = readJournal.eventsByTag(tag, offset).runWith(TestSink.probe[EventEnvelope])
     tp.within(within)(f(tp))
   }
 
-  def currentEventsByTagAsList(tag: String, offset: Offset): List[EventEnvelope] =
+  def currentEventsByTagAsList(tag: String, offset: Offset)(implicit readJournal: CurrentEventsByTagQuery): List[EventEnvelope] =
     readJournal.currentEventsByTag(tag, offset).runWith(Sink.seq).futureValue.toList
 
   /**
    * Persists a single event for a persistenceId with optionally
    * a number of tags.
    */
-  def persist(pid: String, tags: String*)(implicit journal : ActorRef): String = {
+  def persist(pid: String, tags: String*)(implicit journal: ActorRef): String = {
     writeMessages(journal, 1, 1, pid, senderProbe.ref, writerUuid, tags: _*)
     pid
   }
@@ -105,12 +105,12 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
    * persist a single event with seqno 3. The value associated with the
    * event is 'a-seqno' eg. persist(3, 3, pid, tags) will store value 'a-3'.
    */
-  def persist(from: Int, to: Int, pid: String, tags: String*)(implicit journal : ActorRef): String = {
+  def persist(from: Int, to: Int, pid: String, tags: String*)(implicit journal: ActorRef): String = {
     writeMessages(journal, from, to, pid, senderProbe.ref, writerUuid, tags: _*)
     pid
   }
 
-  private def writeMessages(journal: ActorRef ,fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String, tags: String*): Unit = {
+  private def writeMessages(journal: ActorRef, fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String, tags: String*): Unit = {
     def persistentRepr(sequenceNr: Long) =
       PersistentRepr(
         payload = if (tags.isEmpty) s"a-$sequenceNr" else Tagged(s"a-$sequenceNr", Set(tags: _*)),
@@ -132,7 +132,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
         case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`), _) =>
           val id = s"a-$seqNo"
           payload should matchPattern {
-            case `id`            =>
+            case `id` =>
             case Tagged(`id`, _) =>
           }
         //          println(s"==> written '$payload', for pid: '$pid', seqNo: '$seqNo'")
