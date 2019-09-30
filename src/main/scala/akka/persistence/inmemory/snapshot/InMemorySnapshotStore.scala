@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.persistence.inmemory.extension.InMemorySnapshotStorage._
-import akka.persistence.inmemory.extension.StorageExtension
+import akka.persistence.inmemory.extension.StorageExtensionProvider
 import akka.persistence.serialization.Snapshot
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.{SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria}
@@ -42,7 +42,7 @@ class InMemorySnapshotStore(config: Config) extends SnapshotStore {
   implicit val timeout: Timeout = Timeout(config.getDuration("ask-timeout", TimeUnit.SECONDS) -> SECONDS)
   val serialization = SerializationExtension(system)
 
-  val snapshots: ActorRef = StorageExtension(system).snapshotStorage
+  val snapshots: ActorRef = StorageExtensionProvider(system).snapshotStorage(config)
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     val SnapshotEntryOption: Future[Option[snapshotEntry]] = criteria match {
