@@ -45,9 +45,9 @@ import scalariform.formatter.preferences.FormattingPreferences
 // Projects can also exclude plugins using the disablePlugins method
 //
 object ProjectAutoPlugin extends AutoPlugin {
-  final val AkkaVersion = "2.5.23"
-  final val ScalazVersion = "7.2.28"
-  final val ScalaTestVersion = "3.0.8"
+  final val AkkaVersion = "2.6.10"
+  final val ScalazVersion = "7.3.2"
+  final val ScalaTestVersion = "3.2.2"
   final val LogbackVersion = "1.2.3"
 
   final val formattingPreferences: FormattingPreferences = {
@@ -80,8 +80,8 @@ object ProjectAutoPlugin extends AutoPlugin {
 
     licenses += ("Apache-2.0", url("http://opensource.org/licenses/apache2.0.php")),
 
-    scalaVersion := "2.11.11",
-    crossScalaVersions := Seq("2.11.11", "2.12.8", "2.13.0"),
+    scalaVersion := "2.13.3",
+    crossScalaVersions := Seq("2.12.12", "2.13.3"),
     crossVersion := CrossVersion.binary,
 
     fork in Test := true,
