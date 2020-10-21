@@ -33,14 +33,16 @@ import akka.util.Timeout
 import akka.persistence.inmemory.util.UUIDs
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.Try
 
-abstract class TestSpec(config: Config) extends FlatSpec
+abstract class TestSpec(config: Config) extends AnyFlatSpec
     with Matchers
     with ScalaFutures
     with Eventually
@@ -85,7 +87,7 @@ abstract class TestSpec(config: Config) extends FlatSpec
     }
   }
 
-  def withTestProbe[A](src: Source[A, NotUsed])(f: TestSubscriber.Probe[A] ⇒ Unit): Unit =
+  def withTestProbe[A](src: Source[A, NotUsed])(f: TestSubscriber.Probe[A] => Unit): Unit =
     f(src.runWith(TestSink.probe(system)))
 
   implicit class PimpedByteArray(self: Array[Byte]) {

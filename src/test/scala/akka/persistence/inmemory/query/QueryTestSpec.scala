@@ -129,7 +129,7 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     probe.expectMsg(1.hour, WriteMessagesSuccessful)
     fromSnr to toSnr foreach { seqNo =>
       probe.expectMsgPF(1.hour) {
-        case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`), _) =>
+        case WriteMessageSuccess(PersistentImpl(payload, `seqNo`, `pid`, _, _, `sender`, `writerUuid`, _, _), _) =>
           val id = s"a-$seqNo"
           payload should matchPattern {
             case `id`            =>
@@ -153,11 +153,11 @@ abstract class QueryTestSpec(config: String = "application.conf") extends TestSp
     import akka.pattern.ask
     senderProbe = TestProbe()
     _writerUuid = UUID.randomUUID.toString
-    (StorageExtension(system).journalStorage ? ClearJournal).toTry should be a 'success
+    (StorageExtension(system).journalStorage ? ClearJournal).toTry should be a Symbol("success")
     super.beforeEach()
   }
 
   override protected def afterAll(): Unit = {
-    system.terminate().toTry should be a 'success
+    system.terminate().toTry should be a Symbol("success")
   }
 }
