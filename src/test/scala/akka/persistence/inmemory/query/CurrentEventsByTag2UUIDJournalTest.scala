@@ -16,7 +16,7 @@
 
 package akka.persistence.inmemory.query
 
-import akka.persistence.query.{ EventEnvelope2, NoOffset, TimeBasedUUID }
+import akka.persistence.query.{ EventEnvelope, NoOffset, TimeBasedUUID }
 
 /**
  * This test sets the offset-mode to uuid, this means that when a NoOffset type is
@@ -26,7 +26,7 @@ import akka.persistence.query.{ EventEnvelope2, NoOffset, TimeBasedUUID }
 class CurrentEventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode.conf") {
 
   it should "not find events for empty journal using unknown tag using timebased uuid" in {
-    withCurrentEventsByTag2()("unknown", getNowUUID) { tp =>
+    withCurrentEventsByTag()("unknown", getNowUUID) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
@@ -38,12 +38,12 @@ class CurrentEventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode
     persist("my-2", "two")
     persist("my-3", "three")
 
-    withCurrentEventsByTag2()("unknown", NoOffset) { tp =>
+    withCurrentEventsByTag()("unknown", NoOffset) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("unknown", nowUUID) { tp =>
+    withCurrentEventsByTag()("unknown", nowUUID) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
@@ -57,36 +57,36 @@ class CurrentEventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode
     val id3: TimeBasedUUID = getNowUUID
     persist("my-3", "number")
 
-    withCurrentEventsByTag2()("number", NoOffset) { tp =>
+    withCurrentEventsByTag()("number", NoOffset) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("number", id1) { tp =>
+    withCurrentEventsByTag()("number", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("number", id2) { tp =>
+    withCurrentEventsByTag()("number", id2) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("number", id3) { tp =>
+    withCurrentEventsByTag()("number", id3) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("number", getNowUUID) { tp =>
+    withCurrentEventsByTag()("number", getNowUUID) { tp =>
       tp.request(Int.MaxValue)
       tp.expectComplete()
     }
@@ -102,11 +102,11 @@ class CurrentEventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode
     deleteMessages("my-2")
     deleteMessages("my-3")
 
-    withCurrentEventsByTag2()("number", nowUUID) { tp =>
+    withCurrentEventsByTag()("number", nowUUID) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
   }
@@ -123,58 +123,58 @@ class CurrentEventsByTag2UUIDJournalTest extends QueryTestSpec("uuid-offset-mode
     persist(6, 6, "my-1")
     persist(7, 7, "my-1")
 
-    withCurrentEventsByTag2()("one", NoOffset) { tp =>
+    withCurrentEventsByTag()("one", NoOffset) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("one", id1) { tp =>
+    withCurrentEventsByTag()("one", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("prime", id1) { tp =>
+    withCurrentEventsByTag()("prime", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 2, "a-2") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 3, "a-3") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 5, "a-5") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 2, "a-2") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 3, "a-3") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 5, "a-5") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("3", id1) { tp =>
+    withCurrentEventsByTag()("3", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 3, "a-3") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-2", 1, "a-1") => }
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-3", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 3, "a-3") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-2", 1, "a-1") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-3", 1, "a-1") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("4", id1) { tp =>
+    withCurrentEventsByTag()("4", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 4, "a-4") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 4, "a-4") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("four", id1) { tp =>
+    withCurrentEventsByTag()("four", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 4, "a-4") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 4, "a-4") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("5", id1) { tp =>
+    withCurrentEventsByTag()("5", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 5, "a-5") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 5, "a-5") => }
       tp.expectComplete()
     }
 
-    withCurrentEventsByTag2()("five", id1) { tp =>
+    withCurrentEventsByTag()("five", id1) { tp =>
       tp.request(Int.MaxValue)
-      tp.expectNextPF { case EventEnvelope2(TimeBasedUUID(_), "my-1", 5, "a-5") => }
+      tp.expectNextPF { case EventEnvelope(TimeBasedUUID(_), "my-1", 5, "a-5") => }
       tp.expectComplete()
     }
   }

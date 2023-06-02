@@ -46,13 +46,11 @@ object InMemoryReadJournal {
 
 class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system: ExtendedActorSystem) extends ReadJournal
   with CurrentPersistenceIdsQuery
-  with AllPersistenceIdsQuery
+  with PersistenceIdsQuery
   with CurrentEventsByPersistenceIdQuery
   with EventsByPersistenceIdQuery
   with CurrentEventsByTagQuery
-  with CurrentEventsByTagQuery2
-  with EventsByTagQuery
-  with EventsByTagQuery2 {
+  with EventsByTagQuery {
 
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val mat: Materializer = ActorMaterializer()
@@ -86,7 +84,7 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
     Source.fromFuture((journal ? InMemoryJournalStorage.AllPersistenceIds).mapTo[Set[String]])
       .mapConcat(identity)
 
-  override def allPersistenceIds(): Source[String, NotUsed] =
+  override def persistenceIds(): Source[String, NotUsed] =
     Source.repeat(0).flatMapConcat(_ => Source.tick(refreshInterval, 0.seconds, 0).take(1).flatMapConcat(_ => currentPersistenceIds()))
       .statefulMapConcat[String] { () =>
         var knownIds = Set.empty[String]
@@ -103,7 +101,7 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserialization)
-      .map(repr => EventEnvelope(repr.sequenceNr, repr.persistenceId, repr.sequenceNr, repr.payload))
+      .map(repr => EventEnvelope(Sequence(repr.sequenceNr), repr.persistenceId, repr.sequenceNr, repr.payload))
 
   override def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     Source.unfoldAsync[Long, Seq[EventEnvelope]](Math.max(1, fromSequenceNr)) { (from: Long) =>
@@ -123,24 +121,18 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
       }
     }.mapConcat(identity)
 
-  override def currentEventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    currentEventsByTag(tag, Sequence(offset))
-
-  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
+  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
     Source.fromFuture((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
       .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserializationWithOffset(offset))
       .map {
-        case (offset, repr) => EventEnvelope2(offset, repr.persistenceId, repr.sequenceNr, repr.payload)
+        case (offset, repr) => EventEnvelope(offset, repr.persistenceId, repr.sequenceNr, repr.payload)
       }
 
-  override def eventsByTag(tag: String, offset: Long): Source[EventEnvelope, NotUsed] =
-    eventsByTag(tag, Sequence(offset))
-
-  override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope2, NotUsed] =
-    Source.unfoldAsync[Offset, Seq[EventEnvelope2]](offset) { (from: Offset) =>
-      def nextFromOffset(xs: Seq[EventEnvelope2]): Offset = {
+  override def eventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
+    Source.unfoldAsync[Offset, Seq[EventEnvelope]](offset) { (from: Offset) =>
+      def nextFromOffset(xs: Seq[EventEnvelope]): Offset = {
         if (xs.isEmpty) from else xs.last.offset match {
           case Sequence(n)         => Sequence(n)
           case TimeBasedUUID(time) => TimeBasedUUID(UUIDs.startOf(UUIDs.unixTimestamp(time) + 1))

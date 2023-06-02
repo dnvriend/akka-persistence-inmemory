@@ -50,7 +50,7 @@ object InMemoryJournalStorage {
   def getPersistenceId(prod: (String, Vector[JournalEntry])): String = prod._1
   def getEntries(prod: (String, Vector[JournalEntry])): Vector[JournalEntry] = prod._2
   def getEventsByPid(pid: String, journal: Map[String, Vector[JournalEntry]]): Option[Vector[JournalEntry]] =
-    journal.find(_._1 == pid).map(_._2)
+    journal.get(pid)
   def getAllEvents(journal: Map[String, Vector[JournalEntry]]): Vector[JournalEntry] =
     journal.values.flatten[JournalEntry].toVector
   def getMaxSequenceNr(xs: Vector[JournalEntry]): Long = xs.map(_.sequenceNr).max
@@ -108,9 +108,10 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
 
   def delete(ref: ActorRef, persistenceId: String, toSequenceNr: Long): Unit = {
     val pidEntries = journal.filter(_._1 == persistenceId)
-    val notDeleted = pidEntries.mapValues(_.filterNot(_.sequenceNr <= toSequenceNr))
+    val notDeleted = pidEntries.view.mapValues(_.filterNot(_.sequenceNr <= toSequenceNr)).toMap
 
     val deleted = pidEntries
+      .view
       .mapValues(_.filter(_.sequenceNr <= toSequenceNr).map { journalEntry =>
         val updatedRepr: PersistentRepr = journalEntry.repr.update(deleted = true)
         val byteArray: Array[Byte] = serialization.serialize(updatedRepr) match {
@@ -119,6 +120,7 @@ class InMemoryJournalStorage(serialization: Serialization) extends Actor with Ac
         }
         journalEntry.copy(deleted = true).copy(serialized = byteArray).copy(repr = updatedRepr)
       })
+      .toMap
 
     journal = journal.filterNot(_._1 == persistenceId) |+| deleted |+| notDeleted
 

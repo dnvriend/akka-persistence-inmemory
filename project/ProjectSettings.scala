@@ -4,7 +4,7 @@ import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform
 
 object ProjectSettings extends AutoPlugin {
-  final val AkkaVersion = "2.4.20"
+  final val AkkaVersion = "2.6.20"
   final val ScalazVersion = "7.2.28"
   final val ScalaTestVersion = "3.0.8"
   final val LogbackVersion = "1.2.3"
@@ -19,8 +19,7 @@ object ProjectSettings extends AutoPlugin {
     description := "A plugin for storing events in an event journal akka-persistence-inmemory",
     startYear := Some(2014),
 
-    scalaVersion := "2.12.6",
-    crossScalaVersions := Seq("2.11.12", "2.12.8"),
+    scalaVersion := "2.13.10",
     crossVersion := CrossVersion.binary,
 
     licenses := Seq(("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))),
@@ -30,7 +29,7 @@ object ProjectSettings extends AutoPlugin {
   lazy val librarySettings = Seq(
     libraryDependencies += "com.typesafe.akka" %% "akka-actor" % AkkaVersion,
     libraryDependencies += "com.typesafe.akka" %% "akka-persistence" % AkkaVersion,
-    libraryDependencies += "com.typesafe.akka" %% "akka-persistence-query-experimental" % AkkaVersion,
+    libraryDependencies += "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
     libraryDependencies += "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
     libraryDependencies += "org.scalaz" %% "scalaz-core" % ScalazVersion,
     libraryDependencies += "ch.qos.logback" % "logback-classic" % LogbackVersion % Test,
@@ -75,7 +74,6 @@ object ProjectSettings extends AutoPlugin {
       "-Xlog-reflective-calls",
       "-language:higherKinds",
       "-language:implicitConversions",
-      "-Ypartial-unification",
       "-target:jvm-1.8",
       "-Ydelambdafy:method"
     )
