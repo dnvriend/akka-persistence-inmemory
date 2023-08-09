@@ -1,9 +1,8 @@
 # pekko-persistence-inmemory
 
-[![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory](https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg)](https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
+[//]: # ([![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory]&#40;https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg&#41;]&#40;https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge&#41;)
+[![Build Status](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml/badge.svg)](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml)
 [![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dnvriend/akka-persistence-inmemory&amp;utm_campaign=Badge_Grade)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 [pekko-persistence-inmemory](https://github.com/alstanchev/pekko-persistence-inmemory) is a plugin for pekko-persistence that stores journal and snapshot messages in memory, which is very useful when testing persistent actors, persistent FSM and pekko cluster.
