@@ -8,6 +8,8 @@ object PublishSettings extends AutoPlugin {
 
   override def projectSettings = Seq(
     publishMavenStyle := true,
+    organization := "com.github.alstanchev", // This sets the groupId
+    name := "pekko-persistence-inmemory", // This sets the artifactId base
     publishTo := Some(
       if (isSnapshot.value)
 //        Resolver.file("file", new File("target/snapshots"))
