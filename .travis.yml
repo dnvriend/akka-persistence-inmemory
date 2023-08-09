@@ -1,10 +1,10 @@
 language: scala
 scala:
-- 2.11.11
+- 2.13.11
 jdk:
 - openjdk8
 sudo: false
 notifications:
   email:
-    - dnvriend@gmail.com
+    - aleksandar.stanchev@bosch.com
 script: "./build.sh"

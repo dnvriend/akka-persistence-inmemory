@@ -1,4 +1,4 @@
-# akka-persistence-inmemory
+# pekko-persistence-inmemory
 
 [![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory](https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg)](https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/dnvriend/akka-persistence-inmemory.svg?branch=master)](https://travis-ci.org/dnvriend/akka-persistence-inmemory)
@@ -6,11 +6,12 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2cedef156eaf441fbe867becfc5fcb24)](https://www.codacy.com/app/dnvriend/akka-persistence-inmemory?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=dnvriend/akka-persistence-inmemory&amp;utm_campaign=Badge_Grade)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
-[akka-persistence-inmemory](https://github.com/dnvriend/akka-persistence-inmemory) is a plugin for akka-persistence that stores journal and snapshot messages memory, which is very useful when testing persistent actors, persistent FSM and akka cluster.
+[pekko-persistence-inmemory](https://github.com/alstanchev/pekko-persistence-inmemory) is a plugin for pekko-persistence that stores journal and snapshot messages in memory, which is very useful when testing persistent actors, persistent FSM and pekko cluster.
 
 ## Installation
 Add the following to your `build.sbt`:
 
+[//]: # TODO()
 ```scala
 // the library is available in Bintray repository
 resolvers += Resolver.bintrayRepo("dnvriend", "maven")
@@ -72,9 +73,9 @@ inmemory-read-journal {
 It is possible to manually clear the journal an snapshot storage, for example:
 
 ```scala
-import akka.actor.ActorSystem
-import akka.persistence.inmemory.extension.{ InMemoryJournalStorage, InMemorySnapshotStorage, StorageExtension }
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.persistence.inmemory.extension.{ InMemoryJournalStorage, InMemorySnapshotStorage, StorageExtension }
+import org.apache.pekko.testkit.TestProbe
 import org.scalatest.{ BeforeAndAfterEach, Suite }
 
 trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
@@ -84,9 +85,9 @@ trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
   override protected def beforeEach(): Unit = {
     val tp = TestProbe()
     tp.send(StorageExtension(system).journalStorage, InMemoryJournalStorage.ClearJournal)
-    tp.expectMsg(akka.actor.Status.Success(""))
+    tp.expectMsg(org.apache.pekko.actor.Status.Success(""))
     tp.send(StorageExtension(system).snapshotStorage, InMemorySnapshotStorage.ClearSnapshots)
-    tp.expectMsg(akka.actor.Status.Success(""))
+    tp.expectMsg(org.apache.pekko.actor.Status.Success(""))
     super.beforeEach()
   }
 }
@@ -107,9 +108,9 @@ tp.expectMsg(new Status.Success(""));
 ```
 
 ## offset-mode
-akka-persistence-query introduces `akka.persistence.query.Offset`, an ADT that defines `akka.persistence.query.NoOffset`,
-`akka.persistence.query.Sequence` and `akka.persistence.query.TimeBasedUUID`. These offsets can be used when using the
-queries `akka.persistence.query.scaladsl.EventsByTagQuery2` and `akka.persistence.query.scaladsl.CurrentEventsByTagQuery2`
+akka-persistence-query introduces `org.apache.pekko.persistence.query.Offset`, an ADT that defines `org.apache.pekko.persistence.query.NoOffset`,
+`org.apache.pekko.persistence.query.Sequence` and `org.apache.pekko.persistence.query.TimeBasedUUID`. These offsets can be used when using the
+queries `org.apache.pekko.persistence.query.scaladsl.EventsByTagQuery2` and `org.apache.pekko.persistence.query.scaladsl.CurrentEventsByTagQuery2`
 to request and offset in the stream of events.
 
 Because akka-persistence-inmemory implements both the Sequence-based number offset strategy as the TimeBasedUUID strategy
@@ -135,10 +136,10 @@ When an async query is started, a number of events will be buffered and will use
 a Sink. The default size is 100.
 
 ## How to get the ReadJournal using Scala
-The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
+The `ReadJournal` is retrieved via the `org.apache.pekko.persistence.query.PersistenceQuery` extension:
 
 ```scala
-import akka.persistence.query.scaladsl._
+import org.apache.pekko.persistence.query.scaladsl._
 
 lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-journal")
  .asInstanceOf[ReadJournal
@@ -151,11 +152,11 @@ lazy val readJournal = PersistenceQuery(system).readJournalFor("inmemory-read-jo
 ```
 
 ## How to get the ReadJournal using Java
-The `ReadJournal` is retrieved via the `akka.persistence.query.PersistenceQuery` extension:
+The `ReadJournal` is retrieved via the `org.apache.pekko.persistence.query.PersistenceQuery` extension:
 
 ```java
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.inmemory.query.journal.javadsl.InMemoryReadJournal
+import org.apache.pekko.persistence.query.PersistenceQuery
+import org.apache.pekko.persistence.inmemory.query.journal.javadsl.InMemoryReadJournal
 
 final InMemoryReadJournal readJournal = PersistenceQuery.get(system).getReadJournalFor(InMemoryReadJournal.class, InMemoryReadJournal.Identifier());
 ```
@@ -167,11 +168,11 @@ The plugin supports the following queries:
 `allPersistenceIds` and `currentPersistenceIds` are used for retrieving all persistenceIds of all persistent actors.
 
 ```scala
-import akka.actor.ActorSystem
-import akka.stream.{Materializer, ActorMaterializer}
-import akka.stream.scaladsl.Source
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.{Materializer, ActorMaterializer}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.persistence.query.PersistenceQuery
+import org.apache.pekko.persistence.inmemory.query.journal.scaladsl.InMemoryReadJournal
 
 implicit val system: ActorSystem = ActorSystem()
 implicit val mat: Materializer = ActorMaterializer()(system)
@@ -197,10 +198,10 @@ The stream is completed with failure if there is a failure in executing the quer
 a specific PersistentActor identified by persistenceId.
 
 ```scala
-import akka.actor.ActorSystem
-import akka.stream.{Materializer, ActorMaterializer}
-import akka.stream.scaladsl.Source
-import akka.persistence.query.scaladsl._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.{Materializer, ActorMaterializer}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.persistence.query.scaladsl._
 
 implicit val system: ActorSystem = ActorSystem()
 implicit val mat: Materializer = ActorMaterializer()(system)
@@ -230,10 +231,10 @@ The stream is completed with failure if there is a failure in executing the quer
 `tag`, e.g. all domain events of an Aggregate Root type.
 
 ```scala
-import akka.actor.ActorSystem
-import akka.stream.{Materializer, ActorMaterializer}
-import akka.stream.scaladsl.Source
-import akka.persistence.query.scaladsl._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.{Materializer, ActorMaterializer}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.persistence.query.scaladsl._
 
 implicit val system: ActorSystem = ActorSystem()
 implicit val mat: Materializer = ActorMaterializer()(system)
@@ -252,15 +253,15 @@ val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.event
 val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByTag("apple", 0L)
 ```
 
-To tag events you'll need to create an [Event Adapter](http://doc.akka.io/docs/akka/2.4.1/scala/persistence.html#event-adapters-scala) 
-that will wrap the event in a [akka.persistence.journal.Tagged](http://doc.akka.io/api/akka/2.4.1/#akka.persistence.journal.Tagged) 
+To tag events you'll need to create an [Event Adapter](http://doc.org.apache.pekko.io/docs/akka/2.4.1/scala/persistence.html#event-adapters-scala) 
+that will wrap the event in a [org.apache.pekko.persistence.journal.Tagged](http://doc.org.apache.pekko.io/api/akka/2.4.1/#org.apache.pekko.persistence.journal.Tagged) 
 class with the given tags. The `Tagged` class will instruct the persistence plugin to tag the event with the given set of tags.
 The persistence plugin will __not__ store the `Tagged` class in the journal. It will strip the `tags` and `payload` from the `Tagged` class,
 and use the class only as an instruction to tag the event with the given tags and store the `payload` in the 
 `message` field of the journal table. 
 
 ```scala
-import akka.persistence.journal.{ Tagged, WriteEventAdapter }
+import org.apache.pekko.persistence.journal.{ Tagged, WriteEventAdapter }
 import com.github.dnvriend.Person.{ LastNameChanged, FirstNameChanged, PersonCreated }
 
 class TaggingEventAdapter extends WriteEventAdapter {
@@ -315,7 +316,7 @@ This can be useful to configure a behavior similar to cassandra key spaces.
 # the storage in use
 inmemory-storage {
   # storage using inmemory journal for each different value for the configured property keys
-  class = "akka.persistence.inmemory.extension.StorageExtensionByProperty"
+  class = "org.apache.pekko.persistence.inmemory.extension.StorageExtensionByProperty"
   # property keys in journal plugin configuration, for each different value a own journal will be stored
   property-keys = ["keyspace"]
 }
@@ -403,7 +404,7 @@ inmemory-storage {
   - Support for Akka 2.5-M1
   - Support akka 2.11.x and 2.12.x
   - You need Java 8 or higher
-  - Please read the [Akka 2.4 -> 2.5 Migration Guide](http://doc.akka.io/docs/akka/2.5-M1/project/migration-guide-2.4.x-2.5.x.html)
+  - Please read the [Akka 2.4 -> 2.5 Migration Guide](http://doc.org.apache.pekko.io/docs/akka/2.5-M1/project/migration-guide-2.4.x-2.5.x.html)
   - Changed how the `byTag` queries work, the requested offset is excluding, so if a materialized stream is created, when you ask for Sequence(2) for example, you will get Sequence(3) and so on
     so this is for the use case when you store the lastest offset on the read side, you can just put that value in the query and the stream will continue with the next offset,
     no need to manually do the plus-one operation.
@@ -424,15 +425,15 @@ inmemory-storage {
   - cross scala 2.11.8 and 2.12.0 build
 
 ### 1.3.13 (2016-11-01 - Birthday Edition!)
-  - Implemented support for the `akka.persistence.query.TimeBasedUUID`.
+  - Implemented support for the `org.apache.pekko.persistence.query.TimeBasedUUID`.
   - You should set the __new__ configuration key `inmemory-read-journal.offset-mode = "uuid"`, defaults to `sequence`
-    to produce `EventEnvelope2` that contain `TimeBasedUUID` offset fields.
+    to produce `EventEnvelope` that contain `TimeBasedUUID` offset fields.
 
 ### 1.3.12 (2016-10-28)
   - Akka 2.4.11 -> 2.4.12
-  - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-query](http://doc.akka.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
-  - The akka-persistence-inmemory plugin only supports the `akka.persistence.query.NoOffset` or `akka.persistence.query.Sequence` offset types.
-  - There is no support for the `akka.persistence.query.TimeBasedUUID` offset type. When used, akka-persistence-inmemory will throw an IllegalArgumentException.
+  - Support for the new queries `CurrentEventsByTagQuery2` and `EventsByTagQuery2`, please read the [akka-persistence-query](http://doc.org.apache.pekko.io/docs/akka/2.4.12/scala/persistence-query.html) documentation to see what has changed.
+  - The akka-persistence-inmemory plugin only supports the `org.apache.pekko.persistence.query.NoOffset` or `org.apache.pekko.persistence.query.Sequence` offset types.
+  - There is no support for the `org.apache.pekko.persistence.query.TimeBasedUUID` offset type. When used, akka-persistence-inmemory will throw an IllegalArgumentException.
 
 ### 1.3.11 (2016-10-23)
   - Scala 2.11.8 and 2.12.0-RC2 compatible
@@ -466,10 +467,10 @@ inmemory-storage {
   - Akka 2.4.8 -> 2.4.9-RC1
 
 ### 1.3.5 (2016-07-23)
-  - Support for the __non-official__ bulk loading interface [akka.persistence.query.scaladsl.EventWriter](https://github.com/dnvriend/akka-persistence-query-writer/blob/master/src/main/scala/akka/persistence/query/scaladsl/EventWriter.scala)
+  - Support for the __non-official__ bulk loading interface [org.apache.pekko.persistence.query.scaladsl.EventWriter](https://github.com/dnvriend/akka-persistence-query-writer/blob/master/src/main/scala/akka/persistence/query/scaladsl/EventWriter.scala)
     added. I need this interface to load massive amounts of data, that will be processed by many actors, but initially I just want to create and store one or
     more events belonging to an actor, that will handle the business rules eventually. Using actors or a shard region for that matter, just gives to much
-    actor life cycle overhead ie. too many calls to the data store. The `akka.persistence.query.scaladsl.EventWriter` interface is non-official and puts all
+    actor life cycle overhead ie. too many calls to the data store. The `org.apache.pekko.persistence.query.scaladsl.EventWriter` interface is non-official and puts all
     responsibility of ensuring the integrity of the journal on you. This means when some strange things are happening caused by wrong loading of the data,
     and therefor breaking the integrity and ruleset of akka-persistence, all the responsibility on fixing it is on you, and not on the Akka team.
 
