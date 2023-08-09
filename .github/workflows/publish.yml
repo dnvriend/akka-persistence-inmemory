@@ -2,8 +2,8 @@ name: Publish to GitHub Packages
 
 on:
   push:
-    tags:
-      - '*'
+    branches:
+      - release-*
 
 jobs:
   publish:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17' # Or your required version
+          java-version: '17'
           distribution: 'adopt'
           cache: sbt
 
