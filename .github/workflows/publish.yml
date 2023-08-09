@@ -3,6 +3,7 @@ name: Publish to GitHub Packages
 on:
   push:
     branches:
+      - feature/
       - release-*
 
 jobs:
@@ -22,7 +23,7 @@ jobs:
           cache: sbt
 
       - name: Publish
-        run: sbt publish
+        run: sbt clean +publish
         env:
           GITHUB_USERNAME: ${{ secrets.GITHUB_USERNAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-#
+#!/bin/bash
 # Copyright 2016 Dennis Vriend
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#!/bin/bash
-export CODACY_PROJECT_TOKEN=$INMEMORY_CODACY_TOKEN
-echo "project token: $CODACY_PROJECT_TOKEN"
+
 sbt clean coverage test
 sbt coverageReport
 sbt coverageAggregate
-sbt codacyCoverage

@@ -1,43 +1,45 @@
 import sbt._
 import sbt.Keys._
-import bintray.{BintrayKeys, BintrayPlugin}
+import sbtrelease.ReleasePlugin.autoImport.releaseVcsSign
 
-object PublishSettings extends AutoPlugin with BintrayKeys {
+object PublishSettings extends AutoPlugin {
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin && sbtrelease.ReleasePlugin && BintrayPlugin && ProjectSettings
+  override def requires = plugins.JvmPlugin && sbtrelease.ReleasePlugin && ProjectSettings
 
- override def projectSettings = Seq(
+  override def projectSettings = Seq(
     publishMavenStyle := true,
+    publishTo := Some(
+      if (isSnapshot.value)
+//        Resolver.file("file", new File("target/snapshots"))
+        "GitHub Package Registry Snapshots" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
+      else
+        "GitHub Package Registry Releases" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
+//        "GitHub Packages" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
+    ),
+    credentials += Credentials(
+      "GitHub Package Registry",
+      "maven.pkg.github.com",
+      sys.env.getOrElse("USER", ""),
+      sys.env.getOrElse("PACKAGES_TOKEN", "")
+    ),
+    releaseVcsSign := true,
     pomExtraSetting("pekko-persistence-inmemory"),
-    homepageSetting("pekko-persistence-inmemory"),
-    bintrayPackageLabelsSettings("inmemory"),
-    bintrayPackageAttributesSettings("pekko-persistence-inmemory")
- )
-  
-def pomExtraSetting(name: String) = pomExtra := 
+    homepageSetting("pekko-persistence-inmemory")
+  )
+
+  def pomExtraSetting(name: String) = pomExtra :=
     <scm>
-        <url>https://github.com/dnvriend/${name}</url>
-        <connection>scm:git@github.com:alstanchev/${name}.git</connection>
-        </scm>
-        <developers>
+      <url>https://github.com/dnvriend/${name}</url>
+      <connection>scm:git@github.com:alstanchev/${name}.git</connection>
+    </scm>
+      <developers>
         <developer>
-            <id>alstanchev</id>
-            <name>Aleksandar Stanchev</name>
-            <url>https://github.com/alstanchev</url>
+          <id>alstanchev</id>
+          <name>Aleksandar Stanchev</name>
+          <url>https://github.com/alstanchev</url>
         </developer>
-        </developers>
+      </developers>
 
-    def homepageSetting(name: String) = 
-      homepage := Some(url(s"https://github.com/alstanchev/$name"))
-
-    def bintrayPackageLabelsSettings(labels: String*) = 
-	  bintrayPackageLabels := Seq("pekko", "persistence") ++ labels
-
-    def bintrayPackageAttributesSettings(name: String) = {
-      bintrayPackageAttributes ~= (_ ++ Map(
-          "website_url" -> Seq(bintry.Attr.String(s"https://github.com/alstanchev/$name")),
-          "github_repo" -> Seq(bintry.Attr.String(s"https://github.com/alstanchev/$name.git")),
-          "issue_tracker_url" -> Seq(bintry.Attr.String(s"https://github.com/alstanchev/$name.git/issues/"))
-        ))
-    }
+  def homepageSetting(name: String) =
+    homepage := Some(url(s"https://github.com/alstanchev/$name"))
 }

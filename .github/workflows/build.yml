@@ -22,3 +22,6 @@ jobs:
 
       - name: Build project
         run: ./build.sh
+
+      - name: Publish Snapshots
+        run: ./sbt-publish.sh
