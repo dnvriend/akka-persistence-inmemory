@@ -1,47 +1,36 @@
 import sbt._
 import sbt.Keys._
-import sbtrelease.ReleasePlugin.autoImport.releaseVcsSign
+import xerial.sbt.Sonatype.autoImport._
 
 object PublishSettings extends AutoPlugin {
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin && sbtrelease.ReleasePlugin && ProjectSettings
+  override def requires = plugins.JvmPlugin && ProjectSettings
 
   override def projectSettings = Seq(
-    publishMavenStyle := true,
-    organization := "com.github.alstanchev", // This sets the groupId
+    organization := "io.github.alstanchev", // This sets the groupId
     name := "pekko-persistence-inmemory", // This sets the artifactId base
-    publishTo := Some(
-      if (isSnapshot.value)
-//        Resolver.file("file", new File("target/snapshots"))
-        "GitHub Package Registry Snapshots" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
+    homepage := Some(url(s"https://github.com/alstanchev/${name.value}")),
+    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer(
+        "alstanchev",
+        "Aleksandar Stanchev",
+        "aleksandar.stanchev@bosch.com",
+        url("https://github.com/alstanchev/pekko-persistence-inmemory")
+      )
+    ),
+    // Sonatype settings
+    sonatypeCredentialHost := "s01.oss.sonatype.org",
+    sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
+
+    // Publishing destination
+    publishTo := {
+      val nexus = "https://s01.oss.sonatype.org/"
+      if (version.value.endsWith("-SNAPSHOT"))
+        Some("snapshots" at nexus + "content/repositories/snapshots")
       else
-        "GitHub Package Registry Releases" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
-//        "GitHub Packages" at s"https://maven.pkg.github.com/alstanchev/${name.value}"
-    ),
-    credentials += Credentials(
-      "GitHub Package Registry",
-      "maven.pkg.github.com",
-      sys.env.getOrElse("USER", ""),
-      sys.env.getOrElse("PACKAGES_TOKEN", "")
-    ),
-    releaseVcsSign := true,
-    pomExtraSetting("pekko-persistence-inmemory"),
-    homepageSetting("pekko-persistence-inmemory")
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
   )
 
-  def pomExtraSetting(name: String) = pomExtra :=
-    <scm>
-      <url>https://github.com/dnvriend/${name}</url>
-      <connection>scm:git@github.com:alstanchev/${name}.git</connection>
-    </scm>
-      <developers>
-        <developer>
-          <id>alstanchev</id>
-          <name>Aleksandar Stanchev</name>
-          <url>https://github.com/alstanchev</url>
-        </developer>
-      </developers>
-
-  def homepageSetting(name: String) =
-    homepage := Some(url(s"https://github.com/alstanchev/$name"))
 }

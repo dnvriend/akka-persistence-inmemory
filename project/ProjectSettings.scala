@@ -16,13 +16,13 @@ object ProjectSettings extends AutoPlugin {
 
   override def projectSettings = Seq(
     name := "pekko-persistence-inmemory",
-    organization := "com.github.alstanchev",
+    organization := "io.github.alstanchev",
     organizationName := "Aleksandar Stanchev",
     description := "A plugin for storing events in an event journal pekko-persistence-inmemory",
     startYear := Some(2023),
 
     scalaVersion := "2.13.7",
-    crossScalaVersions := Seq("2.12.15", "2.13.7"),
+    crossScalaVersions := Seq("2.12.15", "2.13.7", "3"),
     crossVersion := CrossVersion.binary,
 
     licenses := Seq(("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt"))),
