@@ -1,8 +1,8 @@
 # Query Consumer Refactor
-The akka persistence query api is based upon a push approach in where persisted events will be pushed
+The pekko persistence query api is based upon a push approach in where persisted events will be pushed
 downstream to any subscribers of the log. This rather naive approach has as a side effect that there has to
-be some kind of subscription management in akka-persistence. At the moment there is none available in 
-akka persistence and so the current design must change.
+be some kind of subscription management in pekko-persistence. At the moment there is none available in 
+pekko persistence and so the current design must change.
 
 # Looking at other log architectures
 There are other log architectures, for example [Apache Kafka](http://kafka.apache.org/), that use a clean separation
@@ -18,9 +18,9 @@ has the following responsibilities:
  * handing the response, which consists of a chunk of data beginning from the log position,
  * issuing the maximum number of messages the client can handle by means of a back pressure mechanism
  
-# Refactoring the akka persistence in-memory query clients
-When looking at the design of the Akka Persistence, the client api are also fully separate of the producer 
-of the log. When we copy the design of Kafka, the following changes to the design to the akka persistence
+# Refactoring the pekko persistence in-memory query clients
+When looking at the design of the Pekko Persistence, the client api are also fully separate of the producer 
+of the log. When we copy the design of Kafka, the following changes to the design to the pekko persistence
 in-memory query api clients can be made:
 
  * active clients that `pull` from the broker by issuing `fetch` requests,
@@ -29,7 +29,7 @@ in-memory query api clients can be made:
  * delivering the messages to any subscribers of the stream.
  
 This design places the responsibility of consuming the log and making sure that messages are send to any waiting subscribers 
-of the the log solely on the consumer API and decouples the producer from the consumer. The producer (here akka-persistence) 
+of the the log solely on the consumer API and decouples the producer from the consumer. The producer (here pekko-persistence) 
 must be changed because it does not have to take consumers into account. It has a single responsibility, batch writing messages
 to the log. 
 
