@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-// to format scala source code
-addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
+package org.apache.pekko.persistence.inmemory.journal
 
-// enable updating file headers eg. for copyright
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.0.0")
+import org.apache.pekko.persistence.CapabilityFlag
+import org.apache.pekko.persistence.journal.JournalPerfSpec
+import com.typesafe.config.ConfigFactory
+import org.scalatest.Ignore
 
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
+import scala.concurrent.duration._
 
-//addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.6")
+@Ignore
+class InMemoryJournalPerfSpec extends JournalPerfSpec(ConfigFactory.load("application.conf")) {
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = true
 
-// release and deploy to sonatype
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.12")
+  override def awaitDurationMillis: Long = 60.minutes.toMillis
+}

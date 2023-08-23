@@ -1,0 +1,24 @@
+name: Build with Scala
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Build project
+        run: ./build.sh

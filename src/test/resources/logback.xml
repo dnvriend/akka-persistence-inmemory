@@ -11,8 +11,8 @@
     </appender>
 
 
-    <!--<logger name="akka" level="debug"/>-->
-    <!--<logger name="akka.persistence" level="debug"/>-->
+    <!--<logger name="pekko" level="debug"/>-->
+    <!--<logger name="org.apache.pekko.persistence" level="debug"/>-->
 
     <root level="error">
         <appender-ref ref="console"/>

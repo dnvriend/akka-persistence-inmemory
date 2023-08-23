@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-// to format scala source code
-addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
+package org.apache.pekko.persistence.inmemory
 
-// enable updating file headers eg. for copyright
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.0.0")
+import org.apache.pekko.NotUsed
+import org.apache.pekko.persistence.query._
+import org.apache.pekko.stream.scaladsl.Source
+import scala.language.implicitConversions
 
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
+package object query {
+  def toOldEnvelope(env2: EventEnvelope): EventEnvelope = env2 match {
+    case EventEnvelope(Sequence(offset), persistenceId, sequenceNr, event) =>
+      EventEnvelope(Sequence(offset), persistenceId, sequenceNr, event)
+  }
 
-//addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.6")
-
-// release and deploy to sonatype
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.12")
+  implicit def newSrcToOldSrc(that: Source[EventEnvelope, NotUsed]): Source[EventEnvelope, NotUsed] =
+    that.map(toOldEnvelope)
+}

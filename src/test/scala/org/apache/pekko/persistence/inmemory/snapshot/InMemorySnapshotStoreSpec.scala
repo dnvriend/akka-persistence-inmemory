@@ -14,15 +14,9 @@
  * limitations under the License.
  */
 
-// to format scala source code
-addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
+package org.apache.pekko.persistence.inmemory.snapshot
 
-// enable updating file headers eg. for copyright
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.0.0")
+import org.apache.pekko.persistence.snapshot.SnapshotStoreSpec
+import com.typesafe.config.ConfigFactory
 
-addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
-
-//addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.6")
-
-// release and deploy to sonatype
-addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.12")
+class InMemorySnapshotStoreSpec extends SnapshotStoreSpec(ConfigFactory.load("application.conf"))
