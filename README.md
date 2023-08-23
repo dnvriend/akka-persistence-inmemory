@@ -9,6 +9,8 @@
 
 ## Installation
 ```text
+// the library is available in OSSSonatype and MavenCentral repository
+
     <dependency>
         <groupId>com.github.alstanchev</groupId>
         <artifactId>pekko-persistence-inmemory_2.13</artifactId>
@@ -18,8 +20,7 @@
 
 
 ```scala
-// the library is available in Bintray repository
-resolvers += Resolver.bintrayRepo("dnvriend", "maven")
+// the library is available in OSSSonatype and MavenCentral repository
 
 // pekko 1.0.x
 libraryDependencies += "io.github.alstanchev" %% "pekko-persistence-inmemory" % "1.0.0"
