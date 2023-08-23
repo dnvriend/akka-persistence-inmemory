@@ -26,6 +26,3 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.11.0")
 
 // release and deploy to sonatype
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.12")
-
-// deploy to github packages
-addSbtPlugin("com.codecommit" % "sbt-github-packages" % "0.5.3")
