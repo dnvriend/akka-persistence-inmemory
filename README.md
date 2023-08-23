@@ -1,25 +1,28 @@
 # pekko-persistence-inmemory
 
-[//]: # ([![Join the chat at https://gitter.im/dnvriend/akka-persistence-inmemory]&#40;https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg&#41;]&#40;https://gitter.im/dnvriend/akka-persistence-inmemory?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge&#41;)
+[![Join the chat at https://app.gitter.im/#/room/#alstanchev/pekko-persistence-inmemory:gitter.im](https://badges.gitter.im/dnvriend/akka-persistence-inmemory.svg)](https://app.gitter.im/#/room/#alstanchev/pekko-persistence-inmemory:gitter.im?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml/badge.svg)](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml)
-[![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://bintray.com/dnvriend/maven/akka-persistence-inmemory/_latestVersion)
+[![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://s01.oss.sonatype.org)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 [pekko-persistence-inmemory](https://github.com/alstanchev/pekko-persistence-inmemory) is a plugin for pekko-persistence that stores journal and snapshot messages in memory, which is very useful when testing persistent actors, persistent FSM and pekko cluster.
 
 ## Installation
-Add the following to your `build.sbt`:
+```text
+    <dependency>
+        <groupId>com.github.alstanchev</groupId>
+        <artifactId>pekko-persistence-inmemory_2.13</artifactId>
+        <version>${pekko-persistence-inmemory.version}</version>
+    </dependency>
+```
 
-[//]: # TODO()
+
 ```scala
 // the library is available in Bintray repository
 resolvers += Resolver.bintrayRepo("dnvriend", "maven")
 
-// akka 2.5.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.5.15.2"
-
-// akka 2.4.x
-libraryDependencies += "com.github.dnvriend" %% "akka-persistence-inmemory" % "2.4.20.1"
+// pekko 1.0.x
+libraryDependencies += "io.github.alstanchev" %% "pekko-persistence-inmemory" % "1.0.0"
 ```
 
 ## Contribution policy
@@ -33,7 +36,7 @@ This code is open source software licensed under the [Apache 2.0 License](http:/
 Add the following to the application.conf:
 
 ```scala
-akka {
+pekko {
   persistence {
     journal.plugin = "inmemory-journal"
     snapshot-store.plugin = "inmemory-snapshot-store"
@@ -69,7 +72,7 @@ inmemory-read-journal {
 ```
 
 ## Clearing Journal and Snapshot messages
-It is possible to manually clear the journal an snapshot storage, for example:
+It is possible to manually clear the journal and snapshot storage, for example:
 
 ```scala
 import org.apache.pekko.actor.ActorSystem
@@ -95,39 +98,44 @@ trait InMemoryCleanup extends BeforeAndAfterEach { _: Suite =>
 From Java:
 
 ```java
-ActorRef actorRef = extension.journalStorage();
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.persistence.inmemory.InMemoryJournalStorage
+import org.apache.pekko.persistence.inmemory.InMemorySnapshotStorage
+        
 
-InMemoryJournalStorage.ClearJournal clearJournal = InMemoryJournalStorage.clearJournal();
-tp.send(actorRef, clearJournal);
-tp.expectMsg(new Status.Success(""));
-
-InMemorySnapshotStorage.ClearSnapshots clearSnapshots = InMemorySnapshotStorage.clearSnapshots();
-tp.send(actorRef, clearSnapshots);
-tp.expectMsg(new Status.Success(""));
+    ActorRef actorRef = extension.journalStorage();
+    
+    InMemoryJournalStorage.ClearJournal clearJournal = InMemoryJournalStorage.clearJournal();
+    tp.send(actorRef, clearJournal);
+    tp.expectMsg(new Status.Success(""));
+    
+    InMemorySnapshotStorage.ClearSnapshots clearSnapshots = InMemorySnapshotStorage.clearSnapshots();
+    tp.send(actorRef, clearSnapshots);
+    tp.expectMsg(new Status.Success(""));
 ```
 
 ## offset-mode
-akka-persistence-query introduces `org.apache.pekko.persistence.query.Offset`, an ADT that defines `org.apache.pekko.persistence.query.NoOffset`,
+pekko-persistence-query introduces `org.apache.pekko.persistence.query.Offset`, an ADT that defines `org.apache.pekko.persistence.query.NoOffset`,
 `org.apache.pekko.persistence.query.Sequence` and `org.apache.pekko.persistence.query.TimeBasedUUID`. These offsets can be used when using the
-queries `org.apache.pekko.persistence.query.scaladsl.EventsByTagQuery2` and `org.apache.pekko.persistence.query.scaladsl.CurrentEventsByTagQuery2`
+queries `org.apache.pekko.persistence.query.scaladsl.EventsByTagQuery` and `org.apache.pekko.persistence.query.scaladsl.CurrentEventsByTagQuery`
 to request and offset in the stream of events.
 
-Because akka-persistence-inmemory implements both the Sequence-based number offset strategy as the TimeBasedUUID strategy
-it is required to configure the `inmemory-read-journal.offset-mode="sequence"`. This way akka-persistence-inmemory knows
+Because pekko-persistence-inmemory implements both the Sequence-based number offset strategy as the TimeBasedUUID strategy
+it is required to configure the `inmemory-read-journal.offset-mode="sequence"`. This way pekko-persistence-inmemory knows
 what kind of journal it should emulate when a NoOffset type is requested. EventEnvelope will contain either a Sequence
 when the configuration is `sequence` or a TimeBasedUUID when the configuration is `uuid`.
 
-By default the setting is `sequence`.
+By default, the setting is `sequence`.
 
 ## query and event-adapters
-Write plugins (ie. akka-persistence-plugins that write events) can define event adapters. These event adapters can be
+Write plugins (i.e. pekko-persistence-plugins that write events) can define event adapters. These event adapters can be
 reused when executing a query so that the EventEnvelope contains the `application domain event` and not the data-model
 representation of that event. Set the  `inmemory-read-journal.write-plugin="inmemory-journal"` and configure it with the
 write plugin name (defaults to the `inmemory-journal`).
 
 ## Refresh Interval
 The async query API uses polling to query the journal for new events. The refresh interval can be configured
-eg. "1s" so that the journal will be polled every 1 second. This setting is global for each async query, so
+e.g. "1s" so that the journal will be polled every 1 second. This setting is global for each async query, so
 the _allPersistenceId_, _eventsByTag_ and _eventsByPersistenceId_ queries.
 
 ## Max Buffer Size
@@ -182,7 +190,7 @@ val willNotCompleteTheStream: Source[String, NotUsed] = readJournal.allPersisten
 val willCompleteTheStream: Source[String, NotUsed] = readJournal.currentPersistenceIds()
 ```
 
-The returned event stream is unordered and you can expect different order for multiple executions of the query.
+The returned event stream is unordered, and you can expect different order for multiple executions of the query.
 
 When using the `allPersistenceIds` query, the stream is not completed when it reaches the end of the currently used persistenceIds, 
 but it continues to push new persistenceIds when new persistent actors are created. 
@@ -252,8 +260,8 @@ val willNotCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.event
 val willCompleteTheStream: Source[EventEnvelope, NotUsed] = readJournal.currentEventsByTag("apple", 0L)
 ```
 
-To tag events you'll need to create an [Event Adapter](http://doc.org.apache.pekko.io/docs/akka/2.4.1/scala/persistence.html#event-adapters-scala) 
-that will wrap the event in a [org.apache.pekko.persistence.journal.Tagged](http://doc.org.apache.pekko.io/api/akka/2.4.1/#org.apache.pekko.persistence.journal.Tagged) 
+To tag events you'll need to create an [Event Adapter](https://pekko.apache.org/docs/pekko/current/typed/persistence.html#event-adapters) 
+that will wrap the event in an [org.apache.pekko.persistence.journal.Tagged](https://pekko.apache.org/api/pekko/current/org/apache/pekko/persistence/journal/Tagged.html) 
 class with the given tags. The `Tagged` class will instruct the persistence plugin to tag the event with the given set of tags.
 The persistence plugin will __not__ store the `Tagged` class in the journal. It will strip the `tags` and `payload` from the `Tagged` class,
 and use the class only as an instruction to tag the event with the given tags and store the `payload` in the 
@@ -281,7 +289,7 @@ class TaggingEventAdapter extends WriteEventAdapter {
 ```
 
 The `EventAdapter` must be registered by adding the following to the root of `application.conf` Please see the 
-[demo-akka-persistence-jdbc](https://github.com/dnvriend/demo-akka-persistence-jdbc) project for more information. The identifier of the persistence plugin must be used which for the inmemory plugin is `inmemory-journal`. 
+[demo-akka-persistence-jdbc](https://github.com/dnvriend/demo-akka-persistence-jdbc) project for more information (it is not ported to Apache Pekko but is from the upstream forked project's author and is useful for information). The identifier of the persistence plugin must be used which for the inmemory plugin is `inmemory-journal`. 
 
 ```bash
 inmemory-journal {
@@ -302,7 +310,7 @@ event is provided in the EventEnvelope, which makes it possible to resume the st
 
 In addition to the offset the EventEnvelope also provides persistenceId and sequenceNr for each event. The sequenceNr is 
 the sequence number for the persistent actor with the persistenceId that persisted the event. The persistenceId + sequenceNr 
-is an unique identifier for the event.
+is a unique identifier for the event.
 
 The returned event stream contains only events that correspond to the given tag, and is ordered by the creation time of the events, 
 The same stream elements (in same order) are returned for multiple executions of the same query. Deleted events are not deleted 
