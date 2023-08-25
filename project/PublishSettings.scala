@@ -22,7 +22,7 @@ object PublishSettings extends AutoPlugin {
     // Sonatype settings
     sonatypeCredentialHost := "s01.oss.sonatype.org",
     sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
-
+    ThisBuild / useGpg := true,
     // Publishing destination
     publishTo := {
       val nexus = "https://s01.oss.sonatype.org/"
