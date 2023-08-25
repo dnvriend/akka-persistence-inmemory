@@ -2,7 +2,7 @@
 
 [![Join the chat at https://app.gitter.im/#/room/#pekko-persistence-inmemory:gitter.im](https://badges.gitter.im/repo.svg)](https://app.gitter.im/#/room/#pekko-persistence-inmemory:gitter.im)
 [![Build Status](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml/badge.svg)](https://github.com/alstanchev/pekko-persistence-inmemory/actions/workflows/build.yml)
-[![Download](https://api.bintray.com/packages/dnvriend/maven/akka-persistence-inmemory/images/download.svg) ](https://s01.oss.sonatype.org)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.alstanchev/pekko-persistence-inmemory_2.13)](https://central.sonatype.com/search?q=pekko-persistence-inmemory&namespace=io.github.alstanchev)
 [![License](http://img.shields.io/:license-Apache%202-red.svg)](http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 [pekko-persistence-inmemory](https://github.com/alstanchev/pekko-persistence-inmemory) is a plugin for pekko-persistence that stores journal and snapshot messages in memory, which is very useful when testing persistent actors, persistent FSM and pekko cluster.
@@ -14,7 +14,7 @@
     <dependency>
         <groupId>com.github.alstanchev</groupId>
         <artifactId>pekko-persistence-inmemory_2.13</artifactId>
-        <version>${pekko-persistence-inmemory.version}</version>
+        <version>1.0.0</version>
     </dependency>
 ```
 
