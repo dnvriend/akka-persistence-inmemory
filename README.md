@@ -14,7 +14,7 @@
     <dependency>
         <groupId>com.github.alstanchev</groupId>
         <artifactId>pekko-persistence-inmemory_2.13</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </dependency>
 ```
 
@@ -23,7 +23,7 @@
 // the library is available in OSSSonatype and MavenCentral repository
 
 // pekko 1.0.x
-libraryDependencies += "io.github.alstanchev" %% "pekko-persistence-inmemory" % "1.0.0"
+libraryDependencies += "io.github.alstanchev" %% "pekko-persistence-inmemory" % "1.0.1"
 ```
 
 ## Contribution policy
@@ -330,7 +330,10 @@ inmemory-storage {
 }
 ```
 
+### 1.0.1 (2023-09-11)
+ - Renamed packages
+
 ### 1.0.0 (2023-08-24)
  - Fork from [dnvriend/akka-persistence-inmemory:2.5.15.2](https://github.com/dnvriend/akka-persistence-inmemory)
  - Akka replaced with [Pekko 1.0.1](https://github.com/apache/incubator-pekko)
- - Scala 2.12.x, 2.13.x, 3 support
+ - Scala 2.12.x, 2.13.x

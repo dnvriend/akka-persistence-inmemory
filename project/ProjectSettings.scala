@@ -12,7 +12,7 @@ object ProjectSettings extends AutoPlugin {
   final val ScalaTestV = "3.2.15"
   final val ScalaXmlV = "2.1.0"
   final val LogbackV = "1.4.7"
-  final val version = "0.0.0-SNAPSHOT"
+  final val version = "1.0.1"
 
   override def requires = plugins.JvmPlugin && SbtScalariform
   override def trigger = allRequirements
