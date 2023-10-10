@@ -5,15 +5,13 @@ import org.apache.pekko.actor.ActorSystem;
 import org.apache.pekko.actor.Status;
 import org.apache.pekko.testkit.TestProbe;
 
-import org.apache.pekko.persistence.inmemory.extension.InMemoryJournalStorage;
-import org.apache.pekko.persistence.inmemory.extension.InMemorySnapshotStorage;
-import org.apache.pekko.persistence.inmemory.extension.StorageExtension;
-import org.apache.pekko.persistence.inmemory.extension.StorageExtensionProvider;
-import org.junit.Test;
-
 import io.github.alstanchev.pekko.persistence.inmemory.extension.InMemoryJournalStorage;
 import io.github.alstanchev.pekko.persistence.inmemory.extension.InMemorySnapshotStorage;
 import io.github.alstanchev.pekko.persistence.inmemory.extension.StorageExtension;
+import io.github.alstanchev.pekko.persistence.inmemory.extension.StorageExtensionProvider;
+
+import org.junit.Test;
+
 
 public class StorageExtensionCompileOnlyTest {
 

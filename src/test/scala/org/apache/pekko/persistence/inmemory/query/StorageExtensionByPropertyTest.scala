@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.alstanchev.pekko.persistence.inmemory.query
+package org.apache.pekko.persistence.inmemory.query
 
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.persistence.Persistence

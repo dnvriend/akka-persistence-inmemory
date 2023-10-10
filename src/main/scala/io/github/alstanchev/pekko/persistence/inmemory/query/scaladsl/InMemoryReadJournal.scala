@@ -22,21 +22,21 @@ import io.github.alstanchev.pekko.persistence.inmemory.extension.InMemoryJournal
 import io.github.alstanchev.pekko.persistence.inmemory.extension.InMemoryJournalStorage.PersistenceIds
 import io.github.alstanchev.pekko.persistence.inmemory.util.UUIDs
 import org.apache.pekko.NotUsed
-import org.apache.pekko.actor.{ActorRef, ExtendedActorSystem}
-import org.apache.pekko.event.{Logging, LoggingAdapter}
+import org.apache.pekko.actor.{ ActorRef, ExtendedActorSystem }
+import org.apache.pekko.event.{ Logging, LoggingAdapter }
 import org.apache.pekko.pattern.ask
 import org.apache.pekko.persistence.query._
 import org.apache.pekko.persistence.query.scaladsl._
-import org.apache.pekko.persistence.{Persistence, PersistentRepr}
+import org.apache.pekko.persistence.{ Persistence, PersistentRepr }
 import org.apache.pekko.serialization.SerializationExtension
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.stream.{ActorMaterializer, Materializer}
+import org.apache.pekko.stream.scaladsl.{ Flow, Sink, Source }
+import org.apache.pekko.stream.{ ActorMaterializer, Materializer }
 import org.apache.pekko.util.Timeout
 
 import java.util.concurrent.TimeUnit
-import scala.collection.immutable.{Iterable, Seq}
+import scala.collection.immutable.{ Iterable, Seq }
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 
 object InMemoryReadJournal {
@@ -99,7 +99,7 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
 
   override def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     Source.future((journal ? InMemoryJournalStorage.GetJournalEntriesExceptDeleted(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue))
-        .mapTo[List[JournalEntry]])
+      .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserialization)
       .map(repr => EventEnvelope(Offset.sequence(repr.sequenceNr), repr.persistenceId, repr.sequenceNr, repr.payload))
@@ -124,7 +124,7 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
 
   override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
     Source.future((journal ? InMemoryJournalStorage.EventsByTag(tag, offset))
-        .mapTo[List[JournalEntry]])
+      .mapTo[List[JournalEntry]])
       .mapConcat(identity)
       .via(deserializationWithOffset(offset))
       .map {
@@ -135,7 +135,7 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
     Source.unfoldAsync[Offset, Seq[EventEnvelope]](offset) { (from: Offset) =>
       def nextFromOffset(xs: Seq[EventEnvelope]): Offset = {
         if (xs.isEmpty) from else xs.last.offset match {
-          case Sequence(n) => Sequence(n)
+          case Sequence(n)         => Sequence(n)
           case TimeBasedUUID(time) => TimeBasedUUID(UUIDs.startOf(UUIDs.unixTimestamp(time) + 1))
         }
       }
@@ -173,10 +173,10 @@ class InMemoryReadJournal(config: Config, journal: ActorRef)(implicit val system
     def sequence = Sequence(entry.offset.getOrElse(throw new IllegalStateException("No offset in stream")))
 
     offset match {
-      case _: Sequence => sequence
-      case _: TimeBasedUUID => entry.timestamp
+      case _: Sequence                          => sequence
+      case _: TimeBasedUUID                     => entry.timestamp
       case _ if offsetMode.contains("sequence") => sequence
-      case _ => entry.timestamp
+      case _                                    => entry.timestamp
     }
   }
 

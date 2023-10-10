@@ -16,6 +16,8 @@
 
 package io.github.alstanchev.pekko.persistence.inmemory.query
 
+import org.apache.pekko.persistence.inmemory.query.QueryTestSpec
+
 import scala.concurrent.duration._
 
 class AllPersistenceIdsTest extends QueryTestSpec {

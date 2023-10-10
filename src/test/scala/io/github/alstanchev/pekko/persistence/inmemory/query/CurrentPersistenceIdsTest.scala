@@ -16,6 +16,8 @@
 
 package io.github.alstanchev.pekko.persistence.inmemory.query
 
+import org.apache.pekko.persistence.inmemory.query.QueryTestSpec
+
 class CurrentPersistenceIdsTest extends QueryTestSpec {
 
   it should "not find any persistenceIds for empty journal" in

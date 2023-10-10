@@ -1,6 +1,6 @@
 package io.github.alstanchev.pekko.persistence.inmemory.util
 
-import org.apache.pekko.persistence.inmemory.TestSpec
+import io.github.alstanchev.pekko.persistence.inmemory.TestSpec
 
 import java.time.{ OffsetDateTime, ZoneOffset }
 import org.apache.pekko.persistence.query.TimeBasedUUID

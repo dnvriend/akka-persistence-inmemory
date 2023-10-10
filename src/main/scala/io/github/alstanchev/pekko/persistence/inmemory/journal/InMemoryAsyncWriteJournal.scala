@@ -17,24 +17,24 @@
 package io.github.alstanchev.pekko.persistence.inmemory.journal
 
 import java.util.concurrent.TimeUnit
-import org.apache.pekko.actor.{ActorRef, ActorSystem}
-import org.apache.pekko.event.{Logging, LoggingAdapter}
+import org.apache.pekko.actor.{ ActorRef, ActorSystem }
+import org.apache.pekko.event.{ Logging, LoggingAdapter }
 import org.apache.pekko.pattern.ask
 import io.github.alstanchev.pekko.persistence.inmemory.JournalEntry
-import io.github.alstanchev.pekko.persistence.inmemory.extension.{InMemoryJournalStorage, StorageExtensionProvider}
-import org.apache.pekko.persistence.journal.{AsyncWriteJournal, Tagged}
-import org.apache.pekko.persistence.{AtomicWrite, PersistentRepr}
+import io.github.alstanchev.pekko.persistence.inmemory.extension.{ InMemoryJournalStorage, StorageExtensionProvider }
+import org.apache.pekko.persistence.journal.{ AsyncWriteJournal, Tagged }
+import org.apache.pekko.persistence.{ AtomicWrite, PersistentRepr }
 import org.apache.pekko.serialization.SerializationExtension
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.stream.{ActorMaterializer, Materializer}
+import org.apache.pekko.stream.scaladsl.{ Flow, Sink, Source }
+import org.apache.pekko.stream.{ ActorMaterializer, Materializer }
 import org.apache.pekko.util.Timeout
 import com.typesafe.config.Config
 import io.github.alstanchev.pekko.persistence.inmemory.extension.InMemoryJournalStorage
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success, Try }
 
 class InMemoryAsyncWriteJournal(config: Config) extends AsyncWriteJournal {
   implicit val system: ActorSystem = context.system

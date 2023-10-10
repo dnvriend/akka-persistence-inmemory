@@ -16,6 +16,7 @@
 
 package io.github.alstanchev.pekko.persistence.inmemory.query
 
+import org.apache.pekko.persistence.inmemory.query.QueryTestSpec
 import org.apache.pekko.stream.scaladsl.Sink
 import org.scalatest.Ignore
 
