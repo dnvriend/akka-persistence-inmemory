@@ -1,3 +1,4 @@
+import com.jsuereth.sbtpgp.PgpKeys.useGpg
 import sbt._
 import sbt.Keys._
 import xerial.sbt.Sonatype.autoImport._
